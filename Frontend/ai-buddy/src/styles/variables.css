@@ -1,0 +1,92 @@
+:root {
+
+  /* =========================
+     ZARVIS BACKGROUND
+     ========================= */
+
+  --bg-main: #020316;
+  --bg-sidebar: #05051b;
+
+  --bg-card: rgba(8, 8, 35, 0.88);
+  --bg-card-light: rgba(20, 16, 65, 0.78);
+
+
+  /* =========================
+     PRIMARY ZARVIS COLORS
+     ========================= */
+
+  --primary: #5b4cff;
+  --primary-light: #8577ff;
+
+  --cyan: #4ccfff;
+  --cyan-light: #a5efff;
+
+  --purple: #914cff;
+  --purple-light: #b996ff;
+
+  --pink: #e34cff;
+  --pink-light: #ff9bf4;
+
+
+  /* =========================
+     STATUS COLORS
+     ========================= */
+
+  --green: #32e6a1;
+  --yellow: #ffd166;
+  --orange: #ffad42;
+
+
+  /* =========================
+     TEXT
+     ========================= */
+
+  --text-primary: #f8f7ff;
+  --text-secondary: #c1c0e8;
+  --text-muted: #7777a8;
+
+
+  /* =========================
+     BORDERS
+     ========================= */
+
+  --border: rgba(112, 82, 255, 0.25);
+
+  --border-bright:
+    rgba(139, 92, 246, 0.60);
+
+
+  /* =========================
+     GLASS
+     ========================= */
+
+  --glass: blur(20px);
+
+
+  /* =========================
+     GLOWS
+     ========================= */
+
+  --glow-blue:
+    0 0 28px rgba(91, 76, 255, 0.40);
+
+  --glow-cyan:
+    0 0 28px rgba(76, 207, 255, 0.38);
+
+  --glow-purple:
+    0 0 35px rgba(145, 76, 255, 0.45);
+
+  --glow-pink:
+    0 0 28px rgba(227, 76, 255, 0.32);
+
+
+  /* =========================
+     LAYOUT
+     ========================= */
+
+  --sidebar-width: 240px;
+
+  --radius-lg: 22px;
+  --radius-md: 15px;
+  --radius-sm: 10px;
+}
