@@ -10,6 +10,7 @@ from app.api.integrations import router as integrations_router
 from app.api.memory import router as memory_router
 from app.api.notifications import router as notifications_router
 from app.api.security import router as security_router
+from app.api.timer import router as timer_router
 
 
 app = FastAPI(
@@ -70,6 +71,10 @@ app.include_router(
 app.include_router(
     security_router,
     prefix="/api"
+)
+
+app.include_router(
+    timer_router
 )
 
 

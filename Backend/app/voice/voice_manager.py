@@ -15,13 +15,19 @@ class VoiceManager:
     ):
 
         self.speech_to_text = SpeechToText()
+
         self.text_to_speech = TextToSpeech()
+
         self.wake_word_detector = WakeWordDetector(
             wake_word
         )
 
         self.command_listener = CommandListener()
-        self.voice_response = VoiceResponse()
+
+        self.voice_response = VoiceResponse(
+            self.text_to_speech
+        )
+
         self.audio_manager = AudioManager()
 
         self.enabled = True
@@ -35,6 +41,7 @@ class VoiceManager:
             text,
             str
         ):
+
             return {
                 "success": False,
                 "wake_word_detected": False,
@@ -46,6 +53,7 @@ class VoiceManager:
         text = text.strip()
 
         if not text:
+
             return {
                 "success": False,
                 "wake_word_detected": False,
@@ -55,6 +63,7 @@ class VoiceManager:
             }
 
         if not self.enabled:
+
             return {
                 "success": False,
                 "wake_word_detected": False,
@@ -91,6 +100,7 @@ class VoiceManager:
     ) -> dict:
 
         if not self.enabled:
+
             return {
                 "success": False,
                 "text": "",
@@ -98,6 +108,7 @@ class VoiceManager:
             }
 
         if not self.command_listener.is_listening():
+
             self.command_listener.start_listening()
 
         return self.command_listener.listen(
@@ -107,6 +118,7 @@ class VoiceManager:
     def start_listening(self) -> dict:
 
         if not self.enabled:
+
             return {
                 "success": False,
                 "listening": False,
@@ -125,6 +137,7 @@ class VoiceManager:
     ) -> dict:
 
         if not self.enabled:
+
             return {
                 "success": False,
                 "message": "Voice manager is disabled."
@@ -146,6 +159,7 @@ class VoiceManager:
     def start_recording(self) -> dict:
 
         if not self.enabled:
+
             return {
                 "success": False,
                 "recording": False,
@@ -184,12 +198,15 @@ class VoiceManager:
         self.enabled = False
 
         if self.command_listener.is_listening():
+
             self.command_listener.stop_listening()
 
         if self.audio_manager.is_recording():
+
             self.audio_manager.stop_recording()
 
         if self.audio_manager.is_playing():
+
             self.audio_manager.stop_playback()
 
     def is_enabled(self) -> bool:

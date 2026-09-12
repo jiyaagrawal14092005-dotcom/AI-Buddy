@@ -1,5 +1,7 @@
 import uuid
 
+from sqlalchemy.orm import Session
+
 from app.workflow.state import WorkflowState
 from app.workflow.steps import WorkflowStep
 from app.workflow.executor import WorkflowExecutor
@@ -17,15 +19,50 @@ class WorkflowEngine:
 
     def create_workflow(
         self,
-        plan: dict
+        plan: dict,
+        user_id: int,
+        db: Session
     ) -> dict:
 
-        # Validate plan
+        # ---------------------------------
+        # VALIDATE PLAN
+        # ---------------------------------
+
         if not isinstance(plan, dict):
             return {
                 "success": False,
                 "message": "Workflow plan must be a dictionary."
             }
+
+        # ---------------------------------
+        # VALIDATE USER ID
+        # ---------------------------------
+
+        if not isinstance(user_id, int):
+            return {
+                "success": False,
+                "message": "User ID must be an integer."
+            }
+
+        if user_id <= 0:
+            return {
+                "success": False,
+                "message": "User ID must be greater than zero."
+            }
+
+        # ---------------------------------
+        # VALIDATE DATABASE SESSION
+        # ---------------------------------
+
+        if db is None:
+            return {
+                "success": False,
+                "message": "Database session is required."
+            }
+
+        # ---------------------------------
+        # GET TOOL
+        # ---------------------------------
 
         tool = plan.get("tool")
 
@@ -43,7 +80,10 @@ class WorkflowEngine:
                 "message": "Cannot create workflow without a tool."
             }
 
-        # Validate parameters
+        # ---------------------------------
+        # VALIDATE PARAMETERS
+        # ---------------------------------
+
         parameters = plan.get(
             "parameters",
             {}
@@ -58,19 +98,28 @@ class WorkflowEngine:
                 "message": "Workflow parameters must be a dictionary."
             }
 
-        # Create workflow ID
+        # ---------------------------------
+        # CREATE WORKFLOW ID
+        # ---------------------------------
+
         workflow_id = str(
             uuid.uuid4()
         )
 
-        # Create workflow step
+        # ---------------------------------
+        # CREATE WORKFLOW STEP
+        # ---------------------------------
+
         step = WorkflowStep(
             step_id=1,
             tool=tool,
             parameters=parameters
         )
 
-        # Create workflow state
+        # ---------------------------------
+        # CREATE WORKFLOW STATE
+        # ---------------------------------
+
         state = WorkflowState(
             workflow_id
         )
@@ -86,7 +135,9 @@ class WorkflowEngine:
         try:
 
             result = self.executor.execute_step(
-                step
+                step,
+                user_id,
+                db
             )
 
         except Exception as error:
@@ -102,7 +153,10 @@ class WorkflowEngine:
                 "error": str(error)
             }
 
-        # Validate executor result
+        # ---------------------------------
+        # VALIDATE EXECUTOR RESULT
+        # ---------------------------------
+
         if not isinstance(result, dict):
 
             state.fail(

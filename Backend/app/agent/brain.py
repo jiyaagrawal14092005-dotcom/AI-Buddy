@@ -1,4 +1,8 @@
+import os
+
+from dotenv import load_dotenv
 from google import genai
+from sqlalchemy.orm import Session
 
 from app.agent.context import ContextManager
 from app.agent.intent import IntentDetector
@@ -14,6 +18,12 @@ from app.tools.email_tool import EmailTool
 from app.tools.calendar_tool import CalendarTool
 from app.tools.file_tool import FileTool
 from app.tools.browser_tool import BrowserTool
+from app.tools.application_launcher import ApplicationLauncher
+
+from app.security.security_manager import SecurityManager
+
+
+load_dotenv()
 
 
 class AIBrain:
@@ -28,6 +38,8 @@ class AIBrain:
 
         self.context_manager = ContextManager()
 
+        self.security_manager = SecurityManager()
+
         self.tools = {
             "task": TaskTool(),
             "reminder": ReminderTool(),
@@ -37,36 +49,59 @@ class AIBrain:
             "email": EmailTool(),
             "calendar": CalendarTool(),
             "file": FileTool(),
-            "browser": BrowserTool()
+            "browser": BrowserTool(),
+            "application_launcher": ApplicationLauncher
         }
 
         self.client = None
 
         try:
 
-            self.client = genai.Client()
+            api_key = os.getenv("GEMINI_API_KEY")
 
-        except Exception:
+            if not api_key:
+
+                print(
+                    "Gemini client initialization failed: "
+                    "GEMINI_API_KEY not found."
+                )
+
+            else:
+
+                self.client = genai.Client(
+                    api_key=api_key
+                )
+
+                print(
+                    "Gemini client initialized successfully."
+                )
+
+        except Exception as error:
+
+            print(
+                "Gemini client initialization failed:"
+            )
+
+            print(repr(error))
 
             self.client = None
 
     def _execute_tool(
         self,
         tool_name: str,
-        parameters: dict
+        parameters: dict,
+        user_id: int,
+        db: Session
     ) -> dict:
 
-        tool = self.tools.get(
-            tool_name
-        )
+        tool = self.tools.get(tool_name)
 
         if tool is None:
 
             return {
                 "success": False,
                 "message": (
-                    f"Tool '{tool_name}' "
-                    "is not available."
+                    f"Tool '{tool_name}' is not available."
                 )
             }
 
@@ -83,7 +118,9 @@ class AIBrain:
                 )
 
                 return tool.create_task(
-                    task_name
+                    task_name,
+                    user_id,
+                    db
                 )
 
             if tool_name == "reminder":
@@ -99,17 +136,33 @@ class AIBrain:
                     )
                 )
 
-                return tool.create_reminder(
-                    reminder_text
+                reminder_time = parameters.get(
+                    "time"
                 )
+
+                try:
+
+                    return tool.create_reminder(
+                        reminder_text,
+                        reminder_time
+                    )
+
+                except TypeError:
+
+                    return tool.create_reminder(
+                        reminder_text
+                    )
 
             if tool_name == "timer":
 
                 duration = parameters.get(
-                    "duration",
+                    "duration_seconds",
                     parameters.get(
-                        "minutes",
-                        0
+                        "duration",
+                        parameters.get(
+                            "minutes",
+                            0
+                        )
                     )
                 )
 
@@ -128,51 +181,175 @@ class AIBrain:
                     city
                 )
 
+            if tool_name == "application_launcher":
+
+                action = parameters.get(
+                    "action",
+                    "open_application"
+                )
+
+                if action == "open_application":
+
+                    application = parameters.get(
+                        "application",
+                        parameters.get(
+                            "app",
+                            ""
+                        )
+                    )
+
+                    return tool.open_application(
+                        application
+                    )
+
+                if action == "open_website":
+
+                    url = parameters.get(
+                        "url",
+                        ""
+                    )
+
+                    return tool.open_website(
+                        url
+                    )
+
+                return {
+                    "success": False,
+                    "message": (
+                        "Unsupported launcher action."
+                    )
+                }
+
             return tool.execute(
                 parameters
             )
 
-        except Exception as e:
+        except Exception as error:
 
             return {
                 "success": False,
                 "message": (
-                    f"Tool execution failed: {str(e)}"
+                    f"Tool execution failed: {str(error)}"
                 )
             }
+
+    def _check_security_access(
+        self,
+        user_id: int,
+        tool_name: str
+    ) -> dict:
+
+        security_user_id = f"user-{user_id}"
+
+        tool_access = self.security_manager.check_tool_access(
+            user_id=security_user_id,
+            tool_name=tool_name,
+            permission_granted=True,
+            approval_granted=False
+        )
+
+        if not tool_access.get(
+            "allowed",
+            False
+        ):
+
+            return {
+                "allowed": False,
+                "stage": "tool_guard",
+                "message": tool_access.get(
+                    "message",
+                    "Tool execution blocked by security."
+                )
+            }
+
+        action_access = self.security_manager.check_action_access(
+            user_id=security_user_id,
+            action=tool_name,
+            permission_granted=True,
+            approval_granted=False
+        )
+
+        if not action_access.get(
+            "allowed",
+            False
+        ):
+
+            return {
+                "allowed": False,
+                "stage": "action_policy",
+                "message": action_access.get(
+                    "message",
+                    "Action blocked by security policy."
+                )
+            }
+
+        return {
+            "allowed": True,
+            "message": "Tool and action security checks passed."
+        }
 
     def _generate_general_response(
         self,
         message: str
     ) -> str:
 
+        fallback_message = (
+            "I understand your request, but I am unable "
+            "to generate an AI response right now."
+        )
+
         if self.client is None:
 
-            return (
-                "I understand your request, "
-                "but I am unable to generate "
-                "an AI response right now."
+            print(
+                "Gemini response skipped: "
+                "Gemini client is not available."
             )
+
+            return fallback_message
 
         try:
 
             response = self.client.models.generate_content(
-                model="gemini-3.7-flash",
+                model="gemini-3.6-flash",
                 contents=message
             )
 
-            if response.text:
+            if response is None:
 
-                return response.text.strip()
+                print(
+                    "Gemini response error: "
+                    "No response object returned."
+                )
 
-        except Exception:
+                return fallback_message
 
-            pass
+            response_text = getattr(
+                response,
+                "text",
+                None
+            )
 
-        return (
-            "I understand your request, "
-            "but I could not generate a response right now."
-        )
+            if (
+                isinstance(response_text, str)
+                and response_text.strip()
+            ):
+
+                return response_text.strip()
+
+            print(
+                "Gemini response error: "
+                "Response did not contain usable text."
+            )
+
+        except Exception as error:
+
+            print(
+                "Gemini response generation failed:"
+            )
+
+            print(repr(error))
+
+        return fallback_message
 
     def _build_action_message(
         self,
@@ -213,21 +390,145 @@ class AIBrain:
                 response_message
             )
 
-        except Exception as e:
+        except Exception as error:
 
             print(
-                f"Context storage failed: {e}"
+                f"Context storage failed: {error}"
             )
 
-    def respond(
+    def _prepare_reasoning_plan(
         self,
-        message: str
+        plan: dict
     ) -> dict:
 
         if not isinstance(
-            message,
+            plan,
+            dict
+        ):
+
+            return {}
+
+        steps = plan.get(
+            "steps",
+            []
+        )
+
+        if (
+            not isinstance(
+                steps,
+                list
+            )
+            or not steps
+        ):
+
+            return plan
+
+        first_step = steps[0]
+
+        if not isinstance(
+            first_step,
+            dict
+        ):
+
+            return plan
+
+        tool = first_step.get(
+            "tool"
+        )
+
+        parameters = first_step.get(
+            "parameters",
+            {}
+        )
+
+        if not isinstance(
+            parameters,
+            dict
+        ):
+
+            parameters = {}
+
+        return {
+            "tool": tool,
+            "parameters": parameters
+        }
+
+    def _get_intent_name(
+        self,
+        intent
+    ) -> str:
+
+        if isinstance(
+            intent,
+            dict
+        ):
+
+            value = intent.get(
+                "intent",
+                "UNKNOWN"
+            )
+
+        elif isinstance(
+            intent,
             str
-        ) or not message.strip():
+        ):
+
+            value = intent
+
+        else:
+
+            value = "UNKNOWN"
+
+        if not isinstance(
+            value,
+            str
+        ):
+
+            return "UNKNOWN"
+
+        return value.strip().upper()
+
+    def respond(
+        self,
+        message: str,
+        user_id: int,
+        db: Session
+    ) -> dict:
+
+        if (
+            not isinstance(
+                message,
+                str
+            )
+            or not message.strip()
+        ):
+
+            return {
+                "success": False,
+                "intent": None,
+                "plan": None,
+                "reasoning": None,
+                "message": "Message cannot be empty.",
+                "action_result": None,
+                "context": []
+            }
+
+        if not isinstance(
+            user_id,
+            int
+        ):
+
+            return {
+                "success": False,
+                "intent": None,
+                "plan": None,
+                "reasoning": None,
+                "message": "User ID must be an integer.",
+                "action_result": None,
+                "context": []
+            }
+
+        if user_id <= 0:
 
             return {
                 "success": False,
@@ -235,7 +536,21 @@ class AIBrain:
                 "plan": None,
                 "reasoning": None,
                 "message": (
-                    "Message cannot be empty."
+                    "User ID must be greater than zero."
+                ),
+                "action_result": None,
+                "context": []
+            }
+
+        if db is None:
+
+            return {
+                "success": False,
+                "intent": None,
+                "plan": None,
+                "reasoning": None,
+                "message": (
+                    "Database session is required."
                 ),
                 "action_result": None,
                 "context": []
@@ -243,13 +558,15 @@ class AIBrain:
 
         message = message.strip()
 
+        action_result = None
+
         try:
 
             intent = self.intent_detector.detect(
                 message
             )
 
-        except Exception as e:
+        except Exception as error:
 
             return {
                 "success": False,
@@ -257,59 +574,15 @@ class AIBrain:
                 "plan": None,
                 "reasoning": None,
                 "message": (
-                    f"Intent detection failed: {str(e)}"
+                    f"Intent detection failed: {str(error)}"
                 ),
                 "action_result": None,
                 "context": []
             }
 
-        try:
-
-            plan = self.planner.create_plan(
-                intent
-            )
-
-        except Exception as e:
-
-            return {
-                "success": False,
-                "intent": intent,
-                "plan": None,
-                "reasoning": None,
-                "message": (
-                    f"Planning failed: {str(e)}"
-                ),
-                "action_result": None,
-                "context": []
-            }
-
-        try:
-
-            reasoning = self.reasoning_engine.analyze(
-                intent,
-                plan
-            )
-
-        except Exception as e:
-
-            return {
-                "success": False,
-                "intent": intent,
-                "plan": plan,
-                "reasoning": None,
-                "message": (
-                    f"Reasoning failed: {str(e)}"
-                ),
-                "action_result": None,
-                "context": []
-            }
-
-        intent_name = intent.get(
-            "intent",
-            "UNKNOWN"
+        intent_name = self._get_intent_name(
+            intent
         )
-
-        action_result = None
 
         if intent_name == "GENERAL_QUERY":
 
@@ -319,7 +592,97 @@ class AIBrain:
                 )
             )
 
-        elif not plan.get(
+            self._store_context(
+                message,
+                response_message
+            )
+
+            try:
+
+                context = (
+                    self.context_manager.get_history()
+                )
+
+            except Exception as error:
+
+                print(
+                    f"Context retrieval failed: {error}"
+                )
+
+                context = []
+
+            return {
+                "success": True,
+                "intent": intent,
+                "plan": None,
+                "reasoning": None,
+                "message": response_message,
+                "action_result": None,
+                "context": context
+            }
+
+        try:
+
+            plan = self.planner.create_plan(
+                intent
+            )
+
+        except Exception as error:
+
+            return {
+                "success": False,
+                "intent": intent,
+                "plan": None,
+                "reasoning": None,
+                "message": (
+                    f"Planning failed: {str(error)}"
+                ),
+                "action_result": None,
+                "context": []
+            }
+
+        if not isinstance(
+            plan,
+            dict
+        ):
+
+            plan = {
+                "success": False,
+                "message": (
+                    "Planner returned an invalid plan."
+                )
+            }
+
+        reasoning_plan = (
+            self._prepare_reasoning_plan(
+                plan
+            )
+        )
+
+        try:
+
+            reasoning = (
+                self.reasoning_engine.reason(
+                    intent_name,
+                    reasoning_plan
+                )
+            )
+
+        except Exception as error:
+
+            return {
+                "success": False,
+                "intent": intent,
+                "plan": plan,
+                "reasoning": None,
+                "message": (
+                    f"Reasoning failed: {str(error)}"
+                ),
+                "action_result": None,
+                "context": []
+            }
+
+        if not plan.get(
             "success",
             False
         ):
@@ -329,12 +692,23 @@ class AIBrain:
                 "Unable to create a plan."
             )
 
-        elif reasoning.get(
-            "decision"
-        ) != "EXECUTE":
+        elif not reasoning.get(
+            "success",
+            False
+        ):
 
             response_message = reasoning.get(
-                "reason",
+                "message",
+                "The request cannot be executed."
+            )
+
+        elif not reasoning.get(
+            "executable",
+            False
+        ):
+
+            response_message = reasoning.get(
+                "message",
                 "The request cannot be executed."
             )
 
@@ -345,7 +719,13 @@ class AIBrain:
                 []
             )
 
-            if not steps:
+            if (
+                not isinstance(
+                    steps,
+                    list
+                )
+                or not steps
+            ):
 
                 response_message = (
                     "No executable action was found "
@@ -356,25 +736,78 @@ class AIBrain:
 
                 first_step = steps[0]
 
-                tool_name = first_step.get(
-                    "tool"
-                )
+                if not isinstance(
+                    first_step,
+                    dict
+                ):
 
-                parameters = first_step.get(
-                    "parameters",
-                    {}
-                )
-
-                action_result = self._execute_tool(
-                    tool_name,
-                    parameters
-                )
-
-                response_message = (
-                    self._build_action_message(
-                        action_result
+                    response_message = (
+                        "The execution step is invalid."
                     )
-                )
+
+                else:
+
+                    tool_name = first_step.get(
+                        "tool"
+                    )
+
+                    parameters = first_step.get(
+                        "parameters",
+                        {}
+                    )
+
+                    if not isinstance(
+                        parameters,
+                        dict
+                    ):
+
+                        parameters = {}
+
+                    security_result = (
+                        self._check_security_access(
+                            user_id,
+                            tool_name
+                        )
+                    )
+
+                    if not security_result.get(
+                        "allowed",
+                        False
+                    ):
+
+                        response_message = (
+                            security_result.get(
+                                "message",
+                                "Action blocked by security."
+                            )
+                        )
+
+                        action_result = {
+                            "success": False,
+                            "security_blocked": True,
+                            "stage": security_result.get(
+                                "stage",
+                                "security"
+                            ),
+                            "message": response_message
+                        }
+
+                    else:
+
+                        action_result = (
+                            self._execute_tool(
+                                tool_name,
+                                parameters,
+                                user_id,
+                                db
+                            )
+                        )
+
+                        response_message = (
+                            self._build_action_message(
+                                action_result
+                            )
+                        )
 
         self._store_context(
             message,
@@ -383,12 +816,14 @@ class AIBrain:
 
         try:
 
-            context = self.context_manager.get_history()
+            context = (
+                self.context_manager.get_history()
+            )
 
-        except Exception as e:
+        except Exception as error:
 
             print(
-                f"Context retrieval failed: {e}"
+                f"Context retrieval failed: {error}"
             )
 
             context = []

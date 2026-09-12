@@ -3,9 +3,16 @@ from app.voice.text_to_speech import TextToSpeech
 
 class VoiceResponse:
 
-    def __init__(self):
+    def __init__(
+        self,
+        text_to_speech: TextToSpeech | None = None
+    ):
 
-        self.text_to_speech = TextToSpeech()
+        if text_to_speech is not None:
+            self.text_to_speech = text_to_speech
+        else:
+            self.text_to_speech = TextToSpeech()
+
         self.last_response = ""
 
     def prepare_response(
@@ -50,6 +57,7 @@ class VoiceResponse:
         )
 
         if result.get("success", False):
+
             self.last_response = text.strip()
 
         return result
