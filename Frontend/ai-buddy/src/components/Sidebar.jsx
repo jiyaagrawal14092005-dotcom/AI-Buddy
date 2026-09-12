@@ -1,47 +1,121 @@
 import { NavLink } from "react-router-dom";
 
 import {
-    Home,
+    LayoutDashboard,
+    MessageCircle,
     CheckSquare,
     CalendarDays,
     Workflow,
+    Activity,
     Brain,
+    Plug,
+    ShieldCheck,
     Settings,
     Sparkles,
-    ShieldCheck,
+    ChevronRight,
 } from "lucide-react";
 
 const menuItems = [
-    { label: "Dashboard", icon: Home, path: "/" },
-    { label: "Tasks", icon: CheckSquare, path: "/tasks" },
-    { label: "Schedule", icon: CalendarDays, path: "/schedule" },
-    { label: "Workflows", icon: Workflow, path: "/workflows" },
-    { label: "Memory", icon: Brain, path: "/memory" },
-    { label: "Security", icon: ShieldCheck, path: "/security" },
-    { label: "Settings", icon: Settings, path: "/settings" },
+    {
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        path: "/",
+    },
+    {
+        label: "Assistant",
+        icon: MessageCircle,
+        path: "/assistant",
+    },
+    {
+        label: "Tasks",
+        icon: CheckSquare,
+        path: "/tasks",
+    },
+    {
+        label: "Schedule",
+        icon: CalendarDays,
+        path: "/schedule",
+    },
+    {
+        label: "Workflows",
+        icon: Workflow,
+        path: "/workflows",
+    },
+    {
+        label: "Activity",
+        icon: Activity,
+        path: "/activity",
+    },
+    {
+        label: "Memory",
+        icon: Brain,
+        path: "/memory",
+    },
+    {
+        label: "Integrations",
+        icon: Plug,
+        path: "/integrations",
+    },
+    {
+        label: "Security",
+        icon: ShieldCheck,
+        path: "/security",
+    },
+    {
+        label: "Settings",
+        icon: Settings,
+        path: "/settings",
+    },
 ];
 
 function Sidebar() {
     return (
         <aside className="sidebar">
 
-            {/* LOGO */}
-            <div className="sidebar-logo">
-                <div className="logo-icon">
-                    <Sparkles size={21} />
+            {/* BRAND */}
+            <div className="sidebar-brand">
+
+                <div className="sidebar-logo-mark">
+                    <Sparkles size={19} />
                 </div>
 
-                <div>
-                    <h2>Zarvis</h2>
-                    <span>Your AI Companion</span>
+                <div className="sidebar-brand-text">
+                    <h2>ZARVIS</h2>
+                    <span>AI COMPANION</span>
                 </div>
+
+            </div>
+
+            {/* SYSTEM STATUS */}
+            <div className="sidebar-system">
+
+                <div className="system-indicator">
+
+                    <span className="system-dot"></span>
+
+                    <div>
+                        <strong>SYSTEM ONLINE</strong>
+                        <small>Zarvis Core Active</small>
+                    </div>
+
+                </div>
+
+                <div className="system-line">
+                    <span></span>
+                </div>
+
             </div>
 
             {/* NAVIGATION */}
             <nav className="sidebar-nav">
-                <p className="nav-title">MENU</p>
 
-                {menuItems.map((item) => {
+                <div className="sidebar-section-label">
+                    <span>WORKSPACE</span>
+                    <span className="sidebar-section-line"></span>
+                </div>
+
+                {menuItems.slice(0, 8).map((item) => {
+
                     const Icon = item.icon;
 
                     return (
@@ -49,26 +123,109 @@ function Sidebar() {
                             key={item.label}
                             to={item.path}
                             className={({ isActive }) =>
-                                `nav-item ${isActive ? "active" : ""}`
+                                `sidebar-nav-item ${isActive ? "active" : ""
+                                }`
                             }
                         >
-                            <Icon size={18} />
-                            <span>{item.label}</span>
+
+                            <span className="sidebar-nav-icon">
+                                <Icon size={17} />
+                            </span>
+
+                            <span className="sidebar-nav-label">
+                                {item.label}
+                            </span>
+
+                            <ChevronRight
+                                size={14}
+                                className="sidebar-nav-arrow"
+                            />
+
                         </NavLink>
                     );
+
                 })}
+
+                {/* SYSTEM SECTION */}
+                <div className="sidebar-section-label sidebar-section-security">
+
+                    <span>SYSTEM</span>
+
+                    <span className="sidebar-section-line"></span>
+
+                </div>
+
+                {menuItems.slice(8).map((item) => {
+
+                    const Icon = item.icon;
+
+                    return (
+                        <NavLink
+                            key={item.label}
+                            to={item.path}
+                            className={({ isActive }) =>
+                                `sidebar-nav-item ${isActive ? "active" : ""
+                                }`
+                            }
+                        >
+
+                            <span className="sidebar-nav-icon">
+                                <Icon size={17} />
+                            </span>
+
+                            <span className="sidebar-nav-label">
+                                {item.label}
+                            </span>
+
+                            <ChevronRight
+                                size={14}
+                                className="sidebar-nav-arrow"
+                            />
+
+                        </NavLink>
+                    );
+
+                })}
+
             </nav>
 
-            {/* STATUS */}
+            {/* BOTTOM CORE */}
             <div className="sidebar-bottom">
-                <div className="buddy-status">
-                    <span className="status-dot"></span>
 
-                    <div>
-                        <strong>Zarvis</strong>
-                        <small>Online & Ready</small>
+                <div className="sidebar-core-card">
+
+                    <div className="core-status-icon">
+                        <span></span>
                     </div>
+
+                    <div className="core-status-text">
+
+                        <strong>ZARVIS CORE</strong>
+
+                        <span>
+                            Ready to assist
+                        </span>
+
+                    </div>
+
+                    <div className="core-status-bars">
+
+                        <i></i>
+                        <i></i>
+                        <i></i>
+
+                    </div>
+
                 </div>
+
+                <div className="sidebar-version">
+
+                    <span>V1.0</span>
+
+                    <span>AI BUDDY SYSTEM</span>
+
+                </div>
+
             </div>
 
         </aside>

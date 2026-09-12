@@ -4,23 +4,31 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import ChatBox from "../components/ChatBox";
-
 import TaskCard from "../components/TaskCard";
 import ScheduleCard from "../components/ScheduleCard";
 import ActivityCard from "../components/ActivityCard";
 import MemoryCard from "../components/MemoryCard";
 import AgentNetwork from "../components/AgentNetwork";
-
 import Timer from "../components/Timer";
 import UpcomingTasks from "../components/UpcomingTasks";
 
 function Dashboard() {
     const navigate = useNavigate();
-
     const [activeAction, setActiveAction] = useState("");
 
     const handleQuickAction = (action) => {
         setActiveAction(action);
+    };
+
+    const handleStartTimer = () => {
+        setActiveAction("");
+
+        document
+            .getElementById("zarvis-timer")
+            ?.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+            });
     };
 
     return (
@@ -29,6 +37,7 @@ function Dashboard() {
             {/* SIDEBAR */}
             <Sidebar />
 
+            {/* MAIN CONTENT */}
             <main className="main-content">
 
                 {/* NAVBAR */}
@@ -36,111 +45,164 @@ function Dashboard() {
 
                 <div className="dashboard">
 
-                    {/* AI HERO / CHAT */}
-                    <ChatBox />
+                    {/* HERO SECTION */}
+                    <section className="dashboard-hero">
 
-                    {/* QUICK STATS */}
+                        <div className="dashboard-welcome">
+
+                            <div className="welcome-label">
+                                <span className="welcome-spark">
+                                    ✦
+                                </span>
+
+                                ZARVIS AI COMPANION
+                            </div>
+
+                            <h1>
+                                Good Morning,
+                                <br />
+                                <span>Shanu!</span>
+                            </h1>
+
+                            <p>
+                                Your goals. My priority.
+                            </p>
+
+                        </div>
+
+                        <ChatBox />
+
+                    </section>
+
+
+                    {/* STATS */}
                     <section className="stats-grid">
 
                         <div className="stat-card glass-card">
+
                             <div className="stat-top">
-                                <div className="stat-icon">✓</div>
-                                <span>Today</span>
+
+                                <div className="stat-icon stat-blue">
+                                    ✓
+                                </div>
+
+                                <span>
+                                    Total Tasks
+                                </span>
+
                             </div>
 
-                            <div className="stat-value">12</div>
-
-                            <div className="stat-label">
-                                Tasks completed
+                            <div className="stat-value">
+                                5
                             </div>
+
+                            <div className="stat-label stat-success">
+                                ↑ 2 completed today
+                            </div>
+
                         </div>
 
 
                         <div className="stat-card glass-card">
+
                             <div className="stat-top">
-                                <div className="stat-icon">◷</div>
-                                <span>Focus</span>
+
+                                <div className="stat-icon stat-cyan">
+                                    ▣
+                                </div>
+
+                                <span>
+                                    Today's Events
+                                </span>
+
                             </div>
 
-                            <div className="stat-value">4.5h</div>
-
-                            <div className="stat-label">
-                                Focused time
+                            <div className="stat-value">
+                                3
                             </div>
+
+                            <div className="stat-label stat-success">
+                                ↑ 1 upcoming
+                            </div>
+
                         </div>
 
 
                         <div className="stat-card glass-card">
+
                             <div className="stat-top">
-                                <div className="stat-icon">⚡</div>
-                                <span>Active</span>
+
+                                <div className="stat-icon stat-pink">
+                                    ⚡
+                                </div>
+
+                                <span>
+                                    Active Workflows
+                                </span>
+
                             </div>
 
-                            <div className="stat-value">07</div>
+                            <div className="stat-value">
+                                1
+                            </div>
 
                             <div className="stat-label">
-                                Active tasks
+                                Running
                             </div>
+
                         </div>
 
 
                         <div className="stat-card glass-card">
+
                             <div className="stat-top">
-                                <div className="stat-icon">✦</div>
-                                <span>AI</span>
+
+                                <div className="stat-icon stat-purple">
+                                    ♧
+                                </div>
+
+                                <span>
+                                    Memory Entries
+                                </span>
+
                             </div>
 
-                            <div className="stat-value">24/7</div>
-
-                            <div className="stat-label">
-                                Zarvis availability
+                            <div className="stat-value">
+                                8
                             </div>
+
+                            <div className="stat-label stat-success">
+                                ↑ 1 new
+                            </div>
+
                         </div>
 
                     </section>
 
 
                     {/* QUICK ACTIONS */}
-                    <section>
+                    <section className="quick-section">
 
                         <div className="section-header">
 
                             <h2 className="section-title">
+                                <span>⚡</span>
                                 Quick Actions
                             </h2>
 
-                            <span className="section-link">
+                            <button
+                                type="button"
+                                className="section-link"
+                            >
                                 View all
-                            </span>
+                            </button>
 
                         </div>
 
 
                         <div className="quick-actions">
 
-                            {/* PLAN MY DAY */}
-                            <button
-                                type="button"
-                                className="quick-action"
-                                onClick={() =>
-                                    handleQuickAction("Plan My Day")
-                                }
-                            >
-                                <div className="quick-action-icon">
-                                    ✦
-                                </div>
-
-                                <div className="quick-action-title">
-                                    Plan My Day
-                                </div>
-
-                                <div className="quick-action-text">
-                                    Build a smart daily plan
-                                </div>
-                            </button>
-
-
-                            {/* CREATE TASK */}
+                            {/* ADD TASK */}
                             <button
                                 type="button"
                                 className="quick-action"
@@ -148,21 +210,23 @@ function Dashboard() {
                                     navigate("/tasks?create=true")
                                 }
                             >
+
                                 <div className="quick-action-icon">
                                     ✓
                                 </div>
 
                                 <div className="quick-action-title">
-                                    Create Task
+                                    Add Task
                                 </div>
 
                                 <div className="quick-action-text">
-                                    Add something to your list
+                                    Create a new task
                                 </div>
+
                             </button>
 
 
-                            {/* SCHEDULE */}
+                            {/* ADD EVENT */}
                             <button
                                 type="button"
                                 className="quick-action"
@@ -170,21 +234,23 @@ function Dashboard() {
                                     navigate("/schedule?create=true")
                                 }
                             >
+
                                 <div className="quick-action-icon">
-                                    ◷
+                                    ▣
                                 </div>
 
                                 <div className="quick-action-title">
-                                    Schedule
+                                    Add Event
                                 </div>
 
                                 <div className="quick-action-text">
-                                    Organize your time
+                                    Schedule something
                                 </div>
+
                             </button>
 
 
-                            {/* START WORKFLOW */}
+                            {/* CREATE WORKFLOW */}
                             <button
                                 type="button"
                                 className="quick-action"
@@ -192,27 +258,77 @@ function Dashboard() {
                                     navigate("/workflows?create=true")
                                 }
                             >
+
                                 <div className="quick-action-icon">
                                     ⚡
                                 </div>
 
                                 <div className="quick-action-title">
-                                    Start Workflow
+                                    Create Workflow
                                 </div>
 
                                 <div className="quick-action-text">
                                     Automate a routine
                                 </div>
+
+                            </button>
+
+
+                            {/* START TIMER */}
+                            <button
+                                type="button"
+                                className="quick-action"
+                                onClick={handleStartTimer}
+                            >
+
+                                <div className="quick-action-icon">
+                                    ◷
+                                </div>
+
+                                <div className="quick-action-title">
+                                    Start Timer
+                                </div>
+
+                                <div className="quick-action-text">
+                                    Focus on your work
+                                </div>
+
+                            </button>
+
+
+                            {/* ASK ZARVIS */}
+                            <button
+                                type="button"
+                                className="quick-action"
+                                onClick={() =>
+                                    navigate("/assistant")
+                                }
+                            >
+
+                                <div className="quick-action-icon">
+                                    💬
+                                </div>
+
+                                <div className="quick-action-title">
+                                    Ask Zarvis
+                                </div>
+
+                                <div className="quick-action-text">
+                                    Talk to your AI buddy
+                                </div>
+
                             </button>
 
                         </div>
 
 
-                        {/* QUICK ACTION RESPONSE */}
+                        {/* ACTION RESPONSE */}
                         {activeAction && (
-                            <div className="zarvis-response quick-action-response">
+                            <div className="zarvis-response">
 
-                                <span>✦</span>
+                                <span>
+                                    ✦
+                                </span>
 
                                 <span>
                                     {activeAction} selected.
@@ -225,8 +341,70 @@ function Dashboard() {
                     </section>
 
 
-                    {/* DASHBOARD CARDS */}
-                    <div className="dashboard-cards-grid">
+                    {/* ZARVIS CORE */}
+                    <section className="zarvis-core-card glass-card">
+
+                        <div className="core-orb">
+
+                            <div className="core-orb-inner">
+                                Z
+                            </div>
+
+                        </div>
+
+
+                        <div className="core-info">
+
+                            <span className="core-label">
+                                ZARVIS INTELLIGENCE
+                            </span>
+
+                            <h2>
+                                Zarvis Core
+                            </h2>
+
+                            <p>
+                                Your AI brain, always working for you.
+                            </p>
+
+                            <div className="core-tags">
+
+                                <span>
+                                    ✦ Plan
+                                </span>
+
+                                <span>
+                                    ✦ Think
+                                </span>
+
+                                <span>
+                                    ◆ Execute
+                                </span>
+
+                                <span>
+                                    ✦ Support
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <button
+                            type="button"
+                            className="core-arrow"
+                            onClick={() =>
+                                navigate("/assistant")
+                            }
+                        >
+                            →
+                        </button>
+
+                    </section>
+
+
+                    {/* MAIN DASHBOARD GRID */}
+                    <div className="dashboard-main-grid">
 
                         <TaskCard />
 
@@ -234,15 +412,18 @@ function Dashboard() {
 
                         <ActivityCard />
 
-                        <MemoryCard />
-
                     </div>
 
 
-                    {/* TIMER + UPCOMING TASKS */}
-                    <div className="dashboard-cards-grid">
+                    {/* SECONDARY GRID */}
+                    <div className="dashboard-secondary-grid">
 
-                        <Timer />
+                        <MemoryCard />
+
+                        {/* TIMER */}
+                        <div id="zarvis-timer">
+                            <Timer />
+                        </div>
 
                         <UpcomingTasks />
 

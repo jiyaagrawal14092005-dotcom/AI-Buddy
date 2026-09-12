@@ -1,6 +1,6 @@
-/* =========================================================
-   ZARVIS — FUTURISTIC LAYOUT
-   ========================================================= */
+/* =========================================
+   ZARVIS APP LAYOUT
+========================================= */
 
 .app {
     min-height: 100vh;
@@ -8,83 +8,140 @@
     background: transparent;
 }
 
+/* =========================================
+   MAIN CONTENT
+========================================= */
+
 .main-content {
     flex: 1;
     min-width: 0;
+
     margin-left: var(--sidebar-width);
-    padding: 18px 24px 30px;
+
+    padding: 18px 24px 32px;
+
     position: relative;
 }
+
+/* =========================================
+   DASHBOARD WRAPPER
+========================================= */
 
 .dashboard {
     width: 100%;
     max-width: 1600px;
+
     margin: 0 auto;
+
     position: relative;
 }
 
-/* =========================
-   MAIN DASHBOARD GRID
-   ========================= */
-
-.dashboard-grid {
-    display: grid;
-    grid-template-columns:
-        1.4fr 1fr 0.85fr;
-    gap: 16px;
-}
+/* =========================================
+   GENERAL FULL WIDTH
+========================================= */
 
 .full-width {
     grid-column: 1 / -1;
 }
 
-/* =========================
-   TOP STAT CARDS
-   ========================= */
+/* =========================================
+   LEGACY / FLEXIBLE DASHBOARD GRID
+========================================= */
+
+.dashboard-grid {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.85fr);
+
+    gap: 16px;
+
+    width: 100%;
+}
+
+.dashboard-grid>* {
+    min-width: 0;
+}
+
+/* =========================================
+   DASHBOARD CARDS
+========================================= */
 
 .dashboard-cards-grid {
     display: grid;
+
     grid-template-columns:
         repeat(4, minmax(0, 1fr));
+
     gap: 16px;
+
+    width: 100%;
+
     margin-top: 18px;
 }
-
-/* =========================
-   LOWER CARDS
-   ========================= */
-
-.dashboard-cards-grid+.dashboard-cards-grid {
-    display: grid;
-    grid-template-columns: 0.85fr 1.15fr;
-    gap: 16px;
-    align-items: stretch;
-}
-
-/* Make cards fill their grid area */
 
 .dashboard-cards-grid>* {
     min-width: 0;
     width: 100%;
 }
 
-/* Timer and Upcoming Tasks */
+/* Secondary card row */
+
+.dashboard-cards-grid+.dashboard-cards-grid {
+    grid-template-columns:
+        minmax(0, 0.85fr) minmax(0, 1.15fr);
+
+    gap: 16px;
+
+    align-items: stretch;
+}
+
+/* =========================================
+   MODULE WIDTH SAFETY
+========================================= */
 
 .timer-card,
 .upcoming-tasks-card {
     width: 100%;
+    min-width: 0;
     height: 100%;
+}
+
+.dashboard-main-grid>*,
+.dashboard-secondary-grid>* {
     min-width: 0;
 }
 
-/* =========================
-   TABLET
-   ========================= */
+/* =========================================
+   LARGE DESKTOP
+========================================= */
+
+@media (min-width: 1500px) {
+    .main-content {
+        padding-left: 30px;
+        padding-right: 30px;
+    }
+
+    .dashboard-main-grid,
+    .dashboard-secondary-grid {
+        gap: 18px;
+    }
+}
+
+/* =========================================
+   LAPTOP / SMALL DESKTOP
+========================================= */
 
 @media (max-width: 1200px) {
+
+    .main-content {
+        padding:
+            16px 18px 28px;
+    }
+
     .dashboard-grid {
         grid-template-columns:
-            1fr 1fr;
+            minmax(0, 1fr) minmax(0, 1fr);
     }
 
     .dashboard-cards-grid {
@@ -93,48 +150,123 @@
     }
 
     .dashboard-cards-grid+.dashboard-cards-grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns:
+            minmax(0, 1fr) minmax(0, 1fr);
     }
 }
 
-/* =========================
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 900px) {
+
+    .main-content {
+        padding:
+            14px 16px 26px;
+    }
+
+    .dashboard-main-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-main-grid> :last-child {
+        grid-column: 1 / -1;
+    }
+
+    .dashboard-secondary-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-secondary-grid> :last-child {
+        grid-column: 1 / -1;
+    }
+}
+
+/* =========================================
    MOBILE
-   ========================= */
+========================================= */
 
 @media (max-width: 768px) {
+
     .main-content {
         margin-left: 0;
+
         padding:
             12px 12px 24px;
     }
 
+    .dashboard {
+        width: 100%;
+    }
+
     .dashboard-grid {
         grid-template-columns: 1fr;
+        gap: 12px;
     }
 
     .dashboard-cards-grid {
         grid-template-columns: 1fr;
+
         gap: 12px;
+
+        margin-top: 14px;
     }
 
     .dashboard-cards-grid+.dashboard-cards-grid {
         grid-template-columns: 1fr;
         gap: 12px;
     }
+
+    .dashboard-main-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .dashboard-main-grid> :last-child {
+        grid-column: auto;
+    }
+
+    .dashboard-secondary-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .dashboard-secondary-grid> :last-child {
+        grid-column: auto;
+    }
 }
 
-/* =========================
+/* =========================================
    SMALL MOBILE
-   ========================= */
+========================================= */
 
 @media (max-width: 480px) {
+
     .main-content {
         padding:
             10px 10px 20px;
     }
 
+    .dashboard-grid,
     .dashboard-cards-grid,
-    .dashboard-cards-grid+.dashboard-cards-grid {
+    .dashboard-cards-grid+.dashboard-cards-grid,
+    .dashboard-main-grid,
+    .dashboard-secondary-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* =========================================
+   VERY SMALL SCREENS
+========================================= */
+
+@media (max-width: 360px) {
+
+    .main-content {
+        padding:
+            8px 8px 18px;
     }
 }

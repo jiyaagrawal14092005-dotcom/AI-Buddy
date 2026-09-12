@@ -1,353 +1,493 @@
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState } from "react";
 import {
+    Plus,
     CalendarDays,
     Clock3,
-    Plus,
+    MapPin,
+    Trash2,
     CheckCircle2,
-    X,
 } from "lucide-react";
 
+import Sidebar from "../components/Sidebar";
+import Navbar from "../components/Navbar";
+
+const initialEvents = [
+    {
+        id: 1,
+        title: "Machine Learning Class",
+        date: "Today",
+        time: "11:00 AM",
+        location: "Online",
+        type: "STUDY",
+    },
+    {
+        id: 2,
+        title: "Project Development",
+        date: "Today",
+        time: "02:00 PM",
+        location: "Workspace",
+        type: "WORK",
+    },
+    {
+        id: 3,
+        title: "Revision Session",
+        date: "Today",
+        time: "05:30 PM",
+        location: "Personal",
+        type: "FOCUS",
+    },
+];
+
 function Schedule() {
-    const [searchParams, setSearchParams] = useSearchParams();
+    const [events, setEvents] = useState(initialEvents);
+    const [showForm, setShowForm] = useState(false);
 
-    const [schedule, setSchedule] = useState([
-        {
-            id: 1,
-            time: "09:00 AM",
-            title: "Morning Planning",
-            description: "Review goals and organize your day",
-            type: "Planning",
-        },
-        {
-            id: 2,
-            time: "11:00 AM",
-            title: "Project Development",
-            description: "Work on your current project",
-            type: "Work",
-        },
-        {
-            id: 3,
-            time: "02:00 PM",
-            title: "Study Session",
-            description: "Review notes and learn something new",
-            type: "Study",
-        },
-        {
-            id: 4,
-            time: "05:00 PM",
-            title: "Task Review",
-            description: "Check completed and pending tasks",
-            type: "Review",
-        },
-    ]);
+    const [newEvent, setNewEvent] = useState({
+        title: "",
+        date: "",
+        time: "",
+        location: "",
+        type: "STUDY",
+    });
 
-    const [showForm, setShowForm] = useState(
-        searchParams.get("create") === "true"
-    );
+    const addEvent = (e) => {
+        e.preventDefault();
 
-    const [eventTitle, setEventTitle] = useState("");
-    const [eventTime, setEventTime] = useState("");
-    const [eventDescription, setEventDescription] = useState("");
+        if (!newEvent.title.trim()) return;
 
-    useEffect(() => {
-        if (searchParams.get("create") === "true") {
-            setShowForm(true);
-            setSearchParams({}, { replace: true });
-        }
-    }, [searchParams, setSearchParams]);
-
-    const formatTime = (time) => {
-        if (!time) return "";
-
-        const [hours, minutes] = time.split(":");
-
-        let hour = Number(hours);
-
-        const period = hour >= 12 ? "PM" : "AM";
-
-        hour = hour % 12 || 12;
-
-        return `${String(hour).padStart(2, "0")}:${minutes} ${period}`;
-    };
-
-    const addEvent = () => {
-        if (!eventTitle.trim()) {
-            alert("Please enter an event name.");
-            return;
-        }
-
-        if (!eventTime) {
-            alert("Please select a time.");
-            return;
-        }
-
-        const newEvent = {
+        const event = {
             id: Date.now(),
-            time: formatTime(eventTime),
-            title: eventTitle.trim(),
-            description:
-                eventDescription.trim() || "Scheduled activity",
-            type: "Personal",
+            title: newEvent.title,
+            date: newEvent.date || "Today",
+            time: newEvent.time || "Anytime",
+            location: newEvent.location || "Personal",
+            type: newEvent.type,
         };
 
-        setSchedule((currentSchedule) => [
-            ...currentSchedule,
-            newEvent,
-        ]);
+        setEvents((prev) => [...prev, event]);
 
-        setEventTitle("");
-        setEventTime("");
-        setEventDescription("");
+        setNewEvent({
+            title: "",
+            date: "",
+            time: "",
+            location: "",
+            type: "STUDY",
+        });
+
         setShowForm(false);
     };
 
-    const closeForm = () => {
-        setShowForm(false);
-        setEventTitle("");
-        setEventTime("");
-        setEventDescription("");
+    const deleteEvent = (id) => {
+        setEvents((prev) =>
+            prev.filter((event) => event.id !== id)
+        );
     };
 
     return (
-        <div className="page-container">
+        <div className="app">
 
-            {/* HEADER */}
-            <div className="page-header">
+            <Sidebar />
 
-                <div>
-                    <span className="page-eyebrow">
-                        ZARVIS SCHEDULE
-                    </span>
+            <main className="main-content">
 
-                    <h1>Schedule</h1>
+                <Navbar />
 
-                    <p>
-                        Organize your time and stay on track.
-                    </p>
-                </div>
+                <div className="schedule-page">
 
-                <button
-                    type="button"
-                    className="primary-action"
-                    onClick={() => setShowForm(true)}
-                >
-                    <Plus size={18} />
-                    Add Event
-                </button>
-
-            </div>
-
-            {/* DATE CARD */}
-            <div className="schedule-date glass-card">
-
-                <div className="schedule-date-icon">
-                    <CalendarDays size={21} />
-                </div>
-
-                <div>
-                    <strong>Today</strong>
-
-                    <span>
-                        Thursday, September 11
-                    </span>
-                </div>
-
-                <div className="schedule-date-status">
-                    <CheckCircle2 size={16} />
-                    Zarvis is keeping you on track
-                </div>
-
-            </div>
-
-            {/* ADD EVENT FORM */}
-            {showForm && (
-                <section className="glass-card event-form">
-
-                    <div className="event-form-header">
+                    {/* HEADER */}
+                    <section className="schedule-page-header">
 
                         <div>
-                            <h2>Add New Event</h2>
+                            <span className="schedule-eyebrow">
+                                <CalendarDays size={14} />
+                                ZARVIS SCHEDULE SYSTEM
+                            </span>
+
+                            <h1>
+                                My Schedule
+                            </h1>
 
                             <p>
-                                Add an event to your Zarvis schedule.
+                                Keep your day organized with Zarvis.
                             </p>
                         </div>
 
                         <button
                             type="button"
-                            className="event-form-close"
-                            onClick={closeForm}
+                            className="schedule-add-button"
+                            onClick={() =>
+                                setShowForm(!showForm)
+                            }
                         >
-                            <X size={17} />
-                        </button>
-
-                    </div>
-
-                    <div className="event-form-grid">
-
-                        {/* EVENT NAME */}
-                        <div className="event-field event-field-full">
-
-                            <label>
-                                Event Name
-                            </label>
-
-                            <input
-                                type="text"
-                                placeholder="e.g. Team meeting"
-                                value={eventTitle}
-                                onChange={(event) =>
-                                    setEventTitle(event.target.value)
-                                }
-                            />
-
-                        </div>
-
-                        {/* TIME */}
-                        <div className="event-field">
-
-                            <label>
-                                Time
-                            </label>
-
-                            <input
-                                type="time"
-                                value={eventTime}
-                                onChange={(event) =>
-                                    setEventTime(event.target.value)
-                                }
-                            />
-
-                        </div>
-
-                        {/* DESCRIPTION */}
-                        <div className="event-field">
-
-                            <label>
-                                Description
-                            </label>
-
-                            <input
-                                type="text"
-                                placeholder="Optional"
-                                value={eventDescription}
-                                onChange={(event) =>
-                                    setEventDescription(event.target.value)
-                                }
-                            />
-
-                        </div>
-
-                    </div>
-
-                    {/* ACTIONS */}
-                    <div className="event-form-actions">
-
-                        <button
-                            type="button"
-                            className="event-cancel"
-                            onClick={closeForm}
-                        >
-                            Cancel
-                        </button>
-
-                        <button
-                            type="button"
-                            className="primary-action"
-                            onClick={addEvent}
-                        >
-                            <Plus size={17} />
+                            <Plus size={18} />
                             Add Event
                         </button>
 
-                    </div>
+                    </section>
 
-                </section>
-            )}
 
-            {/* TIMELINE */}
-            <section className="glass-card schedule-page-card">
+                    {/* SUMMARY */}
+                    <section className="schedule-summary">
 
-                <div className="card-header">
+                        <div className="schedule-summary-card">
 
-                    <div>
-                        <h2>
-                            Today's Schedule
-                        </h2>
+                            <span>
+                                TODAY'S EVENTS
+                            </span>
 
-                        <p>
-                            Your planned activities
-                        </p>
-                    </div>
+                            <strong>
+                                {events.length}
+                            </strong>
 
-                    <span className="card-count">
-                        {schedule.length} Events
-                    </span>
+                        </div>
 
-                </div>
+                        <div className="schedule-summary-card">
 
-                <div className="schedule-timeline">
+                            <span>
+                                NEXT EVENT
+                            </span>
 
-                    {schedule.map((item, index) => (
+                            <strong>
+                                {events.length
+                                    ? events[0].time
+                                    : "--"}
+                            </strong>
 
-                        <div
-                            className="schedule-page-item"
-                            key={item.id}
+                        </div>
+
+                        <div className="schedule-summary-card">
+
+                            <span>
+                                STUDY
+                            </span>
+
+                            <strong>
+                                {
+                                    events.filter(
+                                        (event) =>
+                                            event.type === "STUDY"
+                                    ).length
+                                }
+                            </strong>
+
+                        </div>
+
+                        <div className="schedule-summary-card">
+
+                            <span>
+                                WORK
+                            </span>
+
+                            <strong>
+                                {
+                                    events.filter(
+                                        (event) =>
+                                            event.type === "WORK"
+                                    ).length
+                                }
+                            </strong>
+
+                        </div>
+
+                    </section>
+
+
+                    {/* CREATE EVENT */}
+                    {showForm && (
+                        <form
+                            className="schedule-create-panel"
+                            onSubmit={addEvent}
                         >
 
-                            {/* TIME */}
-                            <div className="schedule-time">
-                                {item.time}
-                            </div>
+                            <div className="schedule-create-header">
 
-                            {/* TIMELINE */}
-                            <div className="schedule-line">
-
-                                <span className="schedule-dot"></span>
-
-                                {index !== schedule.length - 1 && (
-                                    <span className="schedule-connector"></span>
-                                )}
-
-                            </div>
-
-                            {/* EVENT */}
-                            <div className="schedule-event">
-
-                                <div className="schedule-event-top">
-
-                                    <strong>
-                                        {item.title}
-                                    </strong>
-
-                                    <span className="schedule-type">
-                                        {item.type}
+                                <div>
+                                    <span>
+                                        EVENT CREATOR
                                     </span>
+
+                                    <h2>
+                                        Create New Event
+                                    </h2>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setShowForm(false)
+                                    }
+                                >
+                                    ×
+                                </button>
+
+                            </div>
+
+
+                            <div className="schedule-form-grid">
+
+                                <div className="schedule-field">
+
+                                    <label>
+                                        Event Name
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Team meeting"
+                                        value={newEvent.title}
+                                        onChange={(e) =>
+                                            setNewEvent({
+                                                ...newEvent,
+                                                title: e.target.value,
+                                            })
+                                        }
+                                    />
 
                                 </div>
 
-                                <p>
-                                    {item.description}
-                                </p>
 
-                                <span className="schedule-duration">
+                                <div className="schedule-field">
 
-                                    <Clock3 size={12} />
+                                    <label>
+                                        Date
+                                    </label>
 
-                                    Planned activity
+                                    <input
+                                        type="date"
+                                        value={newEvent.date}
+                                        onChange={(e) =>
+                                            setNewEvent({
+                                                ...newEvent,
+                                                date: e.target.value,
+                                            })
+                                        }
+                                    />
 
+                                </div>
+
+
+                                <div className="schedule-field">
+
+                                    <label>
+                                        Time
+                                    </label>
+
+                                    <input
+                                        type="time"
+                                        value={newEvent.time}
+                                        onChange={(e) =>
+                                            setNewEvent({
+                                                ...newEvent,
+                                                time: e.target.value,
+                                            })
+                                        }
+                                    />
+
+                                </div>
+
+
+                                <div className="schedule-field">
+
+                                    <label>
+                                        Location
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        placeholder="Online / Workspace"
+                                        value={newEvent.location}
+                                        onChange={(e) =>
+                                            setNewEvent({
+                                                ...newEvent,
+                                                location:
+                                                    e.target.value,
+                                            })
+                                        }
+                                    />
+
+                                </div>
+
+
+                                <div className="schedule-field">
+
+                                    <label>
+                                        Event Type
+                                    </label>
+
+                                    <select
+                                        value={newEvent.type}
+                                        onChange={(e) =>
+                                            setNewEvent({
+                                                ...newEvent,
+                                                type: e.target.value,
+                                            })
+                                        }
+                                    >
+
+                                        <option value="STUDY">
+                                            STUDY
+                                        </option>
+
+                                        <option value="WORK">
+                                            WORK
+                                        </option>
+
+                                        <option value="FOCUS">
+                                            FOCUS
+                                        </option>
+
+                                        <option value="PERSONAL">
+                                            PERSONAL
+                                        </option>
+
+                                    </select>
+
+                                </div>
+
+                            </div>
+
+
+                            <button
+                                type="submit"
+                                className="schedule-create-submit"
+                            >
+                                <Plus size={16} />
+                                CREATE EVENT
+                            </button>
+
+                        </form>
+                    )}
+
+
+                    {/* EVENTS */}
+                    <section className="schedule-events-panel">
+
+                        <div className="schedule-events-header">
+
+                            <div>
+                                <span>
+                                    SCHEDULE QUEUE // 02
                                 </span>
 
+                                <h2>
+                                    Upcoming Events
+                                </h2>
+                            </div>
+
+                            <div className="schedule-live">
+                                <span></span>
+                                LIVE
                             </div>
 
                         </div>
 
-                    ))}
+
+                        <div className="schedule-events-list">
+
+                            {events.length === 0 ? (
+
+                                <div className="schedule-empty">
+
+                                    <CalendarDays size={32} />
+
+                                    <h3>
+                                        No events scheduled
+                                    </h3>
+
+                                    <p>
+                                        Add an event to organize
+                                        your day.
+                                    </p>
+
+                                </div>
+
+                            ) : (
+
+                                events.map((event) => (
+
+                                    <div
+                                        className="schedule-page-row"
+                                        key={event.id}
+                                    >
+
+                                        <div className="schedule-page-time">
+
+                                            <strong>
+                                                {event.time}
+                                            </strong>
+
+                                            <span>
+                                                {event.date}
+                                            </span>
+
+                                        </div>
+
+
+                                        <div className="schedule-page-line">
+
+                                            <span></span>
+
+                                        </div>
+
+
+                                        <div className="schedule-page-content">
+
+                                            <div className="schedule-page-title">
+
+                                                <CheckCircle2
+                                                    size={17}
+                                                />
+
+                                                <strong>
+                                                    {event.title}
+                                                </strong>
+
+                                            </div>
+
+
+                                            <div className="schedule-page-meta">
+
+                                                <span>
+                                                    <MapPin size={12} />
+                                                    {event.location}
+                                                </span>
+
+                                                <span>
+                                                    <Clock3 size={12} />
+                                                    {event.type}
+                                                </span>
+
+                                            </div>
+
+                                        </div>
+
+
+                                        <button
+                                            type="button"
+                                            className="schedule-delete"
+                                            onClick={() =>
+                                                deleteEvent(event.id)
+                                            }
+                                            title="Delete event"
+                                        >
+
+                                            <Trash2 size={16} />
+
+                                        </button>
+
+                                    </div>
+
+                                ))
+
+                            )}
+
+                        </div>
+
+                    </section>
 
                 </div>
 
-            </section>
+            </main>
 
         </div>
     );

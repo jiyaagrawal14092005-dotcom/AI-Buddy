@@ -2,6 +2,7 @@ import {
     Activity,
     CheckCircle2,
     Zap,
+    MessageCircle,
     Clock3,
 } from "lucide-react";
 
@@ -9,42 +10,53 @@ const activities = [
     {
         icon: CheckCircle2,
         title: "Task completed",
-        text: "React module completed",
-        time: "09:42",
-        type: "SUCCESS",
+        text: "AI assignment marked complete",
+        time: "8 min ago",
+        type: "success",
     },
     {
         icon: Zap,
         title: "Workflow executed",
-        text: "Daily planning workflow",
-        time: "09:15",
-        type: "AI",
+        text: "Morning routine completed",
+        time: "32 min ago",
+        type: "purple",
+    },
+    {
+        icon: MessageCircle,
+        title: "Zarvis interaction",
+        text: "Planning assistant activated",
+        time: "1 hr ago",
+        type: "cyan",
     },
     {
         icon: Clock3,
         title: "Focus session",
         text: "25 minute session started",
-        time: "08:50",
-        type: "FOCUS",
+        time: "2 hrs ago",
+        type: "pink",
     },
 ];
 
 function ActivityCard() {
     return (
-        <section className="activity-system">
+        <section className="dashboard-module activity-module">
 
-            {/* HEADER */}
-            <div className="activity-header">
+            <div className="module-header">
 
-                <div className="activity-heading">
-                    <div className="activity-icon">
-                        <Activity size={17} />
+                <div className="module-title">
+
+                    <div className="module-icon module-icon-purple">
+                        <Activity size={16} />
                     </div>
 
                     <div>
-                        <span>MONITOR // 06</span>
-                        <h3>ACTIVITY</h3>
+                        <span className="module-label">
+                            ACTIVITY SYSTEM // 03
+                        </span>
+
+                        <h3>Recent Activity</h3>
                     </div>
+
                 </div>
 
                 <div className="activity-live">
@@ -54,40 +66,43 @@ function ActivityCard() {
 
             </div>
 
-            {/* STATUS */}
-            <div className="activity-status">
-                <span>SYSTEM ACTIVITY</span>
-                <strong>REAL-TIME</strong>
+            <div className="module-line">
+                <span></span>
             </div>
 
-            {/* ACTIVITY LIST */}
             <div className="activity-list">
 
-                {activities.map((item, index) => {
-                    const Icon = item.icon;
+                {activities.map((activity, index) => {
+
+                    const Icon = activity.icon;
 
                     return (
-                        <div className="activity-item" key={index}>
+                        <div
+                            className="activity-row"
+                            key={index}
+                        >
 
-                            <div className="activity-marker">
-                                <Icon size={14} />
+                            <div
+                                className={`activity-icon activity-${activity.type}`}
+                            >
+                                <Icon size={13} />
                             </div>
 
                             <div className="activity-content">
-                                <div className="activity-title-row">
-                                    <h4>{item.title}</h4>
 
-                                    <span className={`activity-type type-${item.type.toLowerCase()}`}>
-                                        {item.type}
-                                    </span>
-                                </div>
+                                <strong>
+                                    {activity.title}
+                                </strong>
 
-                                <p>{item.text}</p>
+                                <span>
+                                    {activity.text}
+                                </span>
+
                             </div>
 
-                            <span className="activity-time">
-                                {item.time}
-                            </span>
+                            <time>
+                                {activity.time}
+                            </time>
 
                         </div>
                     );
@@ -95,15 +110,13 @@ function ActivityCard() {
 
             </div>
 
-            {/* FOOTER */}
-            <div className="activity-footer">
-                <span>
-                    <i></i>
-                    ZARVIS MONITOR
-                </span>
-
-                <span>03 EVENTS</span>
-            </div>
+            <button
+                type="button"
+                className="module-footer-button"
+            >
+                <span>VIEW ACTIVITY LOG</span>
+                <Activity size={13} />
+            </button>
 
         </section>
     );

@@ -1,80 +1,103 @@
 import {
     Brain,
-    User,
-    Clock3,
-    Database,
+    UserRound,
+    BookOpen,
+    Sparkles,
+    ArrowUpRight,
 } from "lucide-react";
 
 const memories = [
     {
-        icon: User,
-        label: "PREFERENCE",
+        icon: UserRound,
+        title: "User preference",
         text: "Prefers focused study sessions",
     },
     {
-        icon: Clock3,
-        label: "ROUTINE",
-        text: "Usually productive in the morning",
+        icon: BookOpen,
+        title: "Learning goal",
+        text: "Currently learning Machine Learning",
     },
     {
-        icon: Database,
-        label: "CONTEXT",
-        text: "Working on Zarvis project",
+        icon: Sparkles,
+        title: "AI preference",
+        text: "Likes simple explanations",
     },
 ];
 
 function MemoryCard() {
     return (
-        <section className="memory-system">
+        <section className="dashboard-module memory-module">
 
-            {/* HEADER */}
-            <div className="memory-header">
+            <div className="module-header">
 
-                <div className="memory-heading">
-                    <div className="memory-icon">
-                        <Brain size={17} />
+                <div className="module-title">
+
+                    <div className="module-icon module-icon-cyan">
+                        <Brain size={16} />
                     </div>
 
                     <div>
-                        <span>MEMORY MODULE // 07</span>
-                        <h3>MEMORY CORE</h3>
+                        <span className="module-label">
+                            MEMORY SYSTEM // 05
+                        </span>
+
+                        <h3>AI Memory Core</h3>
                     </div>
+
                 </div>
 
-                <div className="memory-status">
+                <div className="memory-count">
+                    08
+                </div>
+
+            </div>
+
+            <div className="module-line">
+                <span></span>
+            </div>
+
+            <div className="memory-core-status">
+
+                <div className="memory-pulse">
                     <span></span>
-                    ACTIVE
+                </div>
+
+                <div>
+                    <strong>MEMORY ACTIVE</strong>
+                    <small>Zarvis learning from your interactions</small>
                 </div>
 
             </div>
 
-            {/* STATUS BAR */}
-            <div className="memory-status-bar">
-                <span>PERSONAL CONTEXT</span>
-                <strong>SYNCED</strong>
-            </div>
-
-            {/* MEMORY LIST */}
             <div className="memory-list">
 
                 {memories.map((memory, index) => {
+
                     const Icon = memory.icon;
 
                     return (
-                        <div className="memory-item" key={index}>
+                        <div
+                            className="memory-row"
+                            key={index}
+                        >
 
-                            <div className="memory-item-icon">
-                                <Icon size={14} />
+                            <div className="memory-icon">
+                                <Icon size={13} />
                             </div>
 
                             <div className="memory-content">
-                                <span>{memory.label}</span>
-                                <p>{memory.text}</p>
+
+                                <strong>
+                                    {memory.title}
+                                </strong>
+
+                                <span>
+                                    {memory.text}
+                                </span>
+
                             </div>
 
-                            <div className="memory-indicator">
-                                ●
-                            </div>
+                            <span className="memory-dot"></span>
 
                         </div>
                     );
@@ -82,17 +105,13 @@ function MemoryCard() {
 
             </div>
 
-            {/* FOOTER */}
-            <div className="memory-footer">
-
-                <span>
-                    <i></i>
-                    ZARVIS MEMORY ENGINE
-                </span>
-
-                <span>03 ENTRIES</span>
-
-            </div>
+            <button
+                type="button"
+                className="module-footer-button"
+            >
+                <span>OPEN MEMORY</span>
+                <ArrowUpRight size={14} />
+            </button>
 
         </section>
     );

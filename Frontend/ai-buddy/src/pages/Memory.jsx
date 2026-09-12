@@ -1,455 +1,500 @@
 import { useState } from "react";
 import {
-    Brain,
     Plus,
     Search,
-    User,
-    BookOpen,
-    Lightbulb,
+    Brain,
     Trash2,
-    X,
+    Clock3,
 } from "lucide-react";
 
+import Sidebar from "../components/Sidebar";
+import Navbar from "../components/Navbar";
+
+const initialMemories = [
+    {
+        id: 1,
+        title: "Project Name",
+        description:
+            "The current AI buddy project is called Zarvis.",
+        category: "PROJECT",
+    },
+    {
+        id: 2,
+        title: "Study Preference",
+        description:
+            "Prefer simple explanations with practical examples.",
+        category: "PREFERENCE",
+    },
+    {
+        id: 3,
+        title: "Productivity Style",
+        description:
+            "Keep tasks organized and easy to follow.",
+        category: "PRODUCTIVITY",
+    },
+    {
+        id: 4,
+        title: "Interface Preference",
+        description:
+            "Prefer a clean, modern and futuristic interface.",
+        category: "PERSONAL",
+    },
+];
+
 function Memory() {
-    const [memories, setMemories] = useState([
-        {
-            id: 1,
-            title: "Project Preferences",
-            text: "User prefers a clean futuristic interface with a dark blue theme.",
-            category: "Preferences",
-            icon: User,
-        },
-        {
-            id: 2,
-            title: "Learning",
-            text: "Working on frontend development and AI projects.",
-            category: "Learning",
-            icon: BookOpen,
-        },
-        {
-            id: 3,
-            title: "Ideas",
-            text: "Interested in building useful AI-powered productivity tools.",
-            category: "Ideas",
-            icon: Lightbulb,
-        },
-    ]);
+    const [memories, setMemories] =
+        useState(initialMemories);
 
     const [search, setSearch] = useState("");
-    const [showForm, setShowForm] = useState(false);
 
-    const [newTitle, setNewTitle] = useState("");
-    const [newText, setNewText] = useState("");
-    const [newCategory, setNewCategory] = useState("Personal");
+    const [showForm, setShowForm] =
+        useState(false);
 
-    const addMemory = () => {
-        if (!newTitle.trim() || !newText.trim()) {
-            alert("Please enter a title and memory.");
-            return;
-        }
+    const [newMemory, setNewMemory] =
+        useState({
+            title: "",
+            description: "",
+            category: "PERSONAL",
+        });
 
-        const newMemory = {
-            id: Date.now(),
-            title: newTitle.trim(),
-            text: newText.trim(),
-            category: newCategory,
-            icon: Brain,
-        };
+    const filteredMemories = memories.filter(
+        (memory) =>
+            `${memory.title} ${memory.description} ${memory.category}`
+                .toLowerCase()
+                .includes(search.toLowerCase())
+    );
 
-        setMemories((currentMemories) => [
-            ...currentMemories,
-            newMemory,
-        ]);
+    const projectCount = memories.filter(
+        (memory) => memory.category === "PROJECT"
+    ).length;
 
-        setNewTitle("");
-        setNewText("");
-        setNewCategory("Personal");
-        setShowForm(false);
-    };
+    const preferenceCount = memories.filter(
+        (memory) => memory.category === "PREFERENCE"
+    ).length;
 
     const deleteMemory = (id) => {
-        setMemories((currentMemories) =>
-            currentMemories.filter(
-                (memory) => memory.id !== id
-            )
+        setMemories((current) =>
+            current.filter((memory) => memory.id !== id)
         );
     };
 
-    const closeForm = () => {
+    const handleAddMemory = (e) => {
+        e.preventDefault();
+
+        if (
+            !newMemory.title.trim() ||
+            !newMemory.description.trim()
+        ) {
+            return;
+        }
+
+        const memory = {
+            id: Date.now(),
+            title: newMemory.title.trim(),
+            description:
+                newMemory.description.trim(),
+            category: newMemory.category,
+        };
+
+        setMemories((current) => [
+            memory,
+            ...current,
+        ]);
+
+        setNewMemory({
+            title: "",
+            description: "",
+            category: "PERSONAL",
+        });
+
         setShowForm(false);
-        setNewTitle("");
-        setNewText("");
-        setNewCategory("Personal");
     };
 
-    const filteredMemories = memories.filter((memory) =>
-        `${memory.title} ${memory.text} ${memory.category}`
-            .toLowerCase()
-            .includes(search.toLowerCase())
-    );
-
     return (
-        <div className="page-container">
+        <div className="app">
 
-            {/* HEADER */}
-            <div className="page-header">
+            <Sidebar />
 
-                <div>
-                    <span className="page-eyebrow">
-                        ZARVIS MEMORY
-                    </span>
+            <main className="main-content">
 
-                    <h1>Memory</h1>
+                <Navbar />
 
-                    <p>
-                        Things Zarvis remembers to better assist you.
-                    </p>
-                </div>
+                <div className="memory-page-final">
 
-                <button
-                    type="button"
-                    className="primary-action"
-                    onClick={() => setShowForm(true)}
-                >
-                    <Plus size={18} />
-                    Add Memory
-                </button>
+                    {/* ================= HEADER ================= */}
 
-            </div>
+                    <div className="memory-header-final">
 
+                        <div className="memory-header-left-final">
 
-            {/* OVERVIEW */}
-            <div className="memory-overview">
+                            <div className="memory-eyebrow-final">
+                                <Brain size={14} />
+                                <span>ZARVIS MEMORY SYSTEM</span>
+                            </div>
 
-                <div className="glass-card memory-overview-card">
-
-                    <div className="memory-big-icon">
-                        <Brain size={23} />
-                    </div>
-
-                    <div>
-                        <span>
-                            Total Memories
-                        </span>
-
-                        <strong>
-                            {memories.length}
-                        </strong>
-                    </div>
-
-                </div>
-
-
-                <div className="glass-card memory-overview-card">
-
-                    <div className="memory-big-icon">
-                        <User size={23} />
-                    </div>
-
-                    <div>
-                        <span>
-                            Personal
-                        </span>
-
-                        <strong>
-                            {
-                                memories.filter(
-                                    (memory) =>
-                                        memory.category === "Personal"
-                                ).length
-                            }
-                        </strong>
-                    </div>
-
-                </div>
-
-
-                <div className="glass-card memory-overview-card">
-
-                    <div className="memory-big-icon">
-                        <Lightbulb size={23} />
-                    </div>
-
-                    <div>
-                        <span>
-                            Ideas & Learning
-                        </span>
-
-                        <strong>
-                            {
-                                memories.filter(
-                                    (memory) =>
-                                        memory.category === "Ideas" ||
-                                        memory.category === "Learning"
-                                ).length
-                            }
-                        </strong>
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            {/* ADD MEMORY FORM */}
-            {showForm && (
-                <section className="glass-card memory-form">
-
-                    <div className="memory-form-header">
-
-                        <div>
-                            <h2>
-                                Add New Memory
-                            </h2>
+                            <h1>Memory</h1>
 
                             <p>
-                                Save something Zarvis should remember.
+                                Important information Zarvis remembers
+                                to make your experience more personal.
                             </p>
+
                         </div>
 
                         <button
                             type="button"
-                            className="memory-form-close"
-                            onClick={closeForm}
+                            className="memory-add-final"
+                            onClick={() =>
+                                setShowForm(!showForm)
+                            }
                         >
-                            <X size={17} />
+                            <Plus size={18} />
+                            <span>Add Memory</span>
                         </button>
 
                     </div>
 
 
-                    <div className="memory-form-grid">
+                    {/* ================= STATS ================= */}
 
-                        <div className="memory-field">
+                    <div className="memory-stats-final">
 
-                            <label>
-                                Memory Title
-                            </label>
+                        <div className="memory-stat-final">
+
+                            <span>TOTAL MEMORIES</span>
+
+                            <strong>
+                                {memories.length}
+                            </strong>
+
+                        </div>
+
+                        <div className="memory-stat-final">
+
+                            <span>PROJECT</span>
+
+                            <strong>
+                                {projectCount}
+                            </strong>
+
+                        </div>
+
+                        <div className="memory-stat-final">
+
+                            <span>PREFERENCES</span>
+
+                            <strong>
+                                {preferenceCount}
+                            </strong>
+
+                        </div>
+
+                        <div className="memory-stat-final">
+
+                            <span>MEMORY STATUS</span>
+
+                            <strong className="memory-status-final">
+                                ACTIVE
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    {/* ================= CREATE MEMORY ================= */}
+
+                    {showForm && (
+
+                        <form
+                            className="memory-create-final"
+                            onSubmit={handleAddMemory}
+                        >
+
+                            <div className="memory-create-top-final">
+
+                                <div>
+
+                                    <span>
+                                        MEMORY CREATOR
+                                    </span>
+
+                                    <h2>
+                                        Save New Memory
+                                    </h2>
+
+                                </div>
+
+                                <button
+                                    type="button"
+                                    className="memory-close-final"
+                                    onClick={() =>
+                                        setShowForm(false)
+                                    }
+                                >
+                                    ×
+                                </button>
+
+                            </div>
+
+
+                            <div className="memory-form-final">
+
+                                <div className="memory-input-final">
+
+                                    <label>
+                                        Memory Title
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Favorite study style"
+                                        value={newMemory.title}
+                                        onChange={(e) =>
+                                            setNewMemory({
+                                                ...newMemory,
+                                                title: e.target.value,
+                                            })
+                                        }
+                                    />
+
+                                </div>
+
+
+                                <div className="memory-input-final">
+
+                                    <label>
+                                        Category
+                                    </label>
+
+                                    <select
+                                        value={newMemory.category}
+                                        onChange={(e) =>
+                                            setNewMemory({
+                                                ...newMemory,
+                                                category: e.target.value,
+                                            })
+                                        }
+                                    >
+                                        <option value="PERSONAL">
+                                            PERSONAL
+                                        </option>
+
+                                        <option value="PROJECT">
+                                            PROJECT
+                                        </option>
+
+                                        <option value="PREFERENCE">
+                                            PREFERENCE
+                                        </option>
+
+                                        <option value="PRODUCTIVITY">
+                                            PRODUCTIVITY
+                                        </option>
+                                    </select>
+
+                                </div>
+
+
+                                <div className="memory-input-final memory-input-full-final">
+
+                                    <label>
+                                        Memory
+                                    </label>
+
+                                    <textarea
+                                        placeholder="What should Zarvis remember?"
+                                        value={
+                                            newMemory.description
+                                        }
+                                        onChange={(e) =>
+                                            setNewMemory({
+                                                ...newMemory,
+                                                description:
+                                                    e.target.value,
+                                            })
+                                        }
+                                    />
+
+                                </div>
+
+                            </div>
+
+
+                            <button
+                                type="submit"
+                                className="memory-save-final"
+                            >
+                                <Plus size={16} />
+                                SAVE MEMORY
+                            </button>
+
+                        </form>
+
+                    )}
+
+
+                    {/* ================= SEARCH ================= */}
+
+                    <div className="memory-search-row-final">
+
+                        <div className="memory-search-final">
+
+                            <Search size={18} />
 
                             <input
                                 type="text"
-                                placeholder="e.g. My Learning Goal"
-                                value={newTitle}
-                                onChange={(event) =>
-                                    setNewTitle(event.target.value)
+                                placeholder="Search memories..."
+                                value={search}
+                                onChange={(e) =>
+                                    setSearch(e.target.value)
                                 }
                             />
 
                         </div>
 
+                        <div className="memory-found-final">
 
-                        <div className="memory-field">
+                            <span></span>
 
-                            <label>
-                                Category
-                            </label>
-
-                            <select
-                                value={newCategory}
-                                onChange={(event) =>
-                                    setNewCategory(event.target.value)
-                                }
-                            >
-                                <option value="Personal">
-                                    Personal
-                                </option>
-
-                                <option value="Preferences">
-                                    Preferences
-                                </option>
-
-                                <option value="Learning">
-                                    Learning
-                                </option>
-
-                                <option value="Ideas">
-                                    Ideas
-                                </option>
-                            </select>
-
-                        </div>
-
-
-                        <div className="memory-field memory-field-full">
-
-                            <label>
-                                Memory
-                            </label>
-
-                            <textarea
-                                placeholder="What should Zarvis remember?"
-                                value={newText}
-                                onChange={(event) =>
-                                    setNewText(event.target.value)
-                                }
-                            />
+                            {filteredMemories.length}
+                            {" "}
+                            MEMORIES FOUND
 
                         </div>
 
                     </div>
 
 
-                    <div className="memory-form-actions">
+                    {/* ================= SAVED MEMORIES ================= */}
 
-                        <button
-                            type="button"
-                            className="memory-cancel"
-                            onClick={closeForm}
-                        >
-                            Cancel
-                        </button>
+                    <section className="memory-list-final">
 
-                        <button
-                            type="button"
-                            className="primary-action"
-                            onClick={addMemory}
-                        >
-                            <Plus size={17} />
-                            Save Memory
-                        </button>
+                        <div className="memory-list-header-final">
 
-                    </div>
+                            <div>
 
-                </section>
-            )}
+                                <span>
+                                    KNOWLEDGE STORE // 04
+                                </span>
 
+                                <h2>
+                                    Saved Memories
+                                </h2>
 
-            {/* SEARCH */}
-            <div className="memory-search glass-card">
+                            </div>
 
-                <Search size={17} />
+                            <div className="memory-core-final">
 
-                <input
-                    type="text"
-                    placeholder="Search your memories..."
-                    value={search}
-                    onChange={(event) =>
-                        setSearch(event.target.value)
-                    }
-                />
+                                <Brain size={15} />
 
-                {search && (
-                    <button
-                        type="button"
-                        className="memory-search-clear"
-                        onClick={() => setSearch("")}
-                    >
-                        <X size={15} />
-                    </button>
-                )}
+                                <span>
+                                    CORE ACTIVE
+                                </span>
 
-            </div>
+                            </div>
+
+                        </div>
 
 
-            {/* MEMORIES */}
-            <section className="glass-card memory-page-card">
+                        <div className="memory-items-final">
 
-                <div className="card-header">
+                            {filteredMemories.length === 0 ? (
 
-                    <div>
-                        <h2>
-                            Saved Memories
-                        </h2>
+                                <div className="memory-empty-final">
 
-                        <p>
-                            Information Zarvis can use to personalize
-                            your experience.
-                        </p>
-                    </div>
+                                    <Brain size={32} />
 
-                    <span className="card-count">
-                        {filteredMemories.length} Memories
-                    </span>
+                                    <h3>
+                                        No memories found
+                                    </h3>
 
-                </div>
+                                    <p>
+                                        Try another search or add
+                                        a new memory.
+                                    </p>
 
+                                </div>
 
-                <div className="memory-list">
+                            ) : (
 
-                    {filteredMemories.length > 0 ? (
-                        filteredMemories.map((memory) => {
+                                filteredMemories.map(
+                                    (memory) => (
 
-                            const Icon = memory.icon;
+                                        <div
+                                            className="memory-item-final"
+                                            key={memory.id}
+                                        >
 
-                            return (
-                                <div
-                                    className="memory-item"
-                                    key={memory.id}
-                                >
+                                            <div className="memory-item-icon-final">
 
-                                    <div className="memory-item-icon">
-                                        <Icon size={19} />
-                                    </div>
+                                                <Brain size={19} />
+
+                                            </div>
 
 
-                                    <div className="memory-item-info">
+                                            <div className="memory-item-content-final">
 
-                                        <div className="memory-item-top">
+                                                <div className="memory-item-title-final">
 
-                                            <strong>
-                                                {memory.title}
-                                            </strong>
+                                                    <h3>
+                                                        {memory.title}
+                                                    </h3>
 
-                                            <span className="memory-category">
-                                                {memory.category}
-                                            </span>
+                                                    <span>
+                                                        {memory.category}
+                                                    </span>
+
+                                                </div>
+
+
+                                                <p>
+                                                    {memory.description}
+                                                </p>
+
+
+                                                <div className="memory-item-meta-final">
+
+                                                    <span>
+                                                        <Clock3 size={12} />
+                                                        Today
+                                                    </span>
+
+                                                    <span>
+                                                        <Brain size={12} />
+                                                        Zarvis Memory
+                                                    </span>
+
+                                                </div>
+
+                                            </div>
+
+
+                                            <button
+                                                type="button"
+                                                className="memory-delete-final"
+                                                onClick={() =>
+                                                    deleteMemory(memory.id)
+                                                }
+                                                title="Delete memory"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
 
                                         </div>
 
-                                        <p>
-                                            {memory.text}
-                                        </p>
+                                    )
+                                )
 
-                                    </div>
-
-
-                                    <button
-                                        type="button"
-                                        className="memory-delete"
-                                        title="Delete memory"
-                                        onClick={() =>
-                                            deleteMemory(memory.id)
-                                        }
-                                    >
-                                        <Trash2 size={17} />
-                                    </button>
-
-                                </div>
-                            );
-                        })
-                    ) : (
-                        <div className="memory-empty">
-
-                            <Brain size={28} />
-
-                            <strong>
-                                No memories found
-                            </strong>
-
-                            <p>
-                                Try a different search or add a new memory.
-                            </p>
+                            )}
 
                         </div>
-                    )}
+
+                    </section>
 
                 </div>
 
-            </section>
-
-
-            {/* INFO */}
-            <div className="memory-info">
-
-                <Brain size={17} />
-
-                <span>
-                    Memories are currently stored in frontend
-                    state. They will be permanently saved when
-                    Zarvis is connected to the backend.
-                </span>
-
-            </div>
+            </main>
 
         </div>
     );

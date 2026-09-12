@@ -1,556 +1,619 @@
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState } from "react";
 import {
-    Workflow,
-    Plus,
-    Play,
-    Clock3,
-    CheckCircle2,
-    MoreHorizontal,
-    X,
+  Plus,
+  Workflow as WorkflowIcon,
+  Play,
+  Pause,
+  Trash2,
+  Clock3,
+  CheckCircle2,
+  Zap,
+  ArrowRight,
 } from "lucide-react";
 
-function Workflows() {
-    const [searchParams, setSearchParams] = useSearchParams();
+import Sidebar from "../components/Sidebar";
+import Navbar from "../components/Navbar";
 
-    const [workflows, setWorkflows] = useState([
-        {
-            id: 1,
-            title: "Morning Planning",
-            description:
-                "Review tasks and create your daily plan",
-            steps: 4,
-            lastRun: "Today, 9:00 AM",
-            status: "Active",
-        },
-        {
-            id: 2,
-            title: "Study Routine",
-            description:
-                "Organize study sessions and track progress",
-            steps: 5,
-            lastRun: "Yesterday",
-            status: "Active",
-        },
-        {
-            id: 3,
-            title: "Project Review",
-            description:
-                "Review project tasks and pending work",
-            steps: 3,
-            lastRun: "Monday",
-            status: "Paused",
-        },
+const initialWorkflows = [
+  {
+    id: 1,
+    name: "Morning Routine",
+    description: "Start the day with a productive routine.",
+    status: "ACTIVE",
+    steps: [
+      "Wake up reminder",
+      "Review today's schedule",
+      "Start focus session",
+    ],
+    lastRun: "Today, 06:00 AM",
+  },
+  {
+    id: 2,
+    name: "Study Session",
+    description: "Prepare and start a focused study block.",
+    status: "READY",
+    steps: [
+      "Open study task",
+      "Start 25 min timer",
+      "Review progress",
+    ],
+    lastRun: "Yesterday, 04:00 PM",
+  },
+  {
+    id: 3,
+    name: "Evening Planning",
+    description: "Prepare tomorrow's tasks and schedule.",
+    status: "READY",
+    steps: [
+      "Review completed tasks",
+      "Plan tomorrow",
+      "Create reminders",
+    ],
+    lastRun: "Yesterday, 08:30 PM",
+  },
+];
+
+function Workflows() {
+  const [workflows, setWorkflows] =
+    useState(initialWorkflows);
+
+  const [showForm, setShowForm] =
+    useState(false);
+
+  const [newWorkflow, setNewWorkflow] =
+    useState({
+      name: "",
+      description: "",
+      steps: "",
+    });
+
+  const toggleWorkflow = (id) => {
+    setWorkflows((prev) =>
+      prev.map((workflow) =>
+        workflow.id === id
+          ? {
+            ...workflow,
+            status:
+              workflow.status === "ACTIVE"
+                ? "READY"
+                : "ACTIVE",
+          }
+          : workflow
+      )
+    );
+  };
+
+  const deleteWorkflow = (id) => {
+    setWorkflows((prev) =>
+      prev.filter(
+        (workflow) => workflow.id !== id
+      )
+    );
+  };
+
+  const runWorkflow = (id) => {
+    setWorkflows((prev) =>
+      prev.map((workflow) =>
+        workflow.id === id
+          ? {
+            ...workflow,
+            status: "ACTIVE",
+            lastRun: "Just now",
+          }
+          : workflow
+      )
+    );
+  };
+
+  const createWorkflow = (event) => {
+    event.preventDefault();
+
+    if (!newWorkflow.name.trim()) {
+      return;
+    }
+
+    const steps = newWorkflow.steps
+      .split(",")
+      .map((step) => step.trim())
+      .filter(Boolean);
+
+    const workflow = {
+      id: Date.now(),
+      name: newWorkflow.name,
+      description:
+        newWorkflow.description ||
+        "Custom workflow created with Zarvis.",
+      status: "READY",
+      steps:
+        steps.length > 0
+          ? steps
+          : ["New workflow step"],
+      lastRun: "Never",
+    };
+
+    setWorkflows((prev) => [
+      workflow,
+      ...prev,
     ]);
 
-    const [runningWorkflow, setRunningWorkflow] =
-        useState(null);
+    setNewWorkflow({
+      name: "",
+      description: "",
+      steps: "",
+    });
 
-    const [showForm, setShowForm] = useState(
-        searchParams.get("create") === "true"
-    );
+    setShowForm(false);
+  };
 
-    const [workflowTitle, setWorkflowTitle] =
-        useState("");
+  const activeCount = workflows.filter(
+    (workflow) =>
+      workflow.status === "ACTIVE"
+  ).length;
 
-    const [workflowDescription, setWorkflowDescription] =
-        useState("");
+  const readyCount = workflows.filter(
+    (workflow) =>
+      workflow.status === "READY"
+  ).length;
 
-    const [workflowSteps, setWorkflowSteps] =
-        useState("3");
+  return (
+    <div className="app">
 
+      <Sidebar />
 
-    /* =========================
-       OPEN FORM FROM DASHBOARD
-    ========================= */
+      <main className="main-content">
 
-    useEffect(() => {
-        if (searchParams.get("create") === "true") {
-            setShowForm(true);
+        <Navbar />
 
-            setSearchParams({}, { replace: true });
-        }
-    }, [searchParams, setSearchParams]);
+        <div className="workflows-page">
 
+          {/* HEADER */}
+          <section className="workflows-header">
 
-    /* =========================
-       CREATE WORKFLOW
-    ========================= */
+            <div>
 
-    const addWorkflow = () => {
-        if (!workflowTitle.trim()) {
-            alert("Please enter a workflow name.");
-            return;
-        }
+              <span className="workflows-eyebrow">
+                <WorkflowIcon size={14} />
+                ZARVIS AUTOMATION SYSTEM
+              </span>
 
-        const steps = Number(workflowSteps);
+              <h1>
+                Workflows
+              </h1>
 
-        if (!steps || steps < 1) {
-            alert("Please enter a valid number of steps.");
-            return;
-        }
+              <p>
+                Build routines that Zarvis can
+                organize and execute for you.
+              </p>
 
-        const newWorkflow = {
-            id: Date.now(),
-            title: workflowTitle.trim(),
-            description:
-                workflowDescription.trim() ||
-                "Custom Zarvis workflow",
-            steps: steps,
-            lastRun: "Not run yet",
-            status: "Active",
-        };
+            </div>
 
-        setWorkflows((currentWorkflows) => [
-            ...currentWorkflows,
-            newWorkflow,
-        ]);
+            <button
+              type="button"
+              className="workflow-add-button"
+              onClick={() =>
+                setShowForm(!showForm)
+              }
+            >
+              <Plus size={18} />
+              Create Workflow
+            </button>
 
-        setWorkflowTitle("");
-        setWorkflowDescription("");
-        setWorkflowSteps("3");
-        setShowForm(false);
-    };
+          </section>
 
 
-    /* =========================
-       CLOSE FORM
-    ========================= */
+          {/* STATS */}
+          <section className="workflow-stats">
 
-    const closeForm = () => {
-        setShowForm(false);
-        setWorkflowTitle("");
-        setWorkflowDescription("");
-        setWorkflowSteps("3");
-    };
+            <div className="workflow-stat-card">
 
+              <span>
+                TOTAL WORKFLOWS
+              </span>
 
-    /* =========================
-       RUN WORKFLOW
-    ========================= */
+              <strong>
+                {workflows.length}
+              </strong>
 
-    const handleRun = (id) => {
-        if (runningWorkflow !== null) return;
-
-        setRunningWorkflow(id);
-
-        setWorkflows((currentWorkflows) =>
-            currentWorkflows.map((workflow) =>
-                workflow.id === id
-                    ? {
-                        ...workflow,
-                        status: "Running",
-                        lastRun: "Running now",
-                    }
-                    : workflow
-            )
-        );
-
-        setTimeout(() => {
-            setRunningWorkflow(null);
-
-            setWorkflows((currentWorkflows) =>
-                currentWorkflows.map((workflow) =>
-                    workflow.id === id
-                        ? {
-                            ...workflow,
-                            status: "Active",
-                            lastRun: "Just now",
-                        }
-                        : workflow
-                )
-            );
-        }, 2000);
-    };
+            </div>
 
 
-    return (
-        <div className="page-container">
+            <div className="workflow-stat-card">
 
-            {/* =========================
-          HEADER
-      ========================= */}
+              <span>
+                ACTIVE
+              </span>
 
-            <div className="page-header">
+              <strong>
+                {activeCount}
+              </strong>
+
+            </div>
+
+
+            <div className="workflow-stat-card">
+
+              <span>
+                READY
+              </span>
+
+              <strong>
+                {readyCount}
+              </strong>
+
+            </div>
+
+
+            <div className="workflow-stat-card">
+
+              <span>
+                EXECUTION
+              </span>
+
+              <strong>
+                READY
+              </strong>
+
+            </div>
+
+          </section>
+
+
+          {/* CREATE WORKFLOW */}
+          {showForm && (
+            <form
+              className="workflow-create-panel"
+              onSubmit={createWorkflow}
+            >
+
+              <div className="workflow-create-header">
 
                 <div>
 
-                    <span className="page-eyebrow">
-                        ZARVIS AUTOMATION
-                    </span>
+                  <span>
+                    WORKFLOW BUILDER
+                  </span>
 
-                    <h1>
-                        Workflows
-                    </h1>
-
-                    <p>
-                        Automate routines and let Zarvis handle
-                        repetitive work.
-                    </p>
+                  <h2>
+                    Create New Workflow
+                  </h2>
 
                 </div>
-
 
                 <button
-                    type="button"
-                    className="primary-action"
-                    onClick={() => setShowForm(true)}
+                  type="button"
+                  onClick={() =>
+                    setShowForm(false)
+                  }
                 >
-                    <Plus size={18} />
-                    Create Workflow
+                  ×
                 </button>
 
+              </div>
+
+
+              <div className="workflow-form-grid">
+
+                <div className="workflow-field">
+
+                  <label>
+                    Workflow Name
+                  </label>
+
+                  <input
+                    type="text"
+                    placeholder="e.g. Morning Routine"
+                    value={newWorkflow.name}
+                    onChange={(e) =>
+                      setNewWorkflow({
+                        ...newWorkflow,
+                        name: e.target.value,
+                      })
+                    }
+                  />
+
+                </div>
+
+
+                <div className="workflow-field">
+
+                  <label>
+                    Description
+                  </label>
+
+                  <input
+                    type="text"
+                    placeholder="What should this workflow do?"
+                    value={
+                      newWorkflow.description
+                    }
+                    onChange={(e) =>
+                      setNewWorkflow({
+                        ...newWorkflow,
+                        description:
+                          e.target.value,
+                      })
+                    }
+                  />
+
+                </div>
+
+
+                <div className="workflow-field workflow-field-wide">
+
+                  <label>
+                    Steps
+                  </label>
+
+                  <input
+                    type="text"
+                    placeholder="Step 1, Step 2, Step 3"
+                    value={newWorkflow.steps}
+                    onChange={(e) =>
+                      setNewWorkflow({
+                        ...newWorkflow,
+                        steps: e.target.value,
+                      })
+                    }
+                  />
+
+                  <small>
+                    Separate each step with a comma.
+                  </small>
+
+                </div>
+
+              </div>
+
+
+              <button
+                type="submit"
+                className="workflow-create-submit"
+              >
+                <Plus size={16} />
+                CREATE WORKFLOW
+              </button>
+
+            </form>
+          )}
+
+
+          {/* WORKFLOW LIST */}
+          <section className="workflow-list-panel">
+
+            <div className="workflow-list-header">
+
+              <div>
+
+                <span>
+                  AUTOMATION QUEUE // 03
+                </span>
+
+                <h2>
+                  Your Workflows
+                </h2>
+
+              </div>
+
+              <div className="workflow-network-status">
+
+                <span></span>
+
+                SYSTEM READY
+
+              </div>
+
             </div>
 
 
-            {/* =========================
-          STATS
-      ========================= */}
+            <div className="workflow-list">
 
-            <div className="workflow-stats">
+              {workflows.length === 0 ? (
 
-                <div className="glass-card page-stat">
+                <div className="workflow-empty">
 
-                    <span>
-                        Total Workflows
-                    </span>
+                  <WorkflowIcon size={34} />
 
-                    <strong>
-                        {workflows.length}
-                    </strong>
+                  <h3>
+                    No workflows yet
+                  </h3>
 
-                </div>
-
-
-                <div className="glass-card page-stat">
-
-                    <span>
-                        Active
-                    </span>
-
-                    <strong>
-                        {
-                            workflows.filter(
-                                (workflow) =>
-                                    workflow.status === "Active"
-                            ).length
-                        }
-                    </strong>
+                  <p>
+                    Create your first automated
+                    routine with Zarvis.
+                  </p>
 
                 </div>
 
+              ) : (
 
-                <div className="glass-card page-stat">
+                workflows.map((workflow) => (
 
-                    <span>
-                        Running
-                    </span>
+                  <article
+                    className="workflow-card"
+                    key={workflow.id}
+                  >
 
-                    <strong>
-                        {
-                            workflows.filter(
-                                (workflow) =>
-                                    workflow.status === "Running"
-                            ).length
-                        }
-                    </strong>
+                    {/* CARD TOP */}
+                    <div className="workflow-card-top">
 
-                </div>
+                      <div className="workflow-card-title">
 
-            </div>
-
-
-            {/* =========================
-          CREATE WORKFLOW FORM
-      ========================= */}
-
-            {showForm && (
-                <section className="glass-card workflow-form">
-
-                    <div className="workflow-form-header">
+                        <div className="workflow-card-icon">
+                          <Zap size={17} />
+                        </div>
 
                         <div>
 
-                            <h2>
-                                Create New Workflow
-                            </h2>
+                          <h3>
+                            {workflow.name}
+                          </h3>
 
-                            <p>
-                                Create a routine that Zarvis can
-                                automate for you.
-                            </p>
+                          <p>
+                            {workflow.description}
+                          </p>
 
                         </div>
 
+                      </div>
 
-                        <button
-                            type="button"
-                            className="workflow-form-close"
-                            onClick={closeForm}
-                        >
-                            <X size={17} />
-                        </button>
+
+                      <div
+                        className={`workflow-status ${workflow.status ===
+                            "ACTIVE"
+                            ? "workflow-active"
+                            : "workflow-ready"
+                          }`}
+                      >
+
+                        <span></span>
+
+                        {workflow.status}
+
+                      </div>
 
                     </div>
 
 
-                    <div className="workflow-form-grid">
+                    {/* STEPS */}
+                    <div className="workflow-steps">
 
-                        {/* WORKFLOW NAME */}
+                      <div className="workflow-steps-label">
+                        WORKFLOW STEPS
+                      </div>
 
-                        <div className="workflow-field workflow-field-full">
+                      <div className="workflow-step-list">
 
-                            <label>
-                                Workflow Name
-                            </label>
+                        {workflow.steps.map(
+                          (step, index) => (
 
-                            <input
-                                type="text"
-                                placeholder="e.g. Daily Study Routine"
-                                value={workflowTitle}
-                                onChange={(event) =>
-                                    setWorkflowTitle(
-                                        event.target.value
-                                    )
-                                }
-                            />
-
-                        </div>
-
-
-                        {/* DESCRIPTION */}
-
-                        <div className="workflow-field">
-
-                            <label>
-                                Description
-                            </label>
-
-                            <input
-                                type="text"
-                                placeholder="What should this workflow do?"
-                                value={workflowDescription}
-                                onChange={(event) =>
-                                    setWorkflowDescription(
-                                        event.target.value
-                                    )
-                                }
-                            />
-
-                        </div>
-
-
-                        {/* STEPS */}
-
-                        <div className="workflow-field">
-
-                            <label>
-                                Number of Steps
-                            </label>
-
-                            <input
-                                type="number"
-                                min="1"
-                                max="20"
-                                value={workflowSteps}
-                                onChange={(event) =>
-                                    setWorkflowSteps(
-                                        event.target.value
-                                    )
-                                }
-                            />
-
-                        </div>
-
-                    </div>
-
-
-                    {/* FORM ACTIONS */}
-
-                    <div className="workflow-form-actions">
-
-                        <button
-                            type="button"
-                            className="workflow-cancel"
-                            onClick={closeForm}
-                        >
-                            Cancel
-                        </button>
-
-
-                        <button
-                            type="button"
-                            className="primary-action"
-                            onClick={addWorkflow}
-                        >
-                            <Plus size={17} />
-                            Create Workflow
-                        </button>
-
-                    </div>
-
-                </section>
-            )}
-
-
-            {/* =========================
-          WORKFLOW LIST
-      ========================= */}
-
-            <section className="glass-card workflows-page-card">
-
-                <div className="card-header">
-
-                    <div>
-
-                        <h2>
-                            My Workflows
-                        </h2>
-
-                        <p>
-                            Your automated routines
-                        </p>
-
-                    </div>
-
-
-                    <span className="card-count">
-                        {workflows.length} Workflows
-                    </span>
-
-                </div>
-
-
-                <div className="workflows-page-list">
-
-                    {workflows.map((workflow) => (
-
-                        <div
-                            className="workflow-page-item"
-                            key={workflow.id}
-                        >
-
-                            {/* ICON */}
-
-                            <div className="workflow-page-icon">
-                                <Workflow size={21} />
-                            </div>
-
-
-                            {/* INFO */}
-
-                            <div className="workflow-page-info">
-
-                                <div className="workflow-page-title">
-
-                                    <strong>
-                                        {workflow.title}
-                                    </strong>
-
-                                    <span
-                                        className={`workflow-status ${workflow.status === "Running"
-                                                ? "running"
-                                                : workflow.status === "Paused"
-                                                    ? "paused"
-                                                    : ""
-                                            }`}
-                                    >
-                                        {workflow.status}
-                                    </span>
-
-                                </div>
-
-
-                                <p>
-                                    {workflow.description}
-                                </p>
-
-
-                                <div className="workflow-page-meta">
-
-                                    <span>
-                                        <Workflow size={12} />
-                                        {workflow.steps} Steps
-                                    </span>
-
-                                    <span>
-                                        <Clock3 size={12} />
-                                        {workflow.lastRun}
-                                    </span>
-
-                                </div>
-
-                            </div>
-
-
-                            {/* RUN */}
-
-                            <button
-                                type="button"
-                                className={`workflow-run ${runningWorkflow === workflow.id
-                                        ? "running"
-                                        : ""
-                                    }`}
-                                onClick={() =>
-                                    handleRun(workflow.id)
-                                }
-                                disabled={
-                                    runningWorkflow !== null
-                                }
+                            <div
+                              className="workflow-step"
+                              key={index}
                             >
 
-                                {runningWorkflow === workflow.id ? (
-                                    <>
-                                        <Clock3 size={16} />
-                                        Running
-                                    </>
-                                ) : (
-                                    <>
-                                        <Play size={16} />
-                                        Run
-                                    </>
+                              <div className="workflow-step-number">
+                                {String(
+                                  index + 1
+                                ).padStart(2, "0")}
+                              </div>
+
+                              <span>
+                                {step}
+                              </span>
+
+                              {index <
+                                workflow.steps.length -
+                                1 && (
+                                  <ArrowRight
+                                    size={13}
+                                  />
                                 )}
 
-                            </button>
+                            </div>
+
+                          )
+                        )}
+
+                      </div>
+
+                    </div>
 
 
-                            {/* MORE */}
+                    {/* FOOTER */}
+                    <div className="workflow-card-footer">
 
-                            <button
-                                type="button"
-                                className="workflow-more"
-                                title="More options"
-                            >
-                                <MoreHorizontal size={19} />
-                            </button>
+                      <div className="workflow-last-run">
 
-                        </div>
+                        <Clock3 size={13} />
 
-                    ))}
+                        <span>
+                          Last run:
+                        </span>
 
-                </div>
+                        <strong>
+                          {workflow.lastRun}
+                        </strong>
 
-            </section>
+                      </div>
 
 
-            {/* =========================
-          INFO
-      ========================= */}
+                      <div className="workflow-actions">
 
-            <div className="workflow-info">
+                        <button
+                          type="button"
+                          className="workflow-run-button"
+                          onClick={() =>
+                            runWorkflow(
+                              workflow.id
+                            )
+                          }
+                        >
+                          <Play size={14} />
+                          RUN
+                        </button>
 
-                <CheckCircle2 size={17} />
 
-                <span>
-                    Workflows are currently running with
-                    frontend demo data. Real automation will
-                    be connected when Zarvis gets its backend.
-                </span>
+                        <button
+                          type="button"
+                          className="workflow-toggle-button"
+                          onClick={() =>
+                            toggleWorkflow(
+                              workflow.id
+                            )
+                          }
+                        >
+                          {workflow.status ===
+                            "ACTIVE" ? (
+                            <>
+                              <Pause
+                                size={14}
+                              />
+                              PAUSE
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2
+                                size={14}
+                              />
+                              ENABLE
+                            </>
+                          )}
+                        </button>
+
+
+                        <button
+                          type="button"
+                          className="workflow-delete-button"
+                          onClick={() =>
+                            deleteWorkflow(
+                              workflow.id
+                            )
+                          }
+                          title="Delete workflow"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+
+                      </div>
+
+                    </div>
+
+                  </article>
+
+                ))
+
+              )}
 
             </div>
 
+          </section>
+
         </div>
-    );
+
+      </main>
+
+    </div>
+  );
 }
 
 export default Workflows;

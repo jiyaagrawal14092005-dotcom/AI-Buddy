@@ -4,146 +4,193 @@ import {
     User,
     Bell,
     Palette,
-    MessageCircle,
+    ShieldCheck,
+    Mic,
     Volume2,
+    Moon,
     Save,
+    RotateCcw,
 } from "lucide-react";
 
 function Settings() {
     const [notifications, setNotifications] = useState(true);
-    const [sound, setSound] = useState(true);
-    const [compactMode, setCompactMode] = useState(false);
+    const [voiceAssistant, setVoiceAssistant] = useState(true);
+    const [soundEffects, setSoundEffects] = useState(true);
+    const [darkMode, setDarkMode] = useState(true);
+
+    const [saved, setSaved] = useState(false);
+
+    const handleSave = () => {
+        setSaved(true);
+
+        setTimeout(() => {
+            setSaved(false);
+        }, 2000);
+    };
 
     return (
-        <div className="page-container">
-
-            {/* HEADER */}
-            <div className="page-header">
+        <div className="settings-page">
+            {/* Header */}
+            <div className="settings-header">
                 <div>
-                    <span className="page-eyebrow">
-                        ZARVIS SETTINGS
+                    <span className="settings-eyebrow">
+                        SYSTEM CONFIGURATION // 08
                     </span>
 
                     <h1>Settings</h1>
 
                     <p>
-                        Customize how Zarvis looks and works for you.
+                        Customize how Zarvis works for you.
                     </p>
                 </div>
 
-                <button className="primary-action">
-                    <Save size={18} />
-                    Save Changes
-                </button>
+                <div className="settings-status">
+                    <span></span>
+                    CONFIGURATION READY
+                </div>
             </div>
 
-            {/* SETTINGS GRID */}
-            <div className="settings-grid">
-
-                {/* PROFILE */}
-                <section className="glass-card settings-card">
-
-                    <div className="settings-card-header">
-                        <div className="settings-icon">
-                            <User size={19} />
-                        </div>
-
-                        <div>
-                            <h2>Profile</h2>
-                            <p>Your basic Zarvis profile.</p>
-                        </div>
+            {/* Profile */}
+            <section className="settings-section">
+                <div className="settings-section-header">
+                    <div className="settings-section-icon">
+                        <User size={17} />
                     </div>
 
-                    <div className="settings-field">
-                        <label>Name</label>
+                    <div>
+                        <span>PROFILE</span>
+                        <h2>Personal Information</h2>
+                    </div>
+                </div>
 
+                <div className="settings-divider"></div>
+
+                <div className="settings-form-grid">
+                    <div className="settings-field">
+                        <label>NAME</label>
                         <input
                             type="text"
-                            placeholder="User"
-                            defaultValue="User"
+                            defaultValue="Shanu"
+                            placeholder="Enter your name"
                         />
                     </div>
 
                     <div className="settings-field">
-                        <label>Assistant Name</label>
-
+                        <label>WORKSPACE</label>
                         <input
                             type="text"
-                            defaultValue="Zarvis"
+                            defaultValue="Personal Workspace"
+                            placeholder="Workspace name"
                         />
                     </div>
 
-                </section>
+                    <div className="settings-field full-field">
+                        <label>ABOUT YOU</label>
+                        <textarea
+                            defaultValue="BCA student working on AI and Machine Learning projects."
+                            rows="3"
+                        />
+                    </div>
+                </div>
+            </section>
 
-                {/* APPEARANCE */}
-                <section className="glass-card settings-card">
-
-                    <div className="settings-card-header">
-                        <div className="settings-icon">
-                            <Palette size={19} />
-                        </div>
-
-                        <div>
-                            <h2>Appearance</h2>
-                            <p>Customize the Zarvis interface.</p>
-                        </div>
+            {/* Assistant Settings */}
+            <section className="settings-section">
+                <div className="settings-section-header">
+                    <div className="settings-section-icon cyan">
+                        <Mic size={17} />
                     </div>
 
-                    <div className="settings-option">
-
-                        <div>
-                            <strong>Theme</strong>
-                            <span>Dark futuristic theme</span>
-                        </div>
-
-                        <div className="theme-preview">
-                            Dark
-                        </div>
-
+                    <div>
+                        <span>ASSISTANT</span>
+                        <h2>Zarvis Behavior</h2>
                     </div>
+                </div>
 
+                <div className="settings-divider"></div>
+
+                <div className="settings-option-list">
                     <div className="settings-option">
+                        <div className="settings-option-icon">
+                            <Mic size={16} />
+                        </div>
 
-                        <div>
-                            <strong>Compact Mode</strong>
-                            <span>Use a more compact layout</span>
+                        <div className="settings-option-content">
+                            <strong>Voice Assistant</strong>
+                            <span>
+                                Allow Zarvis to listen and respond using voice.
+                            </span>
                         </div>
 
                         <button
-                            className={`settings-toggle ${compactMode ? "enabled" : ""
+                            type="button"
+                            className={`settings-toggle ${voiceAssistant ? "active" : ""
                                 }`}
-                            onClick={() => setCompactMode(!compactMode)}
+                            onClick={() =>
+                                setVoiceAssistant(!voiceAssistant)
+                            }
                         >
                             <span></span>
                         </button>
-
-                    </div>
-
-                </section>
-
-                {/* NOTIFICATIONS */}
-                <section className="glass-card settings-card">
-
-                    <div className="settings-card-header">
-                        <div className="settings-icon">
-                            <Bell size={19} />
-                        </div>
-
-                        <div>
-                            <h2>Notifications</h2>
-                            <p>Control Zarvis notifications.</p>
-                        </div>
                     </div>
 
                     <div className="settings-option">
+                        <div className="settings-option-icon">
+                            <Volume2 size={16} />
+                        </div>
 
-                        <div>
-                            <strong>Notifications</strong>
-                            <span>Receive important reminders</span>
+                        <div className="settings-option-content">
+                            <strong>Sound Effects</strong>
+                            <span>
+                                Play subtle sounds for important Zarvis actions.
+                            </span>
                         </div>
 
                         <button
-                            className={`settings-toggle ${notifications ? "enabled" : ""
+                            type="button"
+                            className={`settings-toggle ${soundEffects ? "active" : ""
+                                }`}
+                            onClick={() =>
+                                setSoundEffects(!soundEffects)
+                            }
+                        >
+                            <span></span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            {/* Notifications */}
+            <section className="settings-section">
+                <div className="settings-section-header">
+                    <div className="settings-section-icon purple">
+                        <Bell size={17} />
+                    </div>
+
+                    <div>
+                        <span>NOTIFICATIONS</span>
+                        <h2>Alerts & Reminders</h2>
+                    </div>
+                </div>
+
+                <div className="settings-divider"></div>
+
+                <div className="settings-option-list">
+                    <div className="settings-option">
+                        <div className="settings-option-icon">
+                            <Bell size={16} />
+                        </div>
+
+                        <div className="settings-option-content">
+                            <strong>Notifications</strong>
+                            <span>
+                                Receive reminders, task updates and alerts.
+                            </span>
+                        </div>
+
+                        <button
+                            type="button"
+                            className={`settings-toggle ${notifications ? "active" : ""
                                 }`}
                             onClick={() =>
                                 setNotifications(!notifications)
@@ -151,84 +198,104 @@ function Settings() {
                         >
                             <span></span>
                         </button>
+                    </div>
+                </div>
+            </section>
 
+            {/* Appearance */}
+            <section className="settings-section">
+                <div className="settings-section-header">
+                    <div className="settings-section-icon pink">
+                        <Palette size={17} />
                     </div>
 
-                    <div className="settings-option">
+                    <div>
+                        <span>APPEARANCE</span>
+                        <h2>Interface Preferences</h2>
+                    </div>
+                </div>
 
-                        <div>
-                            <strong>Sound Effects</strong>
-                            <span>Play sounds for interactions</span>
+                <div className="settings-divider"></div>
+
+                <div className="settings-option-list">
+                    <div className="settings-option">
+                        <div className="settings-option-icon">
+                            <Moon size={16} />
+                        </div>
+
+                        <div className="settings-option-content">
+                            <strong>Dark Interface</strong>
+                            <span>
+                                Keep the futuristic dark Zarvis interface enabled.
+                            </span>
                         </div>
 
                         <button
-                            className={`settings-toggle ${sound ? "enabled" : ""
+                            type="button"
+                            className={`settings-toggle ${darkMode ? "active" : ""
                                 }`}
-                            onClick={() => setSound(!sound)}
+                            onClick={() => setDarkMode(!darkMode)}
                         >
                             <span></span>
                         </button>
+                    </div>
+                </div>
+            </section>
 
+            {/* Security */}
+            <section className="settings-section">
+                <div className="settings-section-header">
+                    <div className="settings-section-icon green">
+                        <ShieldCheck size={17} />
                     </div>
 
-                </section>
+                    <div>
+                        <span>SECURITY</span>
+                        <h2>Privacy & Protection</h2>
+                    </div>
+                </div>
 
-                {/* ASSISTANT */}
-                <section className="glass-card settings-card">
+                <div className="settings-divider"></div>
 
-                    <div className="settings-card-header">
-                        <div className="settings-icon">
-                            <MessageCircle size={19} />
-                        </div>
-
-                        <div>
-                            <h2>Assistant</h2>
-                            <p>Configure how Zarvis interacts with you.</p>
-                        </div>
+                <div className="security-setting-status">
+                    <div className="security-setting-icon">
+                        <ShieldCheck size={18} />
                     </div>
 
-                    <div className="settings-option">
-
-                        <div>
-                            <strong>Response Style</strong>
-                            <span>Friendly and helpful</span>
-                        </div>
-
-                        <span className="settings-value">
-                            Friendly
+                    <div>
+                        <strong>SECURITY SYSTEM ACTIVE</strong>
+                        <span>
+                            Your Zarvis workspace is protected.
                         </span>
-
                     </div>
 
-                    <div className="settings-option">
-
-                        <div>
-                            <strong>Voice</strong>
-                            <span>Voice assistant preference</span>
-                        </div>
-
-                        <span className="settings-value">
-                            Default
-                        </span>
-
+                    <div className="security-active">
+                        <span></span>
+                        ACTIVE
                     </div>
+                </div>
+            </section>
 
-                </section>
+            {/* Bottom Actions */}
+            <div className="settings-actions">
+                <button
+                    type="button"
+                    className="settings-reset"
+                    onClick={() => window.location.reload()}
+                >
+                    <RotateCcw size={15} />
+                    RESET
+                </button>
 
+                <button
+                    type="button"
+                    className="settings-save"
+                    onClick={handleSave}
+                >
+                    <Save size={15} />
+                    {saved ? "SAVED" : "SAVE CHANGES"}
+                </button>
             </div>
-
-            {/* INFO */}
-            <div className="settings-info">
-
-                <Volume2 size={17} />
-
-                <span>
-                    More advanced settings will be available when
-                    Zarvis is connected to the backend.
-                </span>
-
-            </div>
-
         </div>
     );
 }

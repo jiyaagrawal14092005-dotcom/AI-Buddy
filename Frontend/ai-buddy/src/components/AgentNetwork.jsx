@@ -1,99 +1,154 @@
 import {
+    Network,
     Brain,
-    ListTodo,
     Search,
-    CalendarDays,
     Zap,
-    ShieldCheck,
+    CheckCircle2,
 } from "lucide-react";
 
 const agents = [
-    { name: "Planner", icon: Brain, position: "agent-1", status: "ACTIVE" },
-    { name: "Tasks", icon: ListTodo, position: "agent-2", status: "READY" },
-    { name: "Research", icon: Search, position: "agent-3", status: "READY" },
-    { name: "Schedule", icon: CalendarDays, position: "agent-4", status: "READY" },
-    { name: "Automation", icon: Zap, position: "agent-5", status: "READY" },
-    { name: "Security", icon: ShieldCheck, position: "agent-6", status: "READY" },
+    {
+        name: "Planner",
+        role: "TASK PLANNING",
+        icon: Brain,
+        status: "ACTIVE",
+        load: "84%",
+    },
+    {
+        name: "Research",
+        role: "INFORMATION",
+        icon: Search,
+        status: "READY",
+        load: "42%",
+    },
+    {
+        name: "Executor",
+        role: "TASK EXECUTION",
+        icon: Zap,
+        status: "READY",
+        load: "28%",
+    },
 ];
 
 function AgentNetwork() {
     return (
-        <section className="zarvis-agent-panel">
+        <section className="agent-network">
 
-            <div className="zarvis-agent-header">
-                <div>
-                    <span className="zarvis-agent-label">ZARVIS INTELLIGENCE</span>
-                    <h2>Agent Network</h2>
-                    <p>One core. Multiple specialized agents.</p>
-                </div>
+            <div className="agent-network-header">
 
-                <div className="zarvis-online">
-                    <span />
-                    ALL SYSTEMS ONLINE
-                </div>
-            </div>
+                <div className="agent-network-title">
 
-            <div className="zarvis-agent-stage">
+                    <div className="agent-network-icon">
+                        <Network size={17} />
+                    </div>
 
-                {/* subtle connection structure */}
-                <div className="agent-line line-1" />
-                <div className="agent-line line-2" />
-                <div className="agent-line line-3" />
-                <div className="agent-line line-4" />
-                <div className="agent-line line-5" />
-                <div className="agent-line line-6" />
-
-                {/* central core */}
-                <div className="zarvis-main-core">
-
-                    <div className="core-aura" />
-
-                    <div className="core-ring" />
-
-                    <div className="core-content">
-                        <Brain size={25} />
-                        <strong>ZARVIS</strong>
-                        <small>AI CORE</small>
+                    <div>
+                        <span>AI SYSTEM // 06</span>
+                        <h2>Agent Network</h2>
                     </div>
 
                 </div>
 
-                {/* agents */}
-                {agents.map((agent) => {
-                    const Icon = agent.icon;
-
-                    return (
-                        <div
-                            className={`zarvis-agent-card ${agent.position}`}
-                            key={agent.name}
-                        >
-                            <div className="agent-icon">
-                                <Icon size={17} />
-                            </div>
-
-                            <div className="agent-details">
-                                <strong>{agent.name}</strong>
-
-                                <span>
-                                    <i />
-                                    {agent.status}
-                                </span>
-                            </div>
-                        </div>
-                    );
-                })}
+                <div className="agent-network-status">
+                    <span></span>
+                    NETWORK STABLE
+                </div>
 
             </div>
 
-            <div className="zarvis-agent-footer">
+            <div className="agent-network-line">
+                <span></span>
+            </div>
+
+            <div className="agent-network-body">
+
+                <div className="network-core">
+
+                    <div className="network-ring network-ring-one"></div>
+                    <div className="network-ring network-ring-two"></div>
+
+                    <div className="network-core-center">
+                        <span>Z</span>
+                    </div>
+
+                    <div className="network-core-label">
+                        ZARVIS CORE
+                    </div>
+
+                </div>
+
+                <div className="agent-list">
+
+                    {agents.map((agent, index) => {
+
+                        const Icon = agent.icon;
+
+                        return (
+                            <div
+                                className="agent-item"
+                                key={agent.name}
+                            >
+
+                                <div className="agent-item-icon">
+                                    <Icon size={15} />
+                                </div>
+
+                                <div className="agent-item-info">
+
+                                    <div className="agent-item-name">
+                                        <strong>{agent.name}</strong>
+
+                                        <span
+                                            className={
+                                                agent.status === "ACTIVE"
+                                                    ? "agent-active"
+                                                    : "agent-ready"
+                                            }
+                                        >
+                                            <i></i>
+                                            {agent.status}
+                                        </span>
+                                    </div>
+
+                                    <span className="agent-item-role">
+                                        {agent.role}
+                                    </span>
+
+                                </div>
+
+                                <div className="agent-load">
+
+                                    <div className="agent-load-bar">
+                                        <span
+                                            style={{
+                                                width: agent.load,
+                                            }}
+                                        ></span>
+                                    </div>
+
+                                    <small>{agent.load}</small>
+
+                                </div>
+
+                            </div>
+                        );
+                    })}
+
+                </div>
+
+            </div>
+
+            <div className="agent-network-footer">
+
+                <div>
+                    <CheckCircle2 size={13} />
+                    <span>3 AGENTS AVAILABLE</span>
+                </div>
+
                 <span>
-                    <i />
-                    06 AGENTS CONNECTED
+                    REAL-TIME PROCESSING
                 </span>
 
-                <span>REAL-TIME COORDINATION</span>
-
-                <span>LATENCY 12ms</span>
             </div>
 
         </section>

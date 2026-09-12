@@ -1,126 +1,713 @@
 /* =========================================================
-   ZARVIS CUTE ROBOT
-   Reference-style futuristic mascot
+   ZARVIS ROBOT — REFERENCE STYLE
+   Floating Galaxy • Front Facing • No Container
    ========================================================= */
 
-
-/* =========================================================
-   ROBOT CONTAINER
-   ========================================================= */
-
-.buddy-visual {
+.zarvis-robot-area {
     position: relative;
-
-    min-height: 270px;
+    width: 430px;
+    height: 330px;
+    margin-left: auto;
 
     display: flex;
-
     align-items: center;
     justify-content: center;
 
-    overflow: hidden;
-
-    perspective: 900px;
+    overflow: visible;
+    perspective: 1000px;
 }
 
 
 /* =========================================================
-   BACKGROUND GLOW
+   GALAXY ENVIRONMENT
    ========================================================= */
 
-.robot-glow {
+.zarvis-robot-area::before {
+    content: "";
+
     position: absolute;
-
-    width: 250px;
-    height: 250px;
-
-    border-radius: 50%;
+    inset: -35px;
 
     background:
-        radial-gradient(circle,
-            rgba(143, 74, 255, 0.42) 0%,
-            rgba(91, 76, 255, 0.24) 32%,
-            rgba(57, 217, 255, 0.10) 52%,
-            transparent 72%);
-
-    filter: blur(22px);
-
-    animation:
-        robotGlowPulse 4s ease-in-out infinite;
+        radial-gradient(ellipse at 50% 48%,
+            rgba(92, 54, 255, 0.30),
+            transparent 45%),
+        radial-gradient(ellipse at 82% 25%,
+            rgba(48, 150, 255, 0.13),
+            transparent 30%),
+        radial-gradient(ellipse at 18% 72%,
+            rgba(210, 50, 255, 0.15),
+            transparent 34%);
 
     pointer-events: none;
+    z-index: 0;
 }
 
 
-@keyframes robotGlowPulse {
+/* =========================================================
+   GALAXY GLOWS
+   ========================================================= */
+
+.galaxy-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(48px);
+    pointer-events: none;
+}
+
+.galaxy-glow-one {
+    width: 260px;
+    height: 260px;
+
+    left: 85px;
+    top: 42px;
+
+    background: rgba(104, 57, 255, 0.25);
+
+    animation: galaxyPulse 5s ease-in-out infinite;
+}
+
+.galaxy-glow-two {
+    width: 170px;
+    height: 170px;
+
+    right: 5px;
+    top: 25px;
+
+    background: rgba(45, 155, 255, 0.12);
+}
+
+.galaxy-glow-three {
+    width: 180px;
+    height: 180px;
+
+    left: 0;
+    bottom: 0;
+
+    background: rgba(210, 48, 255, 0.12);
+}
+
+@keyframes galaxyPulse {
 
     0%,
     100% {
         transform: scale(0.88);
-
-        opacity: 0.72;
+        opacity: 0.62;
     }
 
     50% {
-        transform: scale(1.08);
-
+        transform: scale(1.12);
         opacity: 1;
     }
 }
 
 
 /* =========================================================
-   ROBOT FLOAT
+   STAR FIELD
    ========================================================= */
 
-.cute-zarvis {
-    position: relative;
+.galaxy-stars {
+    position: absolute;
+    inset: 0;
 
-    z-index: 10;
+    pointer-events: none;
 
-    width: 130px;
-    height: 190px;
+    background-image:
+        radial-gradient(circle,
+            rgba(255, 255, 255, 0.95) 0 1px,
+            transparent 2px),
+        radial-gradient(circle,
+            rgba(117, 220, 255, 0.85) 0 1px,
+            transparent 2px),
+        radial-gradient(circle,
+            rgba(215, 125, 255, 0.85) 0 1px,
+            transparent 2px);
 
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: center;
-
-    animation:
-        zarvisFloat 3.8s ease-in-out infinite;
+    opacity: 0.52;
 }
 
+.stars-one {
+    background-size:
+        70px 70px,
+        105px 105px,
+        145px 145px;
 
-@keyframes zarvisFloat {
+    background-position:
+        10px 20px,
+        40px 50px,
+        80px 15px;
 
-    0%,
-    100% {
-        transform:
-            translateY(0);
+    animation: starsMove 20s linear infinite;
+}
+
+.stars-two {
+    background-size:
+        95px 95px,
+        135px 135px,
+        175px 175px;
+
+    background-position:
+        20px 10px,
+        60px 30px,
+        15px 70px;
+
+    opacity: 0.25;
+
+    animation: starsMoveReverse 26s linear infinite;
+}
+
+@keyframes starsMove {
+    from {
+        transform: translateY(0);
     }
 
-    50% {
-        transform:
-            translateY(-10px);
+    to {
+        transform: translateY(18px);
+    }
+}
+
+@keyframes starsMoveReverse {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-18px);
     }
 }
 
 
 /* =========================================================
-   ROTATING ORBITS
+   FLOATING STARS
+   ========================================================= */
+
+.space-star {
+    position: absolute;
+    z-index: 3;
+
+    color: #d99aff;
+
+    text-shadow:
+        0 0 7px #a855ff,
+        0 0 17px rgba(129, 73, 255, 0.8);
+
+    pointer-events: none;
+
+    animation: floatingStar 4s ease-in-out infinite;
+}
+
+.star-one {
+    top: 24px;
+    left: 70px;
+    font-size: 13px;
+}
+
+.star-two {
+    top: 62px;
+    right: 43px;
+    font-size: 10px;
+    animation-delay: 1s;
+}
+
+.star-three {
+    left: 32px;
+    top: 174px;
+    font-size: 15px;
+    animation-delay: 1.5s;
+}
+
+.star-four {
+    right: 27px;
+    bottom: 88px;
+    font-size: 13px;
+    animation-delay: 2s;
+}
+
+.star-five {
+    left: 103px;
+    top: 108px;
+
+    color: #70ddff;
+    font-size: 18px;
+
+    animation-delay: 0.7s;
+}
+
+@keyframes floatingStar {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 0.55;
+    }
+
+    50% {
+        transform: translateY(-8px) scale(1.2);
+        opacity: 1;
+    }
+}
+
+
+/* =========================================================
+   ROBOT AURA
+   ========================================================= */
+
+.robot-glow {
+    position: absolute;
+
+    width: 255px;
+    height: 255px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(circle,
+            rgba(159, 73, 255, 0.58),
+            rgba(98, 60, 255, 0.27) 35%,
+            rgba(45, 130, 255, 0.09) 55%,
+            transparent 72%);
+
+    filter: blur(22px);
+
+    z-index: 2;
+
+    animation: robotAura 4s ease-in-out infinite;
+}
+
+@keyframes robotAura {
+
+    0%,
+    100% {
+        transform: scale(0.9);
+        opacity: 0.7;
+    }
+
+    50% {
+        transform: scale(1.08);
+        opacity: 1;
+    }
+}
+
+
+/* =========================================================
+   ROBOT BODY
+   ========================================================= */
+
+.cute-zarvis {
+    position: relative;
+    z-index: 10;
+
+    width: 145px;
+    height: 205px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    animation: robotFloat 4s ease-in-out infinite;
+}
+
+@keyframes robotFloat {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-9px);
+    }
+}
+
+
+/* =========================================================
+   EARS / HEADPHONES
+   ========================================================= */
+
+.zarvis-ear {
+    position: absolute;
+
+    top: 47px;
+
+    width: 30px;
+    height: 51px;
+
+    border-radius: 17px;
+
+    background:
+        linear-gradient(180deg,
+            #ffffff,
+            #f0edff 45%,
+            #c0b7f4 75%,
+            #8d80d7);
+
+    box-shadow:
+        inset 3px 3px 7px rgba(255, 255, 255, 0.95),
+        0 0 17px rgba(139, 74, 255, 0.62);
+}
+
+.zarvis-ear-left {
+    left: 0;
+}
+
+.zarvis-ear-right {
+    right: 0;
+}
+
+.ear-inner {
+    position: absolute;
+    inset: 7px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(circle,
+            #c38aff,
+            #733ce9 60%,
+            #3b229b);
+
+    box-shadow:
+        0 0 10px rgba(150, 75, 255, 0.9);
+}
+
+
+/* =========================================================
+   HEAD
+   ========================================================= */
+
+.zarvis-head {
+    position: relative;
+
+    width: 116px;
+    height: 94px;
+
+    margin-top: 28px;
+
+    border-radius: 46%;
+
+    background:
+        linear-gradient(145deg,
+            #ffffff 0%,
+            #f8f5ff 25%,
+            #e5e1ff 55%,
+            #c2b9f3 78%,
+            #a297e3 100%);
+
+    box-shadow:
+        inset 7px 7px 15px rgba(255, 255, 255, 0.95),
+        inset -9px -11px 18px rgba(75, 58, 180, 0.22),
+        0 0 28px rgba(140, 70, 255, 0.55);
+}
+
+
+/* =========================================================
+   FACE
+   ========================================================= */
+
+.zarvis-face {
+    position: absolute;
+    inset: 9px;
+
+    border-radius: 40%;
+
+    background:
+        radial-gradient(circle at 50% 18%,
+            #3a3275,
+            #181340 62%,
+            #090725 100%);
+
+    box-shadow:
+        inset 0 0 22px rgba(70, 92, 255, 0.35);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 30px;
+}
+
+
+/* =========================================================
+   EYES
+   ========================================================= */
+
+.zarvis-eye {
+    position: relative;
+
+    width: 17px;
+    height: 23px;
+
+    border-radius: 50%;
+
+    background:
+        linear-gradient(180deg,
+            #ffffff,
+            #8feaff);
+
+    box-shadow:
+        0 0 8px #4edcff,
+        0 0 18px rgba(72, 205, 255, 0.8);
+
+    animation: robotBlink 5s ease-in-out infinite;
+}
+
+.zarvis-eye span {
+    position: absolute;
+
+    width: 5px;
+    height: 5px;
+
+    top: 3px;
+    left: 6px;
+
+    border-radius: 50%;
+
+    background: white;
+
+    filter: blur(1px);
+}
+
+@keyframes robotBlink {
+
+    0%,
+    43%,
+    47%,
+    100% {
+        transform: scaleY(1);
+    }
+
+    45% {
+        transform: scaleY(0.08);
+    }
+}
+
+
+/* =========================================================
+   SMILE
+   ========================================================= */
+
+.zarvis-smile {
+    position: absolute;
+
+    left: 50%;
+    bottom: 10px;
+
+    width: 27px;
+    height: 13px;
+
+    transform: translateX(-50%);
+
+    border-bottom: 3px solid #81eaff;
+
+    border-radius: 0 0 50% 50%;
+
+    filter:
+        drop-shadow(0 0 7px rgba(70, 220, 255, 0.95));
+}
+
+
+/* =========================================================
+   HEAD SHINE
+   ========================================================= */
+
+.zarvis-head-shine {
+    position: absolute;
+
+    top: 8px;
+    left: 22px;
+
+    width: 45px;
+    height: 11px;
+
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, 0.76);
+
+    filter: blur(5px);
+}
+
+
+/* =========================================================
+   NECK
+   ========================================================= */
+
+.zarvis-neck {
+    width: 32px;
+    height: 13px;
+
+    margin-top: -1px;
+
+    border-radius: 0 0 10px 10px;
+
+    background:
+        linear-gradient(180deg,
+            #eeeaff,
+            #aaa0e8);
+}
+
+
+/* =========================================================
+   BODY
+   ========================================================= */
+
+.zarvis-body {
+    position: relative;
+
+    width: 88px;
+    height: 73px;
+
+    border-radius:
+        24px 24px 31px 31px;
+
+    background:
+        linear-gradient(145deg,
+            #ffffff,
+            #f1eeff 38%,
+            #ddd8ff 65%,
+            #aaa0e9);
+
+    box-shadow:
+        inset 7px 7px 13px rgba(255, 255, 255, 0.9),
+        inset -9px -10px 17px rgba(72, 55, 180, 0.2),
+        0 0 22px rgba(136, 70, 255, 0.4);
+}
+
+
+/* =========================================================
+   Z LOGO
+   ========================================================= */
+
+.zarvis-chest {
+    position: absolute;
+
+    top: 15px;
+    left: 50%;
+
+    width: 41px;
+    height: 41px;
+
+    transform: translateX(-50%);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(circle,
+            #876bff,
+            #5a3be0 55%,
+            #36219e);
+
+    border:
+        2px solid rgba(255, 255, 255, 0.5);
+
+    color: white;
+
+    font-size: 20px;
+    font-weight: 700;
+
+    box-shadow:
+        0 0 15px rgba(139, 70, 255, 0.95),
+        inset 0 0 9px rgba(255, 255, 255, 0.2);
+}
+
+
+/* =========================================================
+   BODY SHINE
+   ========================================================= */
+
+.zarvis-body-shine {
+    position: absolute;
+
+    top: 8px;
+    left: 16px;
+
+    width: 32px;
+    height: 8px;
+
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, 0.65);
+
+    filter: blur(4px);
+}
+
+
+/* =========================================================
+   ARMS
+   ========================================================= */
+
+.zarvis-arm {
+    position: absolute;
+
+    top: 113px;
+
+    width: 20px;
+    height: 49px;
+
+    border-radius: 14px;
+
+    background:
+        linear-gradient(180deg,
+            #ffffff,
+            #e6e2ff 55%,
+            #aaa0e8);
+
+    box-shadow:
+        inset 2px 2px 5px rgba(255, 255, 255, 0.8),
+        0 0 11px rgba(139, 74, 255, 0.3);
+}
+
+.zarvis-arm-left {
+    left: 6px;
+    transform: rotate(20deg);
+}
+
+.zarvis-arm-right {
+    right: 6px;
+    transform: rotate(-20deg);
+}
+
+
+/* =========================================================
+   HANDS
+   ========================================================= */
+
+.zarvis-hand {
+    position: absolute;
+
+    left: 50%;
+    bottom: -5px;
+
+    width: 22px;
+    height: 16px;
+
+    transform: translateX(-50%);
+
+    border-radius: 50%;
+
+    background:
+        linear-gradient(180deg,
+            #eeeaff,
+            #aaa0e8);
+}
+
+
+/* =========================================================
+   ORBIT RINGS
    ========================================================= */
 
 .robot-orbit {
     position: absolute;
 
     left: 50%;
-    top: 57%;
+    top: 60%;
 
     border-radius: 50%;
 
     pointer-events: none;
-
     transform-style: preserve-3d;
 }
 
@@ -128,36 +715,31 @@
 /* PURPLE ORBIT */
 
 .robot-orbit-1 {
-
-    width: 285px;
-    height: 78px;
+    width: 315px;
+    height: 85px;
 
     border:
-        1.5px solid rgba(143, 74, 255, 0.82);
+        1.5px solid rgba(146, 72, 255, 0.9);
 
     box-shadow:
-        0 0 9px rgba(143, 74, 255, 0.42),
-
-        inset 0 0 8px rgba(143, 74, 255, 0.12);
+        0 0 10px rgba(146, 72, 255, 0.55);
 
     transform:
-        translate(-50%, -50%) rotateX(68deg) rotateZ(7deg);
+        translate(-50%, -50%) rotateX(67deg) rotateZ(7deg);
 
     animation:
-        orbitPurple 7s linear infinite;
+        orbitPurple 8s linear infinite;
 }
 
-
 @keyframes orbitPurple {
-
     from {
         transform:
-            translate(-50%, -50%) rotateX(68deg) rotateZ(7deg);
+            translate(-50%, -50%) rotateX(67deg) rotateZ(7deg);
     }
 
     to {
         transform:
-            translate(-50%, -50%) rotateX(68deg) rotateZ(367deg);
+            translate(-50%, -50%) rotateX(67deg) rotateZ(367deg);
     }
 }
 
@@ -165,34 +747,31 @@
 /* BLUE ORBIT */
 
 .robot-orbit-2 {
-
-    width: 250px;
-    height: 67px;
+    width: 280px;
+    height: 73px;
 
     border:
-        1px solid rgba(57, 217, 255, 0.72);
+        1.5px solid rgba(55, 205, 255, 0.82);
 
     box-shadow:
-        0 0 10px rgba(57, 217, 255, 0.32);
+        0 0 12px rgba(55, 205, 255, 0.4);
 
     transform:
-        translate(-50%, -50%) rotateX(67deg) rotateZ(-22deg);
+        translate(-50%, -50%) rotateX(67deg) rotateZ(-20deg);
 
     animation:
-        orbitBlue 9s linear infinite reverse;
+        orbitBlue 10s linear infinite reverse;
 }
 
-
 @keyframes orbitBlue {
-
     from {
         transform:
-            translate(-50%, -50%) rotateX(67deg) rotateZ(-22deg);
+            translate(-50%, -50%) rotateX(67deg) rotateZ(-20deg);
     }
 
     to {
         transform:
-            translate(-50%, -50%) rotateX(67deg) rotateZ(-382deg);
+            translate(-50%, -50%) rotateX(67deg) rotateZ(-380deg);
     }
 }
 
@@ -200,26 +779,23 @@
 /* PINK ORBIT */
 
 .robot-orbit-3 {
-
-    width: 220px;
-    height: 92px;
+    width: 240px;
+    height: 97px;
 
     border:
-        1px solid rgba(227, 76, 255, 0.52);
+        1px solid rgba(230, 76, 255, 0.58);
 
     box-shadow:
-        0 0 11px rgba(227, 76, 255, 0.22);
+        0 0 12px rgba(230, 76, 255, 0.28);
 
     transform:
         translate(-50%, -50%) rotateX(64deg) rotateZ(72deg);
 
     animation:
-        orbitPink 11s linear infinite;
+        orbitPink 12s linear infinite;
 }
 
-
 @keyframes orbitPink {
-
     from {
         transform:
             translate(-50%, -50%) rotateX(64deg) rotateZ(72deg);
@@ -237,585 +813,292 @@
    ========================================================= */
 
 .orbit-particle {
-
     position: absolute;
 
     width: 8px;
     height: 8px;
 
-    border-radius: 50%;
-
     top: 50%;
     right: -4px;
 
-    transform:
-        translateY(-50%);
-
-    background:
-        #ffffff;
-
-    box-shadow:
-
-        0 0 6px #ffffff,
-
-        0 0 14px #58dfff,
-
-        0 0 25px #914cff;
-}
-
-
-/* =========================================================
-   ROBOT EARS
-   ========================================================= */
-
-.zarvis-ear {
-
-    position: absolute;
-
-    top: 43px;
-
-    width: 27px;
-    height: 47px;
-
-    border-radius: 15px;
-
-    background:
-        linear-gradient(180deg,
-            #ffffff 0%,
-            #f0edff 40%,
-            #c1b8ff 72%,
-            #9182df 100%);
-
-    box-shadow:
-
-        inset 3px 3px 6px rgba(255, 255, 255, 0.9),
-
-        0 0 15px rgba(143, 74, 255, 0.5);
-}
-
-
-.zarvis-ear-left {
-    left: 1px;
-}
-
-
-.zarvis-ear-right {
-    right: 1px;
-}
-
-
-/* EAR INNER */
-
-.ear-inner {
-
-    position: absolute;
-
-    inset: 7px;
+    transform: translateY(-50%);
 
     border-radius: 50%;
 
-    background:
-        radial-gradient(circle,
-            #ae78ff,
-            #6139df 65%,
-            #3c25a5);
+    background: white;
 
     box-shadow:
-
-        0 0 9px rgba(143, 74, 255, 0.9),
-
-        inset 0 0 5px rgba(255, 255, 255, 0.25);
+        0 0 7px white,
+        0 0 16px #51dfff,
+        0 0 27px #914cff;
 }
 
 
 /* =========================================================
-   ROBOT HEAD
-   ========================================================= */
-
-.zarvis-head {
-
-    position: relative;
-
-    width: 108px;
-    height: 88px;
-
-    margin-top: 25px;
-
-    border-radius: 44%;
-
-    background:
-        linear-gradient(145deg,
-            #ffffff 0%,
-            #f7f5ff 25%,
-            #e8e4ff 55%,
-            #c8c0fa 78%,
-            #a79ae9 100%);
-
-    box-shadow:
-
-        inset 7px 7px 15px rgba(255, 255, 255, 0.95),
-
-        inset -9px -11px 18px rgba(80, 64, 190, 0.20),
-
-        0 0 25px rgba(143, 74, 255, 0.48);
-}
-
-
-/* =========================================================
-   FACE SCREEN
-   ========================================================= */
-
-.zarvis-face {
-
-    position: absolute;
-
-    inset: 8px;
-
-    border-radius: 38%;
-
-    background:
-        linear-gradient(145deg,
-            #30286c,
-            #17133e 65%,
-            #0e0b29);
-
-    box-shadow:
-
-        inset 0 0 18px rgba(91, 76, 255, 0.32),
-
-        0 0 3px rgba(255, 255, 255, 0.12);
-
-    display: flex;
-
-    align-items: center;
-    justify-content: center;
-
-    gap: 28px;
-}
-
-
-/* =========================================================
-   EYES
-   ========================================================= */
-
-.zarvis-eye {
-
-    position: relative;
-
-    width: 15px;
-    height: 21px;
-
-    border-radius: 50%;
-
-    background:
-        linear-gradient(180deg,
-            #ffffff,
-            #9bf1ff);
-
-    box-shadow:
-
-        0 0 7px rgba(76, 207, 255, 1),
-
-        0 0 15px rgba(76, 207, 255, 0.6);
-
-    animation:
-        zarvisBlink 5s ease-in-out infinite;
-}
-
-
-.zarvis-eye span {
-
-    position: absolute;
-
-    width: 5px;
-    height: 5px;
-
-    border-radius: 50%;
-
-    top: 3px;
-    left: 5px;
-
-    background:
-        rgba(255, 255, 255, 0.95);
-
-    filter: blur(1px);
-}
-
-
-@keyframes zarvisBlink {
-
-    0%,
-    43%,
-    47%,
-    100% {
-        transform:
-            scaleY(1);
-    }
-
-    45% {
-        transform:
-            scaleY(0.08);
-    }
-}
-
-
-/* =========================================================
-   SMILE
-   ========================================================= */
-
-.zarvis-smile {
-
-    position: absolute;
-
-    bottom: 10px;
-    left: 50%;
-
-    width: 24px;
-    height: 12px;
-
-    transform:
-        translateX(-50%);
-
-    border-bottom:
-        3px solid #82ebff;
-
-    border-radius:
-        0 0 50% 50%;
-
-    filter:
-        drop-shadow(0 0 6px rgba(76, 207, 255, 0.9));
-}
-
-
-/* =========================================================
-   HEAD SHINE
-   ========================================================= */
-
-.zarvis-head-shine {
-
-    position: absolute;
-
-    top: 8px;
-    left: 20px;
-
-    width: 42px;
-    height: 10px;
-
-    border-radius: 50%;
-
-    background:
-        rgba(255, 255, 255, 0.75);
-
-    filter: blur(5px);
-}
-
-
-/* =========================================================
-   NECK
-   ========================================================= */
-
-.zarvis-neck {
-
-    width: 30px;
-    height: 12px;
-
-    margin-top: -1px;
-
-    border-radius:
-        0 0 9px 9px;
-
-    background:
-        linear-gradient(180deg,
-            #eeeaff,
-            #aaa0e8);
-
-    box-shadow:
-        0 2px 7px rgba(90, 70, 200, 0.2);
-}
-
-
-/* =========================================================
-   BODY
-   ========================================================= */
-
-.zarvis-body {
-
-    position: relative;
-
-    width: 82px;
-    height: 69px;
-
-    border-radius:
-        23px 23px 30px 30px;
-
-    background:
-        linear-gradient(145deg,
-            #ffffff 0%,
-            #f0edff 38%,
-            #ddd8ff 62%,
-            #aaa0eb 100%);
-
-    box-shadow:
-
-        inset 6px 6px 12px rgba(255, 255, 255, 0.9),
-
-        inset -8px -9px 15px rgba(80, 65, 190, 0.2),
-
-        0 0 20px rgba(143, 74, 255, 0.35);
-}
-
-
-/* =========================================================
-   Z CHEST
-   ========================================================= */
-
-.zarvis-chest {
-
-    position: absolute;
-
-    top: 14px;
-    left: 50%;
-
-    width: 38px;
-    height: 38px;
-
-    transform:
-        translateX(-50%);
-
-    display: flex;
-
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 50%;
-
-    background:
-        radial-gradient(circle,
-            #8065ff 0%,
-            #5a3de1 55%,
-            #3825a5 100%);
-
-    border:
-        2px solid rgba(255, 255, 255, 0.48);
-
-    color: white;
-
-    font-size: 19px;
-
-    font-weight: 700;
-
-    box-shadow:
-
-        0 0 13px rgba(143, 74, 255, 0.95),
-
-        inset 0 0 8px rgba(255, 255, 255, 0.18);
-}
-
-
-/* =========================================================
-   BODY SHINE
-   ========================================================= */
-
-.zarvis-body-shine {
-
-    position: absolute;
-
-    top: 8px;
-    left: 15px;
-
-    width: 31px;
-    height: 8px;
-
-    border-radius: 50%;
-
-    background:
-        rgba(255, 255, 255, 0.62);
-
-    filter: blur(4px);
-}
-
-
-/* =========================================================
-   ROBOT ARMS
-   ========================================================= */
-
-.zarvis-arm {
-
-    position: absolute;
-
-    top: 106px;
-
-    width: 19px;
-    height: 47px;
-
-    border-radius: 13px;
-
-    background:
-        linear-gradient(180deg,
-            #ffffff,
-            #e6e2ff 55%,
-            #aaa0e8);
-
-    box-shadow:
-
-        inset 2px 2px 4px rgba(255, 255, 255, 0.75),
-
-        0 0 10px rgba(143, 74, 255, 0.28);
-}
-
-
-.zarvis-arm-left {
-
-    left: 7px;
-
-    transform:
-        rotate(18deg);
-}
-
-
-.zarvis-arm-right {
-
-    right: 7px;
-
-    transform:
-        rotate(-18deg);
-}
-
-
-/* =========================================================
-   HANDS
-   ========================================================= */
-
-.zarvis-hand {
-
-    position: absolute;
-
-    left: 50%;
-    bottom: -4px;
-
-    width: 21px;
-    height: 15px;
-
-    transform:
-        translateX(-50%);
-
-    border-radius: 50%;
-
-    background:
-        linear-gradient(180deg,
-            #eeeaff,
-            #aaa0e8);
-}
-
-
-/* =========================================================
-   PLATFORM
+   GLOWING PLATFORM
    ========================================================= */
 
 .zarvis-platform {
-
     position: absolute;
 
     left: 50%;
-    bottom: 7px;
+    bottom: 15px;
 
-    width: 180px;
-    height: 35px;
+    width: 210px;
+    height: 42px;
 
-    transform:
-        translateX(-50%);
+    transform: translateX(-50%);
 
     display: flex;
-
     align-items: center;
     justify-content: center;
+
+    z-index: 5;
 }
 
-
-/* PLATFORM GLOW */
-
 .platform-light {
-
     position: absolute;
 
-    width: 180px;
-    height: 30px;
+    width: 210px;
+    height: 36px;
 
     border-radius: 50%;
 
     background:
         radial-gradient(ellipse,
-            rgba(143, 74, 255, 0.78),
-            rgba(76, 207, 255, 0.20),
+            rgba(153, 70, 255, 0.9),
+            rgba(61, 190, 255, 0.25),
             transparent 72%);
 
-    filter: blur(7px);
+    filter: blur(8px);
 
     animation:
-        platformPulse 2.7s ease-in-out infinite;
+        platformPulse 3s ease-in-out infinite;
 }
 
+.platform-ring {
+    position: absolute;
+
+    width: 162px;
+    height: 27px;
+
+    border-radius: 50%;
+
+    border:
+        2px solid rgba(146, 72, 255, 0.9);
+
+    box-shadow:
+        0 0 10px rgba(146, 72, 255, 0.8),
+        0 0 25px rgba(91, 76, 255, 0.5);
+}
+
+.platform-core {
+    position: absolute;
+
+    width: 65px;
+    height: 13px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(ellipse,
+            rgba(255, 255, 255, 0.85),
+            rgba(119, 68, 255, 0.7),
+            transparent 70%);
+
+    filter: blur(3px);
+
+    animation:
+        platformCore 2.5s ease-in-out infinite;
+}
 
 @keyframes platformPulse {
 
     0%,
     100% {
-        transform:
-            scaleX(0.85);
-
+        transform: scaleX(0.84);
         opacity: 0.65;
     }
 
     50% {
-        transform:
-            scaleX(1.1);
+        transform: scaleX(1.1);
+        opacity: 1;
+    }
+}
 
+@keyframes platformCore {
+
+    0%,
+    100% {
+        transform: scaleX(0.8);
+        opacity: 0.65;
+    }
+
+    50% {
+        transform: scaleX(1.15);
         opacity: 1;
     }
 }
 
 
-/* PLATFORM RING */
+/* =========================================================
+   SPEECH BUBBLE
+   ========================================================= */
 
-.platform-ring {
+.robot-message {
+    position: absolute;
+
+    top: 8px;
+    right: -5px;
+
+    z-index: 20;
+
+    min-width: 160px;
+
+    padding: 11px 15px;
+
+    border-radius:
+        15px 15px 5px 15px;
+
+    background:
+        linear-gradient(135deg,
+            rgba(34, 23, 104, 0.94),
+            rgba(12, 15, 59, 0.92));
+
+    border:
+        1px solid rgba(115, 78, 255, 0.42);
+
+    box-shadow:
+        0 0 20px rgba(99, 55, 255, 0.18),
+        inset 0 0 15px rgba(120, 70, 255, 0.05);
+
+    backdrop-filter: blur(12px);
+}
+
+.robot-message::after {
+    content: "";
 
     position: absolute;
 
-    width: 148px;
-    height: 24px;
+    left: 20px;
+    bottom: -7px;
 
-    border-radius: 50%;
+    width: 13px;
+    height: 13px;
 
-    border:
-        2px solid rgba(143, 74, 255, 0.82);
+    background:
+        rgba(25, 20, 82, 0.96);
 
-    box-shadow:
+    border-right:
+        1px solid rgba(115, 78, 255, 0.42);
 
-        0 0 9px rgba(143, 74, 255, 0.75),
+    border-bottom:
+        1px solid rgba(115, 78, 255, 0.42);
 
-        0 0 22px rgba(91, 76, 255, 0.42);
+    transform: rotate(45deg);
+}
+
+.robot-message strong {
+    display: block;
+
+    color: white;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    margin-bottom: 5px;
+}
+
+.robot-message span {
+    display: block;
+
+    color: #c7c1ff;
+
+    font-size: 8px;
+
+    white-space: nowrap;
 }
 
 
 /* =========================================================
-   MOBILE
+   VOICE READY
    ========================================================= */
 
-@media (max-width: 700px) {
+.robot-voice {
+    position: absolute;
 
-    .buddy-visual {
-        min-height: 220px;
+    right: 18px;
+    bottom: 25px;
+
+    z-index: 20;
+
+    display: flex;
+    align-items: center;
+
+    gap: 5px;
+
+    color: #69eaff;
+
+    font-size: 7px;
+
+    letter-spacing: 1px;
+
+    opacity: 0.75;
+}
+
+.robot-voice svg {
+    filter:
+        drop-shadow(0 0 5px rgba(70, 220, 255, 0.8));
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 900px) {
+    .zarvis-robot-area {
+        width: 360px;
+        height: 290px;
+    }
+
+    .robot-message {
+        right: 0;
+    }
+
+    .robot-orbit-1 {
+        width: 275px;
+    }
+
+    .robot-orbit-2 {
+        width: 245px;
+    }
+
+    .robot-orbit-3 {
+        width: 215px;
+    }
+}
+
+@media (max-width: 700px) {
+    .zarvis-robot-area {
+        width: 100%;
+        height: 280px;
+
+        margin: 0 auto;
     }
 
     .cute-zarvis {
-        transform:
-            scale(0.86);
+        transform: scale(0.85);
     }
 
-    .robot-orbit-1,
-    .robot-orbit-2,
-    .robot-orbit-3 {
-        transform:
-            translate(-50%, -50%) scale(0.82);
+    .robot-message {
+        right: 10px;
+
+        transform: scale(0.85);
+        transform-origin: top right;
+    }
+
+    .robot-voice {
+        display: none;
     }
 }

@@ -9,16 +9,16 @@ import "./styles/layout.css";
 import "./styles/components.css";
 import "./styles/dashboard.css";
 import "./styles/robot.css";
-
-
+import "./styles/assistant.css";
+import "./styles/memory.css";
+import "./styles/activity.css";
+import "./styles/integrations.css";
+import "./styles/security.css";
+import "./styles/settings.css";
 ReactDOM.createRoot(
   document.getElementById("root")
 ).render(
-
   <React.StrictMode>
-
     <App />
-
   </React.StrictMode>
-
 );

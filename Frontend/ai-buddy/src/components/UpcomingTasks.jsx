@@ -1,148 +1,122 @@
 import {
+    ListTodo,
     Clock3,
-    CheckCircle2,
-    Circle,
     ArrowUpRight,
 } from "lucide-react";
 
-const tasks = [
+const upcomingTasks = [
     {
-        time: "10:30",
-        period: "AM",
-        title: "Complete React Module",
-        category: "LEARNING",
+        title: "Complete project documentation",
+        date: "Today",
+        time: "07:00 PM",
         priority: "HIGH",
-        done: true,
     },
     {
-        time: "12:00",
-        period: "PM",
-        title: "Lunch Break",
-        category: "PERSONAL",
-        priority: "NORMAL",
-        done: false,
+        title: "Prepare tomorrow's schedule",
+        date: "Today",
+        time: "08:30 PM",
+        priority: "MEDIUM",
     },
     {
-        time: "02:30",
-        period: "PM",
-        title: "Work on Zarvis UI",
-        category: "PROJECT",
+        title: "Machine Learning revision",
+        date: "Tomorrow",
+        time: "10:00 AM",
+        priority: "LOW",
+    },
+    {
+        title: "Work on Zarvis backend",
+        date: "Tomorrow",
+        time: "04:00 PM",
         priority: "HIGH",
-        done: false,
-    },
-    {
-        time: "05:00",
-        period: "PM",
-        title: "Review Today's Progress",
-        category: "PRODUCTIVITY",
-        priority: "NORMAL",
-        done: false,
     },
 ];
 
 function UpcomingTasks() {
     return (
-        <section className="upcoming-system">
+        <section className="dashboard-module upcoming-module">
 
-            {/* HEADER */}
-            <div className="upcoming-header">
+            <div className="module-header">
 
-                <div className="upcoming-heading">
-                    <div className="upcoming-icon">
-                        <Clock3 size={17} />
+                <div className="module-title">
+
+                    <div className="module-icon module-icon-cyan">
+                        <ListTodo size={16} />
                     </div>
 
                     <div>
-                        <span>SCHEDULE MODULE // 05</span>
-                        <h3>UPCOMING TASKS</h3>
+                        <span className="module-label">
+                            TASK QUEUE // 07
+                        </span>
+
+                        <h3>Upcoming Tasks</h3>
                     </div>
+
                 </div>
 
-                <button className="view-schedule">
-                    VIEW ALL
-                    <ArrowUpRight size={13} />
+                <button
+                    type="button"
+                    className="module-action"
+                >
+                    <ArrowUpRight size={15} />
                 </button>
 
             </div>
 
-            {/* STATUS BAR */}
-            <div className="upcoming-status">
-                <span>
-                    <i></i>
-                    TODAY
-                </span>
-
-                <span>04 TASKS</span>
-
-                <span>SYNCED</span>
+            <div className="module-line">
+                <span></span>
             </div>
 
-            {/* TASK LIST */}
             <div className="upcoming-list">
 
-                {tasks.map((task, index) => (
+                {upcomingTasks.map((task, index) => (
                     <div
-                        className={`upcoming-task ${task.done ? "task-completed" : ""
-                            }`}
+                        className="upcoming-row"
                         key={index}
                     >
 
-                        {/* TIME */}
-                        <div className="task-time">
-                            <strong>{task.time}</strong>
-                            <span>{task.period}</span>
+                        <div className="upcoming-index">
+                            {String(index + 1).padStart(2, "0")}
                         </div>
 
-                        {/* CONNECTOR */}
-                        <div className="task-track">
+                        <div className="upcoming-content">
 
-                            <div className="task-dot">
-                                {task.done ? (
-                                    <CheckCircle2 size={15} />
-                                ) : (
-                                    <Circle size={14} />
-                                )}
-                            </div>
+                            <strong>
+                                {task.title}
+                            </strong>
 
-                            {index !== tasks.length - 1 && (
-                                <div className="task-connector"></div>
-                            )}
+                            <div className="upcoming-meta">
 
-                        </div>
-
-                        {/* DETAILS */}
-                        <div className="task-details">
-
-                            <div className="task-title-row">
-                                <h4>{task.title}</h4>
-
-                                <span
-                                    className={`priority priority-${task.priority.toLowerCase()}`}
-                                >
-                                    {task.priority}
+                                <span>
+                                    <Clock3 size={10} />
+                                    {task.date}
                                 </span>
+
+                                <span>
+                                    {task.time}
+                                </span>
+
                             </div>
 
-                            <span className="task-category">
-                                {task.category}
-                            </span>
-
                         </div>
+
+                        <span
+                            className={`upcoming-priority upcoming-${task.priority.toLowerCase()}`}
+                        >
+                            {task.priority}
+                        </span>
 
                     </div>
                 ))}
 
             </div>
 
-            {/* FOOTER */}
-            <div className="upcoming-footer">
-                <span>
-                    <span className="footer-pulse"></span>
-                    ZARVIS MONITORING SCHEDULE
-                </span>
-
-                <span>REAL-TIME</span>
-            </div>
+            <button
+                type="button"
+                className="module-footer-button"
+            >
+                <span>OPEN TASK QUEUE</span>
+                <ArrowUpRight size={14} />
+            </button>
 
         </section>
     );

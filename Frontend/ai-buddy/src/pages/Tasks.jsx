@@ -1,59 +1,72 @@
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState } from "react";
 import {
-    CheckCircle2,
-    Clock3,
     Plus,
+    Search,
+    CheckCircle2,
     Circle,
-    MoreHorizontal,
+    Trash2,
+    Clock3,
+    CalendarDays,
+    ListTodo,
 } from "lucide-react";
 
+import Sidebar from "../components/Sidebar";
+import Navbar from "../components/Navbar";
+
+const initialTasks = [
+    {
+        id: 1,
+        title: "Complete AI assignment",
+        description: "Finish today's AI coursework",
+        date: "Today",
+        time: "10:30 AM",
+        priority: "HIGH",
+        completed: true,
+    },
+    {
+        id: 2,
+        title: "Study Machine Learning",
+        description: "Revise supervised learning concepts",
+        date: "Today",
+        time: "12:00 PM",
+        priority: "MEDIUM",
+        completed: false,
+    },
+    {
+        id: 3,
+        title: "Work on Zarvis frontend",
+        description: "Continue dashboard development",
+        date: "Today",
+        time: "03:30 PM",
+        priority: "HIGH",
+        completed: false,
+    },
+    {
+        id: 4,
+        title: "Review today's notes",
+        description: "Quick revision before evening",
+        date: "Today",
+        time: "06:00 PM",
+        priority: "LOW",
+        completed: false,
+    },
+];
+
 function Tasks() {
-    const [searchParams, setSearchParams] = useSearchParams();
+    const [tasks, setTasks] = useState(initialTasks);
+    const [search, setSearch] = useState("");
+    const [showForm, setShowForm] = useState(false);
 
-    const [tasks, setTasks] = useState([
-        {
-            id: 1,
-            title: "Complete project documentation",
-            time: "Today · 5:00 PM",
-            priority: "High",
-            completed: false,
-        },
-        {
-            id: 2,
-            title: "Prepare presentation",
-            time: "Tomorrow",
-            priority: "Medium",
-            completed: false,
-        },
-        {
-            id: 3,
-            title: "Review study notes",
-            time: "Friday",
-            priority: "Low",
-            completed: false,
-        },
-    ]);
-
-    const [showForm, setShowForm] = useState(
-        searchParams.get("create") === "true"
-    );
-
-    const [newTask, setNewTask] = useState("");
-
-    // Open create form when Dashboard sends ?create=true
-    useEffect(() => {
-        if (searchParams.get("create") === "true") {
-            setShowForm(true);
-
-            // Remove ?create=true from URL
-            setSearchParams({}, { replace: true });
-        }
-    }, [searchParams, setSearchParams]);
+    const [newTask, setNewTask] = useState({
+        title: "",
+        description: "",
+        time: "",
+        priority: "MEDIUM",
+    });
 
     const toggleTask = (id) => {
-        setTasks((currentTasks) =>
-            currentTasks.map((task) =>
+        setTasks((prev) =>
+            prev.map((task) =>
                 task.id === id
                     ? {
                         ...task,
@@ -64,225 +77,420 @@ function Tasks() {
         );
     };
 
-    const addTask = () => {
-        const text = newTask.trim();
+    const deleteTask = (id) => {
+        setTasks((prev) =>
+            prev.filter((task) => task.id !== id)
+        );
+    };
 
-        if (!text) return;
+    const addTask = (event) => {
+        event.preventDefault();
 
-        const newTaskItem = {
+        if (!newTask.title.trim()) return;
+
+        const task = {
             id: Date.now(),
-            title: text,
-            time: "No deadline",
-            priority: "Medium",
+            title: newTask.title,
+            description:
+                newTask.description ||
+                "Created with Zarvis",
+            date: "Today",
+            time: newTask.time || "Anytime",
+            priority: newTask.priority,
             completed: false,
         };
 
-        setTasks((currentTasks) => [
-            ...currentTasks,
-            newTaskItem,
-        ]);
+        setTasks((prev) => [task, ...prev]);
 
-        setNewTask("");
+        setNewTask({
+            title: "",
+            description: "",
+            time: "",
+            priority: "MEDIUM",
+        });
+
         setShowForm(false);
     };
 
-    const closeForm = () => {
-        setShowForm(false);
-        setNewTask("");
-    };
+    const filteredTasks = tasks.filter((task) =>
+        `${task.title} ${task.description}`
+            .toLowerCase()
+            .includes(search.toLowerCase())
+    );
 
-    const completedCount = tasks.filter(
+    const completedTasks = tasks.filter(
         (task) => task.completed
     ).length;
 
+    const pendingTasks = tasks.length - completedTasks;
+
     return (
-        <div className="page-container">
+        <div className="app">
 
-            {/* HEADER */}
-            <div className="page-header">
+            <Sidebar />
 
-                <div>
-                    <span className="page-eyebrow">
-                        ZARVIS TASK MANAGER
-                    </span>
+            <main className="main-content">
 
-                    <h1>Tasks</h1>
+                <Navbar />
 
-                    <p>
-                        Manage everything you need to get done.
-                    </p>
-                </div>
+                <div className="tasks-page">
 
-                <button
-                    type="button"
-                    className="primary-action"
-                    onClick={() => setShowForm(true)}
-                >
-                    <Plus size={18} />
-                    Create Task
-                </button>
-
-            </div>
-
-            {/* STATS */}
-            <div className="task-stats">
-
-                <div className="glass-card page-stat">
-                    <span>Total Tasks</span>
-                    <strong>{tasks.length}</strong>
-                </div>
-
-                <div className="glass-card page-stat">
-                    <span>Completed</span>
-                    <strong>{completedCount}</strong>
-                </div>
-
-                <div className="glass-card page-stat">
-                    <span>Remaining</span>
-                    <strong>
-                        {tasks.length - completedCount}
-                    </strong>
-                </div>
-
-            </div>
-
-            {/* CREATE TASK FORM */}
-            {showForm && (
-                <div className="task-form glass-card">
-
-                    <div className="task-form-header">
+                    {/* HEADER */}
+                    <section className="tasks-header">
 
                         <div>
-                            <h2>Create New Task</h2>
+                            <span className="tasks-eyebrow">
+                                <ListTodo size={14} />
+                                ZARVIS TASK SYSTEM
+                            </span>
+
+                            <h1>
+                                My Tasks
+                            </h1>
 
                             <p>
-                                Add a task to your Zarvis task list.
+                                Organize your work and let Zarvis
+                                keep you on track.
                             </p>
                         </div>
 
                         <button
                             type="button"
-                            className="task-form-close"
-                            onClick={closeForm}
-                        >
-                            ×
-                        </button>
-
-                    </div>
-
-                    <div className="task-form-row">
-
-                        <input
-                            type="text"
-                            placeholder="What do you need to do?"
-                            value={newTask}
-                            onChange={(event) =>
-                                setNewTask(event.target.value)
+                            className="tasks-add-button"
+                            onClick={() =>
+                                setShowForm(!showForm)
                             }
-                            onKeyDown={(event) => {
-                                if (event.key === "Enter") {
-                                    addTask();
-                                }
-                            }}
-                            autoFocus
-                        />
-
-                        <button
-                            type="button"
-                            className="primary-action"
-                            onClick={addTask}
                         >
-                            <Plus size={17} />
-                            Add
+                            <Plus size={18} />
+                            Add Task
                         </button>
 
-                    </div>
+                    </section>
 
-                </div>
-            )}
 
-            {/* TASK LIST */}
-            <section className="glass-card tasks-page-card">
+                    {/* STATS */}
+                    <section className="tasks-stats">
 
-                <div className="card-header">
+                        <div className="tasks-stat-card">
+                            <span>Total Tasks</span>
+                            <strong>{tasks.length}</strong>
+                        </div>
 
-                    <div>
-                        <h2>My Tasks</h2>
+                        <div className="tasks-stat-card">
+                            <span>Completed</span>
+                            <strong>{completedTasks}</strong>
+                        </div>
 
-                        <p>
-                            Your current tasks and priorities
-                        </p>
-                    </div>
+                        <div className="tasks-stat-card">
+                            <span>Pending</span>
+                            <strong>{pendingTasks}</strong>
+                        </div>
 
-                    <button
-                        type="button"
-                        className="small-action"
-                        onClick={() => setShowForm(true)}
-                    >
-                        <Plus size={15} />
-                        Add Task
-                    </button>
+                        <div className="tasks-stat-card">
+                            <span>Completion</span>
+                            <strong>
+                                {tasks.length
+                                    ? Math.round(
+                                        (completedTasks /
+                                            tasks.length) *
+                                        100
+                                    )
+                                    : 0}
+                                %
+                            </strong>
+                        </div>
 
-                </div>
+                    </section>
 
-                <div className="tasks-page-list">
 
-                    {tasks.map((task) => (
-                        <div
-                            className={`tasks-page-item ${task.completed ? "completed" : ""
-                                }`}
-                            key={task.id}
+                    {/* ADD TASK FORM */}
+                    {showForm && (
+                        <form
+                            className="task-create-panel"
+                            onSubmit={addTask}
                         >
 
-                            {/* COMPLETE */}
-                            <button
-                                type="button"
-                                className="task-toggle"
-                                onClick={() => toggleTask(task.id)}
-                            >
-                                {task.completed ? (
-                                    <CheckCircle2 size={22} />
-                                ) : (
-                                    <Circle size={22} />
-                                )}
-                            </button>
+                            <div className="task-create-header">
+                                <div>
+                                    <span>
+                                        TASK CREATOR
+                                    </span>
 
-                            {/* INFO */}
-                            <div className="task-page-info">
+                                    <h2>
+                                        Create New Task
+                                    </h2>
+                                </div>
 
-                                <strong>
-                                    {task.title}
-                                </strong>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setShowForm(false)
+                                    }
+                                >
+                                    ×
+                                </button>
+                            </div>
 
-                                <span>
-                                    <Clock3 size={13} />
-                                    {task.time}
-                                </span>
+
+                            <div className="task-form-grid">
+
+                                <div className="task-form-field">
+                                    <label>
+                                        Task Name
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Complete project"
+                                        value={newTask.title}
+                                        onChange={(e) =>
+                                            setNewTask({
+                                                ...newTask,
+                                                title: e.target.value,
+                                            })
+                                        }
+                                    />
+                                </div>
+
+
+                                <div className="task-form-field">
+                                    <label>
+                                        Time
+                                    </label>
+
+                                    <input
+                                        type="time"
+                                        value={newTask.time}
+                                        onChange={(e) =>
+                                            setNewTask({
+                                                ...newTask,
+                                                time: e.target.value,
+                                            })
+                                        }
+                                    />
+                                </div>
+
+
+                                <div className="task-form-field task-form-wide">
+                                    <label>
+                                        Description
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        placeholder="Add a short description"
+                                        value={newTask.description}
+                                        onChange={(e) =>
+                                            setNewTask({
+                                                ...newTask,
+                                                description:
+                                                    e.target.value,
+                                            })
+                                        }
+                                    />
+                                </div>
+
+
+                                <div className="task-form-field">
+                                    <label>
+                                        Priority
+                                    </label>
+
+                                    <select
+                                        value={newTask.priority}
+                                        onChange={(e) =>
+                                            setNewTask({
+                                                ...newTask,
+                                                priority:
+                                                    e.target.value,
+                                            })
+                                        }
+                                    >
+                                        <option value="HIGH">
+                                            HIGH
+                                        </option>
+
+                                        <option value="MEDIUM">
+                                            MEDIUM
+                                        </option>
+
+                                        <option value="LOW">
+                                            LOW
+                                        </option>
+                                    </select>
+                                </div>
 
                             </div>
 
-                            {/* PRIORITY */}
-                            <span
-                                className={`priority priority-${task.priority.toLowerCase()}`}
-                            >
-                                {task.priority}
-                            </span>
 
-                            {/* MORE */}
                             <button
-                                type="button"
-                                className="task-more"
-                                title="More options"
+                                type="submit"
+                                className="task-create-submit"
                             >
-                                <MoreHorizontal size={19} />
+                                <Plus size={16} />
+                                CREATE TASK
                             </button>
 
+                        </form>
+                    )}
+
+
+                    {/* SEARCH */}
+                    <section className="tasks-toolbar">
+
+                        <div className="tasks-search">
+
+                            <Search size={17} />
+
+                            <input
+                                type="text"
+                                placeholder="Search your tasks..."
+                                value={search}
+                                onChange={(e) =>
+                                    setSearch(e.target.value)
+                                }
+                            />
+
                         </div>
-                    ))}
+
+                        <div className="tasks-toolbar-status">
+                            <span></span>
+                            {pendingTasks} TASKS ACTIVE
+                        </div>
+
+                    </section>
+
+
+                    {/* TASK LIST */}
+                    <section className="tasks-list-panel">
+
+                        <div className="tasks-list-header">
+
+                            <div>
+                                <span>
+                                    TASK QUEUE // 01
+                                </span>
+
+                                <h2>
+                                    Today's Tasks
+                                </h2>
+                            </div>
+
+                            <div className="tasks-list-count">
+                                {filteredTasks.length}
+                            </div>
+
+                        </div>
+
+
+                        <div className="tasks-list">
+
+                            {filteredTasks.length === 0 ? (
+                                <div className="tasks-empty">
+
+                                    <ListTodo size={32} />
+
+                                    <h3>
+                                        No tasks found
+                                    </h3>
+
+                                    <p>
+                                        Try another search or create
+                                        a new task.
+                                    </p>
+
+                                </div>
+                            ) : (
+                                filteredTasks.map((task) => (
+
+                                    <div
+                                        className={`task-page-row ${task.completed
+                                                ? "task-page-completed"
+                                                : ""
+                                            }`}
+                                        key={task.id}
+                                    >
+
+                                        {/* CHECK */}
+                                        <button
+                                            type="button"
+                                            className="task-page-check"
+                                            onClick={() =>
+                                                toggleTask(task.id)
+                                            }
+                                        >
+                                            {task.completed ? (
+                                                <CheckCircle2 size={21} />
+                                            ) : (
+                                                <Circle size={21} />
+                                            )}
+                                        </button>
+
+
+                                        {/* CONTENT */}
+                                        <div className="task-page-content">
+
+                                            <strong>
+                                                {task.title}
+                                            </strong>
+
+                                            <span>
+                                                {task.description}
+                                            </span>
+
+                                            <div className="task-page-meta">
+
+                                                <span>
+                                                    <CalendarDays
+                                                        size={12}
+                                                    />
+                                                    {task.date}
+                                                </span>
+
+                                                <span>
+                                                    <Clock3
+                                                        size={12}
+                                                    />
+                                                    {task.time}
+                                                </span>
+
+                                            </div>
+
+                                        </div>
+
+
+                                        {/* PRIORITY */}
+                                        <span
+                                            className={`task-page-priority priority-${task.priority.toLowerCase()}`}
+                                        >
+                                            {task.priority}
+                                        </span>
+
+
+                                        {/* DELETE */}
+                                        <button
+                                            type="button"
+                                            className="task-page-delete"
+                                            onClick={() =>
+                                                deleteTask(task.id)
+                                            }
+                                            title="Delete task"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+
+                                    </div>
+
+                                ))
+                            )}
+
+                        </div>
+
+                    </section>
 
                 </div>
 
-            </section>
+            </main>
 
         </div>
     );
