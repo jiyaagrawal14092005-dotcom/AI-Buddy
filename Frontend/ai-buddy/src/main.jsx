@@ -15,6 +15,8 @@ import "./styles/activity.css";
 import "./styles/integrations.css";
 import "./styles/security.css";
 import "./styles/settings.css";
+import "./styles/workflows.css";
+import "./styles/schedule.css";
 ReactDOM.createRoot(
   document.getElementById("root")
 ).render(

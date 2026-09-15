@@ -1,15 +1,15 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
     Activity as ActivityIcon,
     CheckCircle2,
     Clock3,
-    Plus,
+    XCircle,
+    Search,
     Trash2,
+    Bot,
     Zap,
     CalendarDays,
-    MessageCircle,
     Brain,
-    Search,
 } from "lucide-react";
 
 import Sidebar from "../components/Sidebar";
@@ -18,48 +18,57 @@ import Navbar from "../components/Navbar";
 const initialActivities = [
     {
         id: 1,
-        type: "completed",
-        title: "AI assignment completed",
-        description: "Task marked as completed successfully.",
-        time: "10:30 AM",
+        time: "09:42 AM",
         date: "Today",
+        title: "Task completed",
+        description: "Complete Python assignment",
+        type: "COMPLETED",
         icon: CheckCircle2,
     },
     {
         id: 2,
-        type: "workflow",
-        title: "Study workflow started",
-        description: "Zarvis started your study routine.",
-        time: "09:45 AM",
+        time: "08:15 AM",
         date: "Today",
+        title: "Workflow executed",
+        description: "Morning productivity workflow",
+        type: "WORKFLOW",
         icon: Zap,
     },
     {
         id: 3,
-        type: "schedule",
-        title: "Machine Learning Class added",
-        description: "New event added to your schedule.",
-        time: "09:10 AM",
-        date: "Today",
+        time: "07:30 PM",
+        date: "Yesterday",
+        title: "Schedule created",
+        description: "Study session reminder added",
+        type: "SCHEDULE",
         icon: CalendarDays,
     },
     {
         id: 4,
-        type: "assistant",
-        title: "Conversation with Zarvis",
-        description: "Assistant session completed.",
-        time: "08:40 AM",
-        date: "Today",
-        icon: MessageCircle,
+        time: "05:20 PM",
+        date: "Yesterday",
+        title: "Assistant action",
+        description: "Zarvis processed your command",
+        type: "ASSISTANT",
+        icon: Bot,
     },
     {
         id: 5,
-        type: "memory",
-        title: "Memory updated",
-        description: "A new preference was saved to memory.",
-        time: "Yesterday",
+        time: "03:10 PM",
         date: "Yesterday",
+        title: "Memory updated",
+        description: "New preference saved to memory",
+        type: "MEMORY",
         icon: Brain,
+    },
+    {
+        id: 6,
+        time: "11:45 AM",
+        date: "Yesterday",
+        title: "Task completed",
+        description: "Review machine learning notes",
+        type: "COMPLETED",
+        icon: CheckCircle2,
     },
 ];
 
@@ -71,44 +80,58 @@ function Activity() {
 
     const [filter, setFilter] = useState("ALL");
 
-    const filteredActivities = useMemo(() => {
-        return activities.filter((activity) => {
+    const filteredActivities = activities.filter(
+        (activity) => {
+            const searchText =
+                `${activity.title} ${activity.description} ${activity.type}`
+                    .toLowerCase();
+
             const matchesSearch =
-                `${activity.title} ${activity.description}`
-                    .toLowerCase()
-                    .includes(search.toLowerCase());
+                searchText.includes(
+                    search.toLowerCase()
+                );
 
             const matchesFilter =
                 filter === "ALL" ||
-                activity.type.toUpperCase() === filter;
+                activity.type === filter;
 
-            return matchesSearch && matchesFilter;
-        });
-    }, [activities, search, filter]);
+            return (
+                matchesSearch &&
+                matchesFilter
+            );
+        }
+    );
 
-    const clearActivity = () => {
-        setActivities([]);
-    };
+    const completedCount =
+        activities.filter(
+            (item) =>
+                item.type === "COMPLETED"
+        ).length;
 
-    const deleteActivity = (id) => {
+    const workflowCount =
+        activities.filter(
+            (item) =>
+                item.type === "WORKFLOW"
+        ).length;
+
+    const assistantCount =
+        activities.filter(
+            (item) =>
+                item.type === "ASSISTANT"
+        ).length;
+
+    const clearActivity = (id) => {
         setActivities((current) =>
             current.filter(
-                (activity) => activity.id !== id
+                (activity) =>
+                    activity.id !== id
             )
         );
     };
 
-    const completedCount = activities.filter(
-        (activity) => activity.type === "completed"
-    ).length;
-
-    const workflowCount = activities.filter(
-        (activity) => activity.type === "workflow"
-    ).length;
-
-    const todayCount = activities.filter(
-        (activity) => activity.date === "Today"
-    ).length;
+    const clearAllActivities = () => {
+        setActivities([]);
+    };
 
     return (
         <div className="app">
@@ -121,22 +144,27 @@ function Activity() {
 
                 <div className="activity-page-final">
 
-                    {/* HEADER */}
+                    {/* ================= HEADER ================= */}
 
-                    <section className="activity-header-final">
+                    <div className="activity-header-final">
 
                         <div className="activity-header-info-final">
 
                             <div className="activity-eyebrow-final">
                                 <ActivityIcon size={14} />
-                                <span>ZARVIS ACTIVITY SYSTEM</span>
+
+                                <span>
+                                    ZARVIS ACTIVITY SYSTEM
+                                </span>
                             </div>
 
-                            <h1>Activity</h1>
+                            <h1>
+                                Activity
+                            </h1>
 
                             <p>
-                                See everything Zarvis has been
-                                doing for you.
+                                Track everything Zarvis has
+                                done across your workspace.
                             </p>
 
                         </div>
@@ -144,23 +172,27 @@ function Activity() {
                         <button
                             type="button"
                             className="activity-clear-final"
-                            onClick={clearActivity}
-                            disabled={activities.length === 0}
+                            onClick={clearAllActivities}
+                            disabled={
+                                activities.length === 0
+                            }
                         >
-                            <Trash2 size={16} />
+                            <Trash2 size={15} />
                             Clear Activity
                         </button>
 
-                    </section>
+                    </div>
 
 
-                    {/* STATS */}
+                    {/* ================= STATS ================= */}
 
-                    <section className="activity-stats-final">
+                    <div className="activity-stats-final">
 
                         <div className="activity-stat-final">
 
-                            <span>TOTAL ACTIVITY</span>
+                            <span>
+                                TOTAL ACTIVITY
+                            </span>
 
                             <strong>
                                 {activities.length}
@@ -168,19 +200,12 @@ function Activity() {
 
                         </div>
 
-                        <div className="activity-stat-final">
-
-                            <span>TODAY</span>
-
-                            <strong>
-                                {todayCount}
-                            </strong>
-
-                        </div>
 
                         <div className="activity-stat-final">
 
-                            <span>COMPLETED</span>
+                            <span>
+                                COMPLETED
+                            </span>
 
                             <strong>
                                 {completedCount}
@@ -188,9 +213,12 @@ function Activity() {
 
                         </div>
 
+
                         <div className="activity-stat-final">
 
-                            <span>WORKFLOWS</span>
+                            <span>
+                                WORKFLOWS
+                            </span>
 
                             <strong>
                                 {workflowCount}
@@ -198,12 +226,25 @@ function Activity() {
 
                         </div>
 
-                    </section>
+
+                        <div className="activity-stat-final">
+
+                            <span>
+                                ASSISTANT ACTIONS
+                            </span>
+
+                            <strong>
+                                {assistantCount}
+                            </strong>
+
+                        </div>
+
+                    </div>
 
 
-                    {/* TOOLBAR */}
+                    {/* ================= TOOLBAR ================= */}
 
-                    <section className="activity-toolbar-final">
+                    <div className="activity-toolbar-final">
 
                         <div className="activity-search-final">
 
@@ -214,7 +255,9 @@ function Activity() {
                                 placeholder="Search activity..."
                                 value={search}
                                 onChange={(e) =>
-                                    setSearch(e.target.value)
+                                    setSearch(
+                                        e.target.value
+                                    )
                                 }
                             />
 
@@ -223,38 +266,106 @@ function Activity() {
 
                         <div className="activity-filters-final">
 
-                            {[
-                                "ALL",
-                                "COMPLETED",
-                                "WORKFLOW",
-                                "SCHEDULE",
-                                "ASSISTANT",
-                                "MEMORY",
-                            ].map((item) => (
+                            <button
+                                type="button"
+                                className={
+                                    filter === "ALL"
+                                        ? "active"
+                                        : ""
+                                }
+                                onClick={() =>
+                                    setFilter("ALL")
+                                }
+                            >
+                                ALL
+                            </button>
 
-                                <button
-                                    type="button"
-                                    key={item}
-                                    className={
-                                        filter === item
-                                            ? "active"
-                                            : ""
-                                    }
-                                    onClick={() =>
-                                        setFilter(item)
-                                    }
-                                >
-                                    {item}
-                                </button>
+                            <button
+                                type="button"
+                                className={
+                                    filter === "COMPLETED"
+                                        ? "active"
+                                        : ""
+                                }
+                                onClick={() =>
+                                    setFilter(
+                                        "COMPLETED"
+                                    )
+                                }
+                            >
+                                COMPLETED
+                            </button>
 
-                            ))}
+                            <button
+                                type="button"
+                                className={
+                                    filter === "WORKFLOW"
+                                        ? "active"
+                                        : ""
+                                }
+                                onClick={() =>
+                                    setFilter(
+                                        "WORKFLOW"
+                                    )
+                                }
+                            >
+                                WORKFLOW
+                            </button>
+
+                            <button
+                                type="button"
+                                className={
+                                    filter === "SCHEDULE"
+                                        ? "active"
+                                        : ""
+                                }
+                                onClick={() =>
+                                    setFilter(
+                                        "SCHEDULE"
+                                    )
+                                }
+                            >
+                                SCHEDULE
+                            </button>
+
+                            <button
+                                type="button"
+                                className={
+                                    filter === "ASSISTANT"
+                                        ? "active"
+                                        : ""
+                                }
+                                onClick={() =>
+                                    setFilter(
+                                        "ASSISTANT"
+                                    )
+                                }
+                            >
+                                ASSISTANT
+                            </button>
+
+                            <button
+                                type="button"
+                                className={
+                                    filter === "MEMORY"
+                                        ? "active"
+                                        : ""
+                                }
+                                onClick={() =>
+                                    setFilter(
+                                        "MEMORY"
+                                    )
+                                }
+                            >
+                                MEMORY
+                            </button>
 
                         </div>
 
-                    </section>
+                    </div>
 
 
-                    {/* ACTIVITY PANEL */}
+                    {/* ================= ACTIVITY PANEL ================= */}
 
                     <section className="activity-panel-final">
 
@@ -263,7 +374,10 @@ function Activity() {
                             <div>
 
                                 <span>
-                                    EXECUTION LOG // 05
+                                    SYSTEM LOG //{" "}
+                                    {String(
+                                        filteredActivities.length
+                                    ).padStart(2, "0")}
                                 </span>
 
                                 <h2>
@@ -276,12 +390,14 @@ function Activity() {
 
                                 <span></span>
 
-                                LIVE
+                                LIVE MONITORING
 
                             </div>
 
                         </div>
 
+
+                        {/* ================= LIST ================= */}
 
                         <div className="activity-list-final">
 
@@ -296,8 +412,8 @@ function Activity() {
                                     </h3>
 
                                     <p>
-                                        Your Zarvis activity will
-                                        appear here.
+                                        Try another search or
+                                        clear the current filter.
                                     </p>
 
                                 </div>
@@ -305,72 +421,123 @@ function Activity() {
                             ) : (
 
                                 filteredActivities.map(
-                                    (activity, index) => {
+                                    (activity) => {
 
-                                        const Icon = activity.icon;
+                                        const Icon =
+                                            activity.icon;
+
+                                        const typeClass =
+                                            activity.type ===
+                                                "COMPLETED"
+                                                ? "activity-type-completed"
+                                                : activity.type ===
+                                                    "WORKFLOW"
+                                                    ? "activity-type-workflow"
+                                                    : activity.type ===
+                                                        "SCHEDULE"
+                                                        ? "activity-type-schedule"
+                                                        : activity.type ===
+                                                            "ASSISTANT"
+                                                            ? "activity-type-assistant"
+                                                            : "activity-type-memory";
 
                                         return (
                                             <div
                                                 className="activity-row-final"
-                                                key={activity.id}
+                                                key={
+                                                    activity.id
+                                                }
                                             >
+
+                                                {/* TIME */}
 
                                                 <div className="activity-time-final">
 
                                                     <strong>
-                                                        {activity.time}
+                                                        {
+                                                            activity.time
+                                                        }
                                                     </strong>
 
                                                     <span>
-                                                        {activity.date}
+                                                        {
+                                                            activity.date
+                                                        }
                                                     </span>
 
                                                 </div>
 
 
+                                                {/* TIMELINE */}
+
                                                 <div className="activity-line-final">
 
                                                     <div className="activity-dot-final">
-                                                        <Icon size={15} />
+
+                                                        <Icon
+                                                            size={15}
+                                                        />
+
                                                     </div>
 
-                                                    {index !==
-                                                        filteredActivities.length - 1 && (
-                                                            <span></span>
-                                                        )}
+                                                    <span></span>
 
                                                 </div>
 
+
+                                                {/* CONTENT */}
 
                                                 <div className="activity-content-final">
 
                                                     <div className="activity-title-final">
 
                                                         <h3>
-                                                            {activity.title}
+                                                            {
+                                                                activity.title
+                                                            }
                                                         </h3>
 
                                                         <span
-                                                            className={`activity-type-${activity.type}`}
+                                                            className={
+                                                                typeClass
+                                                            }
                                                         >
-                                                            {activity.type.toUpperCase()}
+                                                            {
+                                                                activity.type
+                                                            }
                                                         </span>
 
                                                     </div>
 
+
                                                     <p>
-                                                        {activity.description}
+                                                        {
+                                                            activity.description
+                                                        }
                                                     </p>
+
 
                                                     <div className="activity-meta-final">
 
                                                         <span>
-                                                            <Clock3 size={12} />
-                                                            {activity.time}
+                                                            <Clock3
+                                                                size={
+                                                                    12
+                                                                }
+                                                            />
+
+                                                            {
+                                                                activity.time
+                                                            }
                                                         </span>
 
                                                         <span>
-                                                            <ActivityIcon size={12} />
+                                                            <Bot
+                                                                size={
+                                                                    12
+                                                                }
+                                                            />
+
                                                             Zarvis Core
                                                         </span>
 
@@ -379,17 +546,21 @@ function Activity() {
                                                 </div>
 
 
+                                                {/* DELETE */}
+
                                                 <button
                                                     type="button"
                                                     className="activity-delete-final"
+                                                    title="Remove activity"
                                                     onClick={() =>
-                                                        deleteActivity(
+                                                        clearActivity(
                                                             activity.id
                                                         )
                                                     }
-                                                    title="Delete activity"
                                                 >
-                                                    <Trash2 size={15} />
+                                                    <Trash2
+                                                        size={15}
+                                                    />
                                                 </button>
 
                                             </div>
@@ -404,7 +575,7 @@ function Activity() {
                     </section>
 
 
-                    {/* BOTTOM STATUS */}
+                    {/* ================= STATUS BAR ================= */}
 
                     <div className="activity-status-bar-final">
 
@@ -413,18 +584,21 @@ function Activity() {
                             <span className="activity-status-dot-final"></span>
 
                             <strong>
-                                ZARVIS CORE
+                                ACTIVITY MONITOR
                             </strong>
 
                             <span>
-                                Activity monitoring active
+                                Tracking workspace events
                             </span>
 
                         </div>
 
                         <span>
-                            <Plus size={13} />
-                            REAL-TIME LOGGING
+
+                            <Bot size={12} />
+
+                            ZARVIS CORE ONLINE
+
                         </span>
 
                     </div>

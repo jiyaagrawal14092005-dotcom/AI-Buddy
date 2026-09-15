@@ -1,9 +1,12 @@
 import { useState } from "react";
+import { Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useBuddy } from "../context/BuddyContext";
 
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import ChatBox from "../components/ChatBox";
+
 import TaskCard from "../components/TaskCard";
 import ScheduleCard from "../components/ScheduleCard";
 import ActivityCard from "../components/ActivityCard";
@@ -14,6 +17,14 @@ import UpcomingTasks from "../components/UpcomingTasks";
 
 function Dashboard() {
     const navigate = useNavigate();
+
+    const {
+        buddyStatus,
+        isThinking,
+        lastCommand,
+        lastResponse,
+    } = useBuddy();
+
     const [activeAction, setActiveAction] = useState("");
 
     const handleQuickAction = (action) => {
@@ -34,19 +45,29 @@ function Dashboard() {
     return (
         <div className="app">
 
-            {/* SIDEBAR */}
+            {/* =================================================
+                SIDEBAR
+            ================================================= */}
+
             <Sidebar />
 
-            {/* MAIN CONTENT */}
             <main className="main-content">
 
-                {/* NAVBAR */}
+                {/* =================================================
+                    NAVBAR
+                ================================================= */}
+
                 <Navbar />
 
                 <div className="dashboard">
 
-                    {/* HERO SECTION */}
+                    {/* =================================================
+                        HERO SECTION
+                    ================================================= */}
+
                     <section className="dashboard-hero">
+
+                        {/* LEFT SIDE — WELCOME TEXT */}
 
                         <div className="dashboard-welcome">
 
@@ -55,355 +76,571 @@ function Dashboard() {
                                     ✦
                                 </span>
 
-                                ZARVIS AI COMPANION
+                                GOOD MORNING
                             </div>
 
                             <h1>
-                                Good Morning,
-                                <br />
-                                <span>Shanu!</span>
+                                Hello,{" "}
+                                <span>Shanu</span>
                             </h1>
 
                             <p>
-                                Your goals. My priority.
+                                Your AI buddy is here to make your day
+                                <br />
+                                smarter, simpler and more productive.
                             </p>
 
+                            {/* QUICK HERO ACTIONS */}
+
+                            <div className="hero-quick-actions">
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        navigate("/schedule")
+                                    }
+                                >
+                                    <span>◫</span>
+                                    Plan My Day
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        navigate("/assistant")
+                                    }
+                                >
+                                    <span>▣</span>
+                                    Study Help
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        navigate("/schedule")
+                                    }
+                                >
+                                    <span>✈</span>
+                                    Travel Plans
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        navigate("/tasks")
+                                    }
+                                >
+                                    <span>＋</span>
+                                    Create Task
+                                </button>
+
+                            </div>
+
+                            {/* THINKING STATUS */}
+<div className="hero-status-cards">
+
+    <div className="hero-status-card thinking-card">
+
+        <div className="hero-status-icon zarvis-thinking-logo">
+    <Sparkles size={27} strokeWidth={2.2} />
+</div>
+
+
+        <div className="hero-status-content">
+
+            <strong>
+                Zarvis Thinking
+            </strong>
+
+            <span>
+                {isThinking
+                    ? "Analyzing your request..."
+                    : "Ready to understand your request."}
+            </span>
+
+            <div className="thinking-wave">
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div className="hero-status-card ready-card">
+
+        <div className="hero-status-icon ready-help-icon">
+    💬
+</div>
+
+        <div className="hero-status-content">
+
+            <strong>
+                Ready to Help
+            </strong>
+
+            <span>
+                Just tell me what you need!
+            </span>
+
+            <div className="ready-indicator">
+                <span></span>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
                         </div>
+
+
+                        {/* =================================================
+                            ROBOT
+                        ================================================= */}
 
                         <ChatBox />
 
                     </section>
 
 
-                    {/* STATS */}
+                    {/* =================================================
+                        STATS
+                    ================================================= */}
+
                     <section className="stats-grid">
 
-                        <div className="stat-card glass-card">
+                        <div className="stat-card">
 
-                            <div className="stat-top">
+                            <div className="stat-card-top">
 
-                                <div className="stat-icon stat-blue">
+                                <span className="stat-label">
+                                    TODAY'S TASKS
+                                </span>
+
+                                <span className="stat-icon">
                                     ✓
-                                </div>
-
-                                <span>
-                                    Total Tasks
                                 </span>
 
                             </div>
 
-                            <div className="stat-value">
-                                5
-                            </div>
+                            <strong className="stat-value">
+                                08
+                            </strong>
 
-                            <div className="stat-label stat-success">
-                                ↑ 2 completed today
-                            </div>
+                            <span className="stat-description">
+                                5 completed
+                            </span>
 
                         </div>
 
 
-                        <div className="stat-card glass-card">
+                        <div className="stat-card">
 
-                            <div className="stat-top">
+                            <div className="stat-card-top">
 
-                                <div className="stat-icon stat-cyan">
-                                    ▣
-                                </div>
-
-                                <span>
-                                    Today's Events
+                                <span className="stat-label">
+                                    ACTIVE WORKFLOWS
                                 </span>
 
-                            </div>
-
-                            <div className="stat-value">
-                                3
-                            </div>
-
-                            <div className="stat-label stat-success">
-                                ↑ 1 upcoming
-                            </div>
-
-                        </div>
-
-
-                        <div className="stat-card glass-card">
-
-                            <div className="stat-top">
-
-                                <div className="stat-icon stat-pink">
+                                <span className="stat-icon">
                                     ⚡
-                                </div>
-
-                                <span>
-                                    Active Workflows
                                 </span>
 
                             </div>
 
-                            <div className="stat-value">
-                                1
-                            </div>
+                            <strong className="stat-value">
+                                03
+                            </strong>
 
-                            <div className="stat-label">
-                                Running
-                            </div>
+                            <span className="stat-description">
+                                2 running now
+                            </span>
 
                         </div>
 
 
-                        <div className="stat-card glass-card">
+                        <div className="stat-card">
 
-                            <div className="stat-top">
+                            <div className="stat-card-top">
 
-                                <div className="stat-icon stat-purple">
-                                    ♧
-                                </div>
+                                <span className="stat-label">
+                                    SCHEDULED
+                                </span>
 
-                                <span>
-                                    Memory Entries
+                                <span className="stat-icon">
+                                    ◷
                                 </span>
 
                             </div>
 
-                            <div className="stat-value">
-                                8
+                            <strong className="stat-value">
+                                06
+                            </strong>
+
+                            <span className="stat-description">
+                                Next at 10:00 AM
+                            </span>
+
+                        </div>
+
+
+                        <div className="stat-card">
+
+                            <div className="stat-card-top">
+
+                                <span className="stat-label">
+                                    ZARVIS STATUS
+                                </span>
+
+                                <span className="stat-icon">
+                                    ●
+                                </span>
+
                             </div>
 
-                            <div className="stat-label stat-success">
-                                ↑ 1 new
-                            </div>
+                            <strong className="stat-value">
+                                {buddyStatus}
+                            </strong>
+
+                            <span className="stat-description">
+                                Core operating normally
+                            </span>
 
                         </div>
 
                     </section>
 
 
-                    {/* QUICK ACTIONS */}
+                    {/* =================================================
+                        QUICK COMMANDS
+                    ================================================= */}
+
                     <section className="quick-section">
 
-                        <div className="section-header">
+                        <div className="section-title-row">
 
-                            <h2 className="section-title">
-                                <span>⚡</span>
-                                Quick Actions
-                            </h2>
+                            <div>
+
+                                <span className="section-eyebrow">
+                                    QUICK COMMANDS
+                                </span>
+
+                                <h2>
+                                    What should Zarvis do?
+                                </h2>
+
+                            </div>
 
                             <button
                                 type="button"
                                 className="section-link"
-                            >
-                                View all
-                            </button>
-
-                        </div>
-
-
-                        <div className="quick-actions">
-
-                            {/* ADD TASK */}
-                            <button
-                                type="button"
-                                className="quick-action"
-                                onClick={() =>
-                                    navigate("/tasks?create=true")
-                                }
-                            >
-
-                                <div className="quick-action-icon">
-                                    ✓
-                                </div>
-
-                                <div className="quick-action-title">
-                                    Add Task
-                                </div>
-
-                                <div className="quick-action-text">
-                                    Create a new task
-                                </div>
-
-                            </button>
-
-
-                            {/* ADD EVENT */}
-                            <button
-                                type="button"
-                                className="quick-action"
-                                onClick={() =>
-                                    navigate("/schedule?create=true")
-                                }
-                            >
-
-                                <div className="quick-action-icon">
-                                    ▣
-                                </div>
-
-                                <div className="quick-action-title">
-                                    Add Event
-                                </div>
-
-                                <div className="quick-action-text">
-                                    Schedule something
-                                </div>
-
-                            </button>
-
-
-                            {/* CREATE WORKFLOW */}
-                            <button
-                                type="button"
-                                className="quick-action"
-                                onClick={() =>
-                                    navigate("/workflows?create=true")
-                                }
-                            >
-
-                                <div className="quick-action-icon">
-                                    ⚡
-                                </div>
-
-                                <div className="quick-action-title">
-                                    Create Workflow
-                                </div>
-
-                                <div className="quick-action-text">
-                                    Automate a routine
-                                </div>
-
-                            </button>
-
-
-                            {/* START TIMER */}
-                            <button
-                                type="button"
-                                className="quick-action"
-                                onClick={handleStartTimer}
-                            >
-
-                                <div className="quick-action-icon">
-                                    ◷
-                                </div>
-
-                                <div className="quick-action-title">
-                                    Start Timer
-                                </div>
-
-                                <div className="quick-action-text">
-                                    Focus on your work
-                                </div>
-
-                            </button>
-
-
-                            {/* ASK ZARVIS */}
-                            <button
-                                type="button"
-                                className="quick-action"
                                 onClick={() =>
                                     navigate("/assistant")
                                 }
                             >
-
-                                <div className="quick-action-icon">
-                                    💬
-                                </div>
-
-                                <div className="quick-action-title">
-                                    Ask Zarvis
-                                </div>
-
-                                <div className="quick-action-text">
-                                    Talk to your AI buddy
-                                </div>
-
+                                Open Assistant →
                             </button>
 
                         </div>
 
 
-                        {/* ACTION RESPONSE */}
-                        {activeAction && (
-                            <div className="zarvis-response">
+                        <div className="quick-actions-grid">
 
-                                <span>
-                                    ✦
+                            {/* CREATE TASK */}
+
+                            <button
+                                type="button"
+                                className={`quick-action-card ${
+                                    activeAction === "task"
+                                        ? "active"
+                                        : ""
+                                }`}
+                                onClick={() =>
+                                    handleQuickAction("task")
+                                }
+                            >
+
+                                <span className="quick-action-icon">
+                                    ✓
                                 </span>
 
+                                <strong>
+                                    Create Task
+                                </strong>
+
                                 <span>
-                                    {activeAction} selected.
-                                    Zarvis is ready.
+                                    Add something to your day
                                 </span>
 
-                            </div>
-                        )}
+                            </button>
+
+
+                            {/* SCHEDULE */}
+
+                            <button
+                                type="button"
+                                className={`quick-action-card ${
+                                    activeAction === "schedule"
+                                        ? "active"
+                                        : ""
+                                }`}
+                                onClick={() =>
+                                    handleQuickAction("schedule")
+                                }
+                            >
+
+                                <span className="quick-action-icon">
+                                    ◷
+                                </span>
+
+                                <strong>
+                                    Schedule
+                                </strong>
+
+                                <span>
+                                    Plan an upcoming event
+                                </span>
+
+                            </button>
+
+
+                            {/* WORKFLOW */}
+
+                            <button
+                                type="button"
+                                className={`quick-action-card ${
+                                    activeAction === "workflow"
+                                        ? "active"
+                                        : ""
+                                }`}
+                                onClick={() =>
+                                    handleQuickAction("workflow")
+                                }
+                            >
+
+                                <span className="quick-action-icon">
+                                    ⚡
+                                </span>
+
+                                <strong>
+                                    New Workflow
+                                </strong>
+
+                                <span>
+                                    Automate a sequence
+                                </span>
+
+                            </button>
+
+
+                            {/* MEMORY */}
+
+                            <button
+                                type="button"
+                                className={`quick-action-card ${
+                                    activeAction === "memory"
+                                        ? "active"
+                                        : ""
+                                }`}
+                                onClick={() =>
+                                    handleQuickAction("memory")
+                                }
+                            >
+
+                                <span className="quick-action-icon">
+                                    ◈
+                                </span>
+
+                                <strong>
+                                    Save Memory
+                                </strong>
+
+                                <span>
+                                    Tell Zarvis something
+                                </span>
+
+                            </button>
+
+
+                            {/* FOCUS MODE */}
+
+                            <button
+                                type="button"
+                                className="quick-action-card"
+                                onClick={handleStartTimer}
+                            >
+
+                                <span className="quick-action-icon">
+                                    ⏱
+                                </span>
+
+                                <strong>
+                                    Focus Mode
+                                </strong>
+
+                                <span>
+                                    Start a focused session
+                                </span>
+
+                            </button>
+
+                        </div>
 
                     </section>
 
 
-                    {/* ZARVIS CORE */}
-                    <section className="zarvis-core-card glass-card">
+                    {/* =================================================
+                        ACTION MESSAGE
+                    ================================================= */}
 
-                        <div className="core-orb">
+                    {activeAction && (
 
-                            <div className="core-orb-inner">
-                                Z
-                            </div>
+                        <div className="dashboard-action-message">
 
-                        </div>
-
-
-                        <div className="core-info">
-
-                            <span className="core-label">
-                                ZARVIS INTELLIGENCE
+                            <span>
+                                COMMAND READY
                             </span>
 
-                            <h2>
-                                Zarvis Core
-                            </h2>
+                            <strong>
 
-                            <p>
-                                Your AI brain, always working for you.
-                            </p>
+                                {activeAction === "task" &&
+                                    "Create Task selected"}
 
-                            <div className="core-tags">
+                                {activeAction === "schedule" &&
+                                    "Schedule selected"}
 
-                                <span>
-                                    ✦ Plan
+                                {activeAction === "workflow" &&
+                                    "New Workflow selected"}
+
+                                {activeAction === "memory" &&
+                                    "Save Memory selected"}
+
+                            </strong>
+
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setActiveAction("")
+                                }
+                            >
+                                ×
+                            </button>
+
+                        </div>
+
+                    )}
+
+
+                    {/* =================================================
+                        ZARVIS CORE
+                    ================================================= */}
+
+                    <section className="zarvis-core-card glass-card">
+
+                        <div className="zarvis-core-header">
+
+                            <div>
+
+                                <span className="section-eyebrow">
+                                    ZARVIS CORE
                                 </span>
 
-                                <span>
-                                    ✦ Think
-                                </span>
+                                <h2>
+                                    Your AI Command Center
+                                </h2>
 
-                                <span>
-                                    ◆ Execute
-                                </span>
+                                <p>
+                                    Plan, organize and execute
+                                    your day with Zarvis.
+                                </p>
 
-                                <span>
-                                    ✦ Support
-                                </span>
+                            </div>
+
+                            <div className="core-status">
+
+                                <span></span>
+
+                                {buddyStatus}
 
                             </div>
 
                         </div>
 
 
-                        <button
-                            type="button"
-                            className="core-arrow"
-                            onClick={() =>
-                                navigate("/assistant")
-                            }
-                        >
-                            →
-                        </button>
+                        <div className="zarvis-core-metrics">
+
+                            <div>
+
+                                <span>
+                                    CORE STATUS
+                                </span>
+
+                                <strong>
+                                    {isThinking
+                                        ? "THINKING"
+                                        : "READY"}
+                                </strong>
+
+                            </div>
+
+
+                            <div>
+
+                                <span>
+                                    MEMORY
+                                </span>
+
+                                <strong>
+                                    ACTIVE
+                                </strong>
+
+                            </div>
+
+
+                            <div>
+
+                                <span>
+                                    AUTOMATION
+                                </span>
+
+                                <strong>
+                                    READY
+                                </strong>
+
+                            </div>
+
+
+                            <div>
+
+                                <span>
+                                    VOICE
+                                </span>
+
+                                <strong>
+                                    READY
+                                </strong>
+
+                            </div>
+
+                        </div>
 
                     </section>
 
 
-                    {/* MAIN DASHBOARD GRID */}
+                    {/* =================================================
+                        MAIN MODULES
+                    ================================================= */}
+
                     <div className="dashboard-main-grid">
 
                         <TaskCard />
@@ -415,14 +652,18 @@ function Dashboard() {
                     </div>
 
 
-                    {/* SECONDARY GRID */}
+                    {/* =================================================
+                        SECONDARY MODULES
+                    ================================================= */}
+
                     <div className="dashboard-secondary-grid">
 
                         <MemoryCard />
 
-                        {/* TIMER */}
                         <div id="zarvis-timer">
+
                             <Timer />
+
                         </div>
 
                         <UpcomingTasks />
@@ -430,7 +671,10 @@ function Dashboard() {
                     </div>
 
 
-                    {/* AGENT NETWORK */}
+                    {/* =================================================
+                        AGENT NETWORK
+                    ================================================= */}
+
                     <AgentNetwork />
 
                 </div>

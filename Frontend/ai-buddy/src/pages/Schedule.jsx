@@ -1,466 +1,410 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+
 import {
     Plus,
     CalendarDays,
     Clock3,
     MapPin,
     Trash2,
-    CheckCircle2,
 } from "lucide-react";
 
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 
-const initialEvents = [
-    {
-        id: 1,
-        title: "Machine Learning Class",
-        date: "Today",
-        time: "11:00 AM",
-        location: "Online",
-        type: "STUDY",
-    },
-    {
-        id: 2,
-        title: "Project Development",
-        date: "Today",
-        time: "02:00 PM",
-        location: "Workspace",
-        type: "WORK",
-    },
-    {
-        id: 3,
-        title: "Revision Session",
-        date: "Today",
-        time: "05:30 PM",
-        location: "Personal",
-        type: "FOCUS",
-    },
-];
 
 function Schedule() {
-    const [events, setEvents] = useState(initialEvents);
-    const [showForm, setShowForm] = useState(false);
 
-    const [newEvent, setNewEvent] = useState({
-        title: "",
-        date: "",
-        time: "",
-        location: "",
-        type: "STUDY",
-    });
+    const [events, setEvents] = useState([
+        {
+            id: 1,
+            title: "React Learning",
+            date: "Today",
+            time: "10:30 AM",
+            location: "Study Desk",
+        },
+        {
+            id: 2,
+            title: "Work on Zarvis UI",
+            date: "Today",
+            time: "02:30 PM",
+            location: "Home",
+        },
+        {
+            id: 3,
+            title: "Review Progress",
+            date: "Today",
+            time: "05:00 PM",
+            location: "Study Desk",
+        },
+    ]);
 
-    const addEvent = (e) => {
-        e.preventDefault();
 
-        if (!newEvent.title.trim()) return;
+    const [newEvent, setNewEvent] = useState("");
+
+    const inputRef = useRef(null);
+
+
+    /* ==============================
+       OPEN ADD EVENT
+    ============================== */
+
+    const openAddEvent = () => {
+        inputRef.current?.focus();
+    };
+
+
+    /* ==============================
+       ADD EVENT
+    ============================== */
+
+    const addEvent = () => {
+
+        const title = newEvent.trim();
+
+        if (!title) {
+            inputRef.current?.focus();
+            return;
+        }
 
         const event = {
             id: Date.now(),
-            title: newEvent.title,
-            date: newEvent.date || "Today",
-            time: newEvent.time || "Anytime",
-            location: newEvent.location || "Personal",
-            type: newEvent.type,
+            title: title,
+            date: "Today",
+            time: "Not scheduled",
+            location: "Not specified",
         };
 
-        setEvents((prev) => [...prev, event]);
+        setEvents((currentEvents) => [
+            ...currentEvents,
+            event,
+        ]);
 
-        setNewEvent({
-            title: "",
-            date: "",
-            time: "",
-            location: "",
-            type: "STUDY",
-        });
+        setNewEvent("");
 
-        setShowForm(false);
+        // Keep cursor ready for another event
+        setTimeout(() => {
+            inputRef.current?.focus();
+        }, 0);
     };
 
+
+    /* ==============================
+       DELETE EVENT
+    ============================== */
+
     const deleteEvent = (id) => {
-        setEvents((prev) =>
-            prev.filter((event) => event.id !== id)
+
+        setEvents((currentEvents) =>
+            currentEvents.filter(
+                (event) => event.id !== id
+            )
         );
     };
 
+
     return (
+
         <div className="app">
 
+            {/* ==============================
+                SIDEBAR
+            ============================== */}
+
             <Sidebar />
+
+
+            {/* ==============================
+                MAIN CONTENT
+            ============================== */}
 
             <main className="main-content">
 
                 <Navbar />
 
+
+                {/* ==============================
+                    SCHEDULE PAGE
+                ============================== */}
+
                 <div className="schedule-page">
 
-                    {/* HEADER */}
-                    <section className="schedule-page-header">
+
+                    {/* ==============================
+                        PAGE HEADER
+                    ============================== */}
+
+                    <div className="page-header">
 
                         <div>
-                            <span className="schedule-eyebrow">
-                                <CalendarDays size={14} />
-                                ZARVIS SCHEDULE SYSTEM
+
+                            <span className="page-label">
+                                ZARVIS PLANNER
                             </span>
 
                             <h1>
-                                My Schedule
+                                Schedule
                             </h1>
 
                             <p>
-                                Keep your day organized with Zarvis.
+                                Organize your day and keep track
+                                of what is coming next.
                             </p>
+
                         </div>
+
 
                         <button
                             type="button"
-                            className="schedule-add-button"
-                            onClick={() =>
-                                setShowForm(!showForm)
-                            }
+                            className="primary-action"
+                            onClick={openAddEvent}
                         >
-                            <Plus size={18} />
+
+                            <Plus size={17} />
+
                             Add Event
+
                         </button>
 
-                    </section>
+                    </div>
 
 
-                    {/* SUMMARY */}
-                    <section className="schedule-summary">
+                    {/* ==============================
+                        ADD EVENT INPUT
+                    ============================== */}
 
-                        <div className="schedule-summary-card">
+                    <div className="schedule-input-card">
 
-                            <span>
-                                TODAY'S EVENTS
-                            </span>
+                        <CalendarDays size={19} />
 
-                            <strong>
-                                {events.length}
-                            </strong>
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={newEvent}
+                            onChange={(event) =>
+                                setNewEvent(event.target.value)
+                            }
+                            onKeyDown={(event) => {
 
-                        </div>
-
-                        <div className="schedule-summary-card">
-
-                            <span>
-                                NEXT EVENT
-                            </span>
-
-                            <strong>
-                                {events.length
-                                    ? events[0].time
-                                    : "--"}
-                            </strong>
-
-                        </div>
-
-                        <div className="schedule-summary-card">
-
-                            <span>
-                                STUDY
-                            </span>
-
-                            <strong>
-                                {
-                                    events.filter(
-                                        (event) =>
-                                            event.type === "STUDY"
-                                    ).length
+                                if (event.key === "Enter") {
+                                    event.preventDefault();
+                                    addEvent();
                                 }
-                            </strong>
 
-                        </div>
+                            }}
+                            placeholder="What would you like to schedule?"
+                        />
 
-                        <div className="schedule-summary-card">
-
-                            <span>
-                                WORK
-                            </span>
-
-                            <strong>
-                                {
-                                    events.filter(
-                                        (event) =>
-                                            event.type === "WORK"
-                                    ).length
-                                }
-                            </strong>
-
-                        </div>
-
-                    </section>
-
-
-                    {/* CREATE EVENT */}
-                    {showForm && (
-                        <form
-                            className="schedule-create-panel"
-                            onSubmit={addEvent}
+                        <button
+                            type="button"
+                            onClick={addEvent}
+                            aria-label="Add event"
                         >
 
-                            <div className="schedule-create-header">
+                            <Plus size={18} />
 
-                                <div>
-                                    <span>
-                                        EVENT CREATOR
-                                    </span>
+                        </button>
 
-                                    <h2>
-                                        Create New Event
-                                    </h2>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        setShowForm(false)
-                                    }
-                                >
-                                    ×
-                                </button>
-
-                            </div>
+                    </div>
 
 
-                            <div className="schedule-form-grid">
+                    {/* ==============================
+                        SCHEDULE SUMMARY
+                    ============================== */}
 
-                                <div className="schedule-field">
-
-                                    <label>
-                                        Event Name
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        placeholder="e.g. Team meeting"
-                                        value={newEvent.title}
-                                        onChange={(e) =>
-                                            setNewEvent({
-                                                ...newEvent,
-                                                title: e.target.value,
-                                            })
-                                        }
-                                    />
-
-                                </div>
+                    <div className="schedule-summary">
 
 
-                                <div className="schedule-field">
+                        {/* TODAY'S EVENTS */}
 
-                                    <label>
-                                        Date
-                                    </label>
+                        <div className="schedule-stat">
 
-                                    <input
-                                        type="date"
-                                        value={newEvent.date}
-                                        onChange={(e) =>
-                                            setNewEvent({
-                                                ...newEvent,
-                                                date: e.target.value,
-                                            })
-                                        }
-                                    />
-
-                                </div>
-
-
-                                <div className="schedule-field">
-
-                                    <label>
-                                        Time
-                                    </label>
-
-                                    <input
-                                        type="time"
-                                        value={newEvent.time}
-                                        onChange={(e) =>
-                                            setNewEvent({
-                                                ...newEvent,
-                                                time: e.target.value,
-                                            })
-                                        }
-                                    />
-
-                                </div>
-
-
-                                <div className="schedule-field">
-
-                                    <label>
-                                        Location
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        placeholder="Online / Workspace"
-                                        value={newEvent.location}
-                                        onChange={(e) =>
-                                            setNewEvent({
-                                                ...newEvent,
-                                                location:
-                                                    e.target.value,
-                                            })
-                                        }
-                                    />
-
-                                </div>
-
-
-                                <div className="schedule-field">
-
-                                    <label>
-                                        Event Type
-                                    </label>
-
-                                    <select
-                                        value={newEvent.type}
-                                        onChange={(e) =>
-                                            setNewEvent({
-                                                ...newEvent,
-                                                type: e.target.value,
-                                            })
-                                        }
-                                    >
-
-                                        <option value="STUDY">
-                                            STUDY
-                                        </option>
-
-                                        <option value="WORK">
-                                            WORK
-                                        </option>
-
-                                        <option value="FOCUS">
-                                            FOCUS
-                                        </option>
-
-                                        <option value="PERSONAL">
-                                            PERSONAL
-                                        </option>
-
-                                    </select>
-
-                                </div>
-
-                            </div>
-
-
-                            <button
-                                type="submit"
-                                className="schedule-create-submit"
-                            >
-                                <Plus size={16} />
-                                CREATE EVENT
-                            </button>
-
-                        </form>
-                    )}
-
-
-                    {/* EVENTS */}
-                    <section className="schedule-events-panel">
-
-                        <div className="schedule-events-header">
+                            <CalendarDays size={19} />
 
                             <div>
+
+                                <strong>
+                                    {events.length}
+                                </strong>
+
                                 <span>
-                                    SCHEDULE QUEUE // 02
+                                    Today's Events
                                 </span>
 
-                                <h2>
-                                    Upcoming Events
-                                </h2>
-                            </div>
-
-                            <div className="schedule-live">
-                                <span></span>
-                                LIVE
                             </div>
 
                         </div>
 
 
-                        <div className="schedule-events-list">
+                        {/* UPCOMING */}
+
+                        <div className="schedule-stat">
+
+                            <Clock3 size={19} />
+
+                            <div>
+
+                                <strong>
+                                    {events.length > 1 ? 2 : 0}
+                                </strong>
+
+                                <span>
+                                    Upcoming
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        {/* ONLINE */}
+
+                        <div className="schedule-stat">
+
+                            <MapPin size={19} />
+
+                            <div>
+
+                                <strong>
+                                    1
+                                </strong>
+
+                                <span>
+                                    Online Event
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                    </div>
+
+
+                    {/* ==============================
+                        TODAY'S SCHEDULE
+                    ============================== */}
+
+                    <section className="schedule-section">
+
+
+                        {/* SECTION HEADER */}
+
+                        <div className="section-heading">
+
+                            <div>
+
+                                <h2>
+                                    Today's Schedule
+                                </h2>
+
+                                <p>
+                                    Your planned events and activities.
+                                </p>
+
+                            </div>
+
+
+                            <span>
+                                {events.length} events
+                            </span>
+
+                        </div>
+
+
+                        {/* ==============================
+                            EVENT LIST
+                        ============================== */}
+
+                        <div className="schedule-list">
+
 
                             {events.length === 0 ? (
 
-                                <div className="schedule-empty">
+                                /* EMPTY STATE */
 
-                                    <CalendarDays size={32} />
+                                <div className="empty-schedule">
+
+                                    <CalendarDays size={30} />
 
                                     <h3>
                                         No events scheduled
                                     </h3>
 
                                     <p>
-                                        Add an event to organize
-                                        your day.
+                                        Add an event to start
+                                        planning your day.
                                     </p>
 
                                 </div>
 
                             ) : (
 
+                                /* EVENTS */
+
                                 events.map((event) => (
 
                                     <div
-                                        className="schedule-page-row"
+                                        className="schedule-item"
                                         key={event.id}
                                     >
 
-                                        <div className="schedule-page-time">
 
-                                            <strong>
-                                                {event.time}
-                                            </strong>
+                                        {/* TIME */}
+
+                                        <div className="schedule-time">
+
+                                            <Clock3 size={15} />
 
                                             <span>
-                                                {event.date}
+                                                {event.time}
                                             </span>
 
                                         </div>
 
 
-                                        <div className="schedule-page-line">
+                                        {/* EVENT ICON */}
 
-                                            <span></span>
+                                        <div className="schedule-event-icon">
+
+                                            <CalendarDays size={18} />
 
                                         </div>
 
 
-                                        <div className="schedule-page-content">
+                                        {/* EVENT DETAILS */}
 
-                                            <div className="schedule-page-title">
+                                        <div className="schedule-event-info">
 
-                                                <CheckCircle2
-                                                    size={17}
-                                                />
-
-                                                <strong>
-                                                    {event.title}
-                                                </strong>
-
-                                            </div>
+                                            <h3>
+                                                {event.title}
+                                            </h3>
 
 
-                                            <div className="schedule-page-meta">
+                                            <div className="schedule-event-meta">
 
                                                 <span>
+
+                                                    <CalendarDays size={12} />
+
+                                                    {event.date}
+
+                                                </span>
+
+
+                                                <span>
+
                                                     <MapPin size={12} />
-                                                    {event.location}
-                                                </span>
 
-                                                <span>
-                                                    <Clock3 size={12} />
-                                                    {event.type}
+                                                    {event.location}
+
                                                 </span>
 
                                             </div>
 
                                         </div>
 
+
+                                        {/* DELETE */}
 
                                         <button
                                             type="button"
@@ -469,11 +413,13 @@ function Schedule() {
                                                 deleteEvent(event.id)
                                             }
                                             title="Delete event"
+                                            aria-label="Delete event"
                                         >
 
                                             <Trash2 size={16} />
 
                                         </button>
+
 
                                     </div>
 
@@ -485,6 +431,7 @@ function Schedule() {
 
                     </section>
 
+
                 </div>
 
             </main>
@@ -492,5 +439,6 @@ function Schedule() {
         </div>
     );
 }
+
 
 export default Schedule;

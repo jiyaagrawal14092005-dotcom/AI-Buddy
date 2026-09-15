@@ -1,5 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+import { AuthProvider } from "./context/AuthContext";
+import { BuddyProvider } from "./context/BuddyContext";
+
 import Dashboard from "./pages/Dashboard";
 import Assistant from "./pages/Assistant";
 import Tasks from "./pages/Tasks";
@@ -13,32 +16,63 @@ import Settings from "./pages/Settings";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <AuthProvider>
+      <BuddyProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route
+              path="/"
+              element={<Dashboard />}
+            />
 
-        {/* MAIN */}
-        <Route path="/" element={<Dashboard />} />
+            <Route
+              path="/assistant"
+              element={<Assistant />}
+            />
 
-        {/* WORKSPACE */}
-        <Route path="/assistant" element={<Assistant />} />
-        <Route path="/tasks" element={<Tasks />} />
-        <Route path="/schedule" element={<Schedule />} />
-        <Route path="/workflows" element={<Workflows />} />
-        <Route path="/activity" element={<Activity />} />
-        <Route path="/memory" element={<Memory />} />
+            <Route
+              path="/tasks"
+              element={<Tasks />}
+            />
 
-        {/* INTEGRATIONS */}
-        <Route
-          path="/integrations"
-          element={<Integrations />}
-        />
+            <Route
+              path="/schedule"
+              element={<Schedule />}
+            />
 
-        {/* SYSTEM */}
-        <Route path="/security" element={<Security />} />
-        <Route path="/settings" element={<Settings />} />
+            <Route
+              path="/workflows"
+              element={<Workflows />}
+            />
 
-      </Routes>
-    </BrowserRouter>
+            <Route
+              path="/activity"
+              element={<Activity />}
+            />
+
+            <Route
+              path="/integrations"
+              element={<Integrations />}
+            />
+
+            <Route
+              path="/memory"
+              element={<Memory />}
+            />
+
+            <Route
+              path="/security"
+              element={<Security />}
+            />
+
+            <Route
+              path="/settings"
+              element={<Settings />}
+            />
+          </Routes>
+        </BrowserRouter>
+      </BuddyProvider>
+    </AuthProvider>
   );
 }
 

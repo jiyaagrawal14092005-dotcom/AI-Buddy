@@ -270,3 +270,410 @@
             8px 8px 18px;
     }
 }
+/* =========================================================
+   ZARVIS LOWER MODULES — CLEAN REFERENCE STYLE
+========================================================= */
+
+.dashboard-main-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr;
+    gap: 16px;
+
+    margin-top: 18px;
+}
+
+.dashboard-secondary-grid {
+    display: grid;
+    grid-template-columns: 0.95fr 0.95fr 1.1fr;
+    gap: 16px;
+
+    margin-top: 16px;
+}
+
+.dashboard-main-grid > *,
+.dashboard-secondary-grid > * {
+    min-width: 0;
+    width: 100%;
+}
+
+
+/* Compact module height */
+
+.dashboard-main-grid > *,
+.dashboard-secondary-grid > * {
+    min-height: 260px;
+}
+
+
+/* =========================================================
+   GLASS MODULES
+========================================================= */
+
+.dashboard-main-grid .glass-card,
+.dashboard-secondary-grid .glass-card,
+.dashboard-secondary-grid > div {
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(12, 10, 42, 0.78),
+            rgba(7, 7, 29, 0.68)
+        );
+
+    border:
+        1px solid rgba(117, 86, 255, 0.20);
+
+    box-shadow:
+        0 10px 35px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.025);
+
+    backdrop-filter: blur(18px);
+}
+
+
+/* =========================================================
+   AGENT NETWORK
+========================================================= */
+
+.dashboard > .agent-network,
+.dashboard > section.agent-network {
+    margin-top: 16px;
+}
+
+
+/* =========================================================
+   LARGE DESKTOP
+========================================================= */
+
+@media (min-width: 1400px) {
+
+    .dashboard-main-grid {
+        grid-template-columns: 1.2fr 1fr 1fr;
+    }
+
+    .dashboard-secondary-grid {
+        grid-template-columns: 1fr 1fr 1.15fr;
+    }
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1100px) {
+
+    .dashboard-main-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .dashboard-secondary-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+
+    .dashboard-main-grid,
+    .dashboard-secondary-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .dashboard-main-grid > *,
+    .dashboard-secondary-grid > * {
+        min-height: auto;
+    }
+}
+/* =========================================================
+   ZARVIS — LOWER MODULES REFERENCE STYLE
+========================================================= */
+
+.zarvis-dashboard-modules {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr 1fr;
+    gap: 16px;
+
+    margin-top: 18px;
+}
+
+.zarvis-dashboard-modules.secondary {
+    grid-template-columns: 1fr 1fr 1.15fr;
+    margin-top: 16px;
+}
+
+.zarvis-dashboard-modules > .module-column {
+    min-width: 0;
+    min-height: 260px;
+}
+
+/* Glass module surface */
+.zarvis-dashboard-modules > .module-column > * {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(13, 11, 42, 0.82),
+            rgba(6, 6, 27, 0.72)
+        );
+
+    border:
+        1px solid rgba(126, 91, 255, 0.22);
+
+    box-shadow:
+        0 12px 35px rgba(0, 0, 0, 0.20),
+        inset 0 1px 0 rgba(255, 255, 255, 0.025);
+
+    backdrop-filter: blur(18px);
+
+    overflow: hidden;
+}
+
+/* Subtle top glow */
+.zarvis-dashboard-modules > .module-column {
+    position: relative;
+}
+
+.zarvis-dashboard-modules > .module-column::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 12%;
+    right: 12%;
+
+    height: 1px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(126, 92, 255, 0.55),
+            rgba(57, 217, 255, 0.28),
+            transparent
+        );
+
+    opacity: 0.7;
+
+    pointer-events: none;
+
+    z-index: 10;
+}
+
+/* Hover — very subtle */
+.zarvis-dashboard-modules > .module-column > * {
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+.zarvis-dashboard-modules > .module-column:hover > * {
+    border-color:
+        rgba(126, 91, 255, 0.34);
+
+    box-shadow:
+        0 14px 40px rgba(0, 0, 0, 0.24),
+        0 0 25px rgba(86, 61, 210, 0.07),
+        inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+
+/* =========================================================
+   AGENT NETWORK
+========================================================= */
+
+.zarvis-agent-section {
+    width: 100%;
+    margin-top: 16px;
+}
+
+.zarvis-agent-section > * {
+    width: 100%;
+    border-radius: 18px;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1100px) {
+
+    .zarvis-dashboard-modules,
+    .zarvis-dashboard-modules.secondary {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+
+    .zarvis-dashboard-modules,
+    .zarvis-dashboard-modules.secondary {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .zarvis-dashboard-modules > .module-column {
+        min-height: auto;
+    }
+
+    .zarvis-dashboard-modules > .module-column > * {
+        height: auto;
+    }
+
+    .zarvis-agent-section {
+        margin-top: 12px;
+    }
+}
+/* =========================================================
+   ZARVIS DASHBOARD — FINAL SPACING & ALIGNMENT
+========================================================= */
+
+.dashboard {
+    width: 100%;
+    max-width: 1500px;
+
+    margin: 0 auto;
+}
+
+
+/* Hero */
+
+.dashboard-hero {
+    width: 100%;
+
+    margin-bottom: 8px;
+}
+
+
+/* Stats */
+
+.stats-grid {
+    width: 100%;
+
+    margin-top: 0;
+    margin-bottom: 28px;
+}
+
+
+/* Quick Commands */
+
+.quick-section {
+    width: 100%;
+
+    margin-top: 0;
+    margin-bottom: 8px;
+}
+
+
+/* Zarvis Core */
+
+.zarvis-core-card {
+    width: calc(100% - 36px);
+
+    margin-left: 18px;
+    margin-right: 18px;
+}
+
+
+/* Lower modules */
+
+.dashboard-main-grid,
+.dashboard-secondary-grid {
+    width: calc(100% - 36px);
+
+    margin-left: 18px;
+    margin-right: 18px;
+}
+
+
+/* Agent Network */
+
+.agent-network {
+    width: calc(100% - 36px);
+
+    margin-left: 18px;
+    margin-right: 18px;
+}
+
+
+/* =========================================================
+   LARGE SCREENS
+========================================================= */
+
+@media (min-width: 1500px) {
+
+    .dashboard {
+        max-width: 1500px;
+    }
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 800px) {
+
+    .dashboard {
+        width: 100%;
+    }
+
+    .zarvis-core-card,
+    .dashboard-main-grid,
+    .dashboard-secondary-grid,
+    .agent-network {
+        width: calc(100% - 20px);
+
+        margin-left: 10px;
+        margin-right: 10px;
+    }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 520px) {
+
+    .dashboard {
+        width: 100%;
+    }
+
+    .zarvis-core-card,
+    .dashboard-main-grid,
+    .dashboard-secondary-grid,
+    .agent-network {
+        width: calc(100% - 20px);
+
+        margin-left: 10px;
+        margin-right: 10px;
+    }
+}
+/* =========================================================
+   ZARVIS — SIDEBAR REFERENCE WIDTH
+========================================================= */
+
+.main-content {
+    margin-left: 228px !important;
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0 !important;
+    }
+}

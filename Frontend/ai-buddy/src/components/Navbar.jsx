@@ -1,66 +1,59 @@
 import {
-  Search,
-  Bell,
-  Sun,
+    Search,
+    Bell,
+    Sun,
+    ChevronDown,
 } from "lucide-react";
 
 function Navbar() {
-  return (
-    <header className="navbar">
+    return (
+        <header className="navbar reference-navbar">
 
-      {/* LEFT GREETING */}
-      <div className="navbar-greeting">
+            <div className="reference-navbar-search">
+                <Search size={22} />
 
-        <div className="navbar-sun">
-          <Sun size={27} />
-        </div>
+                <input
+                    type="text"
+                    placeholder="Search anything..."
+                />
+            </div>
 
-        <div className="navbar-greeting-text">
-          <h2>Good Morning, Shanu!</h2>
-          <p>Your goals. My priority.</p>
-        </div>
+            <div className="reference-navbar-actions">
 
-      </div>
+                <button
+                    type="button"
+                    className="reference-navbar-icon"
+                    title="Notifications"
+                >
+                    <Bell size={24} />
+                    <span className="reference-notification-dot"></span>
+                </button>
 
-      {/* RIGHT SIDE */}
-      <div className="navbar-actions">
+                <button
+                    type="button"
+                    className="reference-navbar-icon"
+                    title="Theme"
+                >
+                    <Sun size={23} />
+                </button>
 
-        {/* SEARCH */}
-        <div className="navbar-search">
+                <button
+                    type="button"
+                    className="reference-navbar-profile"
+                >
+                    <div className="reference-profile-avatar">
+                        S
+                    </div>
 
-          <Search size={18} />
+                    <span>Shanu</span>
 
-          <input
-            type="text"
-            placeholder="Search anything..."
-          />
+                    <ChevronDown size={16} />
+                </button>
 
-        </div>
+            </div>
 
-        {/* NOTIFICATION */}
-        <button
-          type="button"
-          className="navbar-notification"
-          aria-label="Notifications"
-        >
-          <Bell size={25} />
-
-          <span className="navbar-notification-dot"></span>
-        </button>
-
-        {/* PROFILE */}
-        <button
-          type="button"
-          className="navbar-profile"
-          aria-label="Profile"
-        >
-          S
-        </button>
-
-      </div>
-
-    </header>
-  );
+        </header>
+    );
 }
 
 export default Navbar;

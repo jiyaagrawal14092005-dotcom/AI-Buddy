@@ -1,1104 +1,1730 @@
 /* =========================================================
-   ZARVIS ROBOT — REFERENCE STYLE
-   Floating Galaxy • Front Facing • No Container
-   ========================================================= */
+   ZARVIS COSMIC ROBOT
+   Reference Style — Small Robot + Open Galaxy
+========================================================= */
 
 .zarvis-robot-area {
     position: relative;
-    width: 430px;
-    height: 330px;
-    margin-left: auto;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
+    width: 100%;
+    height: 100%;
+    min-height: 570px;
     overflow: visible;
-    perspective: 1000px;
+    pointer-events: none;
+    background: transparent;
 }
 
-
 /* =========================================================
-   GALAXY ENVIRONMENT
-   ========================================================= */
+   COSMIC BACKGROUND
+========================================================= */
 
-.zarvis-robot-area::before {
-    content: "";
-
+.robot-cosmos {
     position: absolute;
-    inset: -35px;
+    inset: -10%;
+    overflow: hidden;
+    pointer-events: none;
 
     background:
-        radial-gradient(ellipse at 50% 48%,
-            rgba(92, 54, 255, 0.30),
-            transparent 45%),
-        radial-gradient(ellipse at 82% 25%,
-            rgba(48, 150, 255, 0.13),
-            transparent 30%),
-        radial-gradient(ellipse at 18% 72%,
-            rgba(210, 50, 255, 0.15),
-            transparent 34%);
+        radial-gradient(
+            ellipse at 70% 42%,
+            rgba(63, 70, 230, 0.20),
+            transparent 42%
+        ),
+        radial-gradient(
+            ellipse at 82% 58%,
+            rgba(115, 45, 235, 0.20),
+            transparent 40%
+        ),
+        radial-gradient(
+            ellipse at 60% 18%,
+            rgba(40, 95, 255, 0.12),
+            transparent 35%
+        );
 
-    pointer-events: none;
-    z-index: 0;
+    z-index: 1;
 }
 
-
 /* =========================================================
-   GALAXY GLOWS
-   ========================================================= */
+   NEBULA
+========================================================= */
 
-.galaxy-glow {
+.cosmic-nebula {
     position: absolute;
     border-radius: 50%;
-    filter: blur(48px);
+    filter: blur(55px);
     pointer-events: none;
 }
 
-.galaxy-glow-one {
-    width: 260px;
-    height: 260px;
+.nebula-purple {
+    width: 600px;
+    height: 420px;
 
-    left: 85px;
-    top: 42px;
+    right: -80px;
+    top: 40px;
 
-    background: rgba(104, 57, 255, 0.25);
+    background:
+        radial-gradient(
+            ellipse,
+            rgba(110, 55, 255, 0.28),
+            rgba(75, 45, 220, 0.12) 45%,
+            transparent 75%
+        );
 
-    animation: galaxyPulse 5s ease-in-out infinite;
+    transform: rotate(-18deg);
 }
 
-.galaxy-glow-two {
-    width: 170px;
-    height: 170px;
+.nebula-blue {
+    width: 450px;
+    height: 360px;
 
-    right: 5px;
-    top: 25px;
+    right: 80px;
+    top: 120px;
 
-    background: rgba(45, 155, 255, 0.12);
+    background:
+        radial-gradient(
+            ellipse,
+            rgba(35, 115, 255, 0.22),
+            transparent 72%
+        );
 }
 
-.galaxy-glow-three {
-    width: 180px;
-    height: 180px;
+.nebula-center {
+    width: 350px;
+    height: 300px;
 
-    left: 0;
-    bottom: 0;
+    right: 250px;
+    bottom: 30px;
 
-    background: rgba(210, 48, 255, 0.12);
+    background:
+        radial-gradient(
+            ellipse,
+            rgba(95, 45, 255, 0.18),
+            transparent 70%
+        );
 }
-
-@keyframes galaxyPulse {
-
-    0%,
-    100% {
-        transform: scale(0.88);
-        opacity: 0.62;
-    }
-
-    50% {
-        transform: scale(1.12);
-        opacity: 1;
-    }
-}
-
 
 /* =========================================================
-   STAR FIELD
-   ========================================================= */
+   LARGE STARS
+========================================================= */
 
-.galaxy-stars {
+.cosmic-star {
     position: absolute;
-    inset: 0;
 
-    pointer-events: none;
-
-    background-image:
-        radial-gradient(circle,
-            rgba(255, 255, 255, 0.95) 0 1px,
-            transparent 2px),
-        radial-gradient(circle,
-            rgba(117, 220, 255, 0.85) 0 1px,
-            transparent 2px),
-        radial-gradient(circle,
-            rgba(215, 125, 255, 0.85) 0 1px,
-            transparent 2px);
-
-    opacity: 0.52;
-}
-
-.stars-one {
-    background-size:
-        70px 70px,
-        105px 105px,
-        145px 145px;
-
-    background-position:
-        10px 20px,
-        40px 50px,
-        80px 15px;
-
-    animation: starsMove 20s linear infinite;
-}
-
-.stars-two {
-    background-size:
-        95px 95px,
-        135px 135px,
-        175px 175px;
-
-    background-position:
-        20px 10px,
-        60px 30px,
-        15px 70px;
-
-    opacity: 0.25;
-
-    animation: starsMoveReverse 26s linear infinite;
-}
-
-@keyframes starsMove {
-    from {
-        transform: translateY(0);
-    }
-
-    to {
-        transform: translateY(18px);
-    }
-}
-
-@keyframes starsMoveReverse {
-    from {
-        transform: translateX(0);
-    }
-
-    to {
-        transform: translateX(-18px);
-    }
-}
-
-
-/* =========================================================
-   FLOATING STARS
-   ========================================================= */
-
-.space-star {
-    position: absolute;
-    z-index: 3;
-
-    color: #d99aff;
-
-    text-shadow:
-        0 0 7px #a855ff,
-        0 0 17px rgba(129, 73, 255, 0.8);
-
-    pointer-events: none;
-
-    animation: floatingStar 4s ease-in-out infinite;
-}
-
-.star-one {
-    top: 24px;
-    left: 70px;
-    font-size: 13px;
-}
-
-.star-two {
-    top: 62px;
-    right: 43px;
-    font-size: 10px;
-    animation-delay: 1s;
-}
-
-.star-three {
-    left: 32px;
-    top: 174px;
-    font-size: 15px;
-    animation-delay: 1.5s;
-}
-
-.star-four {
-    right: 27px;
-    bottom: 88px;
-    font-size: 13px;
-    animation-delay: 2s;
-}
-
-.star-five {
-    left: 103px;
-    top: 108px;
-
-    color: #70ddff;
+    color: #ffffff;
     font-size: 18px;
 
-    animation-delay: 0.7s;
+    text-shadow:
+        0 0 6px rgba(255, 255, 255, 0.95),
+        0 0 16px rgba(75, 130, 255, 0.85);
+
+    opacity: 0.9;
+
+    animation:
+        starTwinkle
+        3s
+        ease-in-out
+        infinite;
 }
 
-@keyframes floatingStar {
+.star-1 {
+    top: 14%;
+    right: 42%;
+}
 
+.star-2 {
+    top: 24%;
+    right: 12%;
+    font-size: 13px;
+}
+
+.star-3 {
+    top: 48%;
+    right: 46%;
+    font-size: 12px;
+}
+
+.star-4 {
+    top: 60%;
+    right: 20%;
+    font-size: 16px;
+}
+
+.star-5 {
+    top: 35%;
+    right: 30%;
+    font-size: 10px;
+}
+
+.star-6 {
+    top: 72%;
+    right: 40%;
+    font-size: 13px;
+}
+
+.star-7 {
+    top: 17%;
+    right: 65%;
+    font-size: 11px;
+}
+
+.star-8 {
+    top: 76%;
+    right: 68%;
+    font-size: 10px;
+}
+
+@keyframes starTwinkle {
     0%,
     100% {
-        transform: translateY(0) scale(1);
-        opacity: 0.55;
+        opacity: 0.45;
+        transform: scale(0.8);
     }
 
     50% {
-        transform: translateY(-8px) scale(1.2);
         opacity: 1;
+        transform: scale(1.15);
     }
 }
 
-
 /* =========================================================
-   ROBOT AURA
-   ========================================================= */
+   TINY STARS
+========================================================= */
 
-.robot-glow {
+.tiny-star {
     position: absolute;
 
-    width: 255px;
-    height: 255px;
+    width: 3px;
+    height: 3px;
+
+    border-radius: 50%;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 0 6px rgba(255, 255, 255, 0.9),
+        0 0 12px rgba(80, 120, 255, 0.8);
+}
+
+.tiny-1 {
+    top: 18%;
+    right: 25%;
+}
+
+.tiny-2 {
+    top: 30%;
+    right: 55%;
+}
+
+.tiny-3 {
+    top: 43%;
+    right: 18%;
+}
+
+.tiny-4 {
+    top: 52%;
+    right: 70%;
+}
+
+.tiny-5 {
+    top: 64%;
+    right: 55%;
+}
+
+.tiny-6 {
+    top: 75%;
+    right: 25%;
+}
+
+.tiny-7 {
+    top: 12%;
+    right: 52%;
+}
+
+.tiny-8 {
+    top: 38%;
+    right: 78%;
+}
+
+.tiny-9 {
+    top: 68%;
+    right: 75%;
+}
+
+.tiny-10 {
+    top: 82%;
+    right: 48%;
+}
+
+/* =========================================================
+   GALAXY STREAK
+========================================================= */
+
+.galaxy-streak {
+    position: absolute;
+
+    width: 780px;
+    height: 160px;
+
+    right: -70px;
+    top: 70px;
 
     border-radius: 50%;
 
     background:
-        radial-gradient(circle,
-            rgba(159, 73, 255, 0.58),
-            rgba(98, 60, 255, 0.27) 35%,
-            rgba(45, 130, 255, 0.09) 55%,
-            transparent 72%);
+        linear-gradient(
+            110deg,
+            transparent 5%,
+            rgba(45, 100, 255, 0.03) 25%,
+            rgba(115, 55, 255, 0.18) 48%,
+            rgba(45, 115, 255, 0.12) 65%,
+            transparent 90%
+        );
 
-    filter: blur(22px);
+    filter: blur(24px);
 
-    z-index: 2;
-
-    animation: robotAura 4s ease-in-out infinite;
+    transform: rotate(-28deg);
 }
-
-@keyframes robotAura {
-
-    0%,
-    100% {
-        transform: scale(0.9);
-        opacity: 0.7;
-    }
-
-    50% {
-        transform: scale(1.08);
-        opacity: 1;
-    }
-}
-
 
 /* =========================================================
-   ROBOT BODY
-   ========================================================= */
+   ROBOT VISUAL
+========================================================= */
 
-.cute-zarvis {
-    position: relative;
-    z-index: 10;
+.robot-visual {
+    position: absolute;
 
-    width: 145px;
-    height: 205px;
+    /* Reference screenshot ke according */
+    left: 54%;
+    top: 50%;
+
+    width: 500px;
+    height: 500px;
+
+    transform: translate(-50%, -50%);
 
     display: flex;
-    flex-direction: column;
     align-items: center;
+    justify-content: center;
 
-    animation: robotFloat 4s ease-in-out infinite;
+    background: transparent;
+
+    z-index: 20;
 }
 
-@keyframes robotFloat {
+/* =========================================================
+   ROBOT IMAGE
+========================================================= */
 
+.robot-image-wrap {
+    position: relative;
+
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    z-index: 15;
+}
+
+.zarvis-robot-image {
+    display: block;
+
+    /* Small robot */
+    width: 280px;
+
+    height: auto;
+
+    max-width: none;
+
+    object-fit: contain;
+
+    background: transparent;
+
+    filter:
+        drop-shadow(
+            0 0 14px
+            rgba(55, 100, 255, 0.30)
+        )
+        drop-shadow(
+            0 0 30px
+            rgba(109, 55, 255, 0.18)
+        );
+
+    animation:
+        zarvisRobotFloat
+        5s
+        ease-in-out
+        infinite;
+}
+
+@keyframes zarvisRobotFloat {
     0%,
     100% {
         transform: translateY(0);
     }
 
     50% {
-        transform: translateY(-9px);
+        transform: translateY(-7px);
     }
 }
-
-
-/* =========================================================
-   EARS / HEADPHONES
-   ========================================================= */
-
-.zarvis-ear {
-    position: absolute;
-
-    top: 47px;
-
-    width: 30px;
-    height: 51px;
-
-    border-radius: 17px;
-
-    background:
-        linear-gradient(180deg,
-            #ffffff,
-            #f0edff 45%,
-            #c0b7f4 75%,
-            #8d80d7);
-
-    box-shadow:
-        inset 3px 3px 7px rgba(255, 255, 255, 0.95),
-        0 0 17px rgba(139, 74, 255, 0.62);
-}
-
-.zarvis-ear-left {
-    left: 0;
-}
-
-.zarvis-ear-right {
-    right: 0;
-}
-
-.ear-inner {
-    position: absolute;
-    inset: 7px;
-
-    border-radius: 50%;
-
-    background:
-        radial-gradient(circle,
-            #c38aff,
-            #733ce9 60%,
-            #3b229b);
-
-    box-shadow:
-        0 0 10px rgba(150, 75, 255, 0.9);
-}
-
-
-/* =========================================================
-   HEAD
-   ========================================================= */
-
-.zarvis-head {
-    position: relative;
-
-    width: 116px;
-    height: 94px;
-
-    margin-top: 28px;
-
-    border-radius: 46%;
-
-    background:
-        linear-gradient(145deg,
-            #ffffff 0%,
-            #f8f5ff 25%,
-            #e5e1ff 55%,
-            #c2b9f3 78%,
-            #a297e3 100%);
-
-    box-shadow:
-        inset 7px 7px 15px rgba(255, 255, 255, 0.95),
-        inset -9px -11px 18px rgba(75, 58, 180, 0.22),
-        0 0 28px rgba(140, 70, 255, 0.55);
-}
-
-
-/* =========================================================
-   FACE
-   ========================================================= */
-
-.zarvis-face {
-    position: absolute;
-    inset: 9px;
-
-    border-radius: 40%;
-
-    background:
-        radial-gradient(circle at 50% 18%,
-            #3a3275,
-            #181340 62%,
-            #090725 100%);
-
-    box-shadow:
-        inset 0 0 22px rgba(70, 92, 255, 0.35);
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    gap: 30px;
-}
-
-
-/* =========================================================
-   EYES
-   ========================================================= */
-
-.zarvis-eye {
-    position: relative;
-
-    width: 17px;
-    height: 23px;
-
-    border-radius: 50%;
-
-    background:
-        linear-gradient(180deg,
-            #ffffff,
-            #8feaff);
-
-    box-shadow:
-        0 0 8px #4edcff,
-        0 0 18px rgba(72, 205, 255, 0.8);
-
-    animation: robotBlink 5s ease-in-out infinite;
-}
-
-.zarvis-eye span {
-    position: absolute;
-
-    width: 5px;
-    height: 5px;
-
-    top: 3px;
-    left: 6px;
-
-    border-radius: 50%;
-
-    background: white;
-
-    filter: blur(1px);
-}
-
-@keyframes robotBlink {
-
-    0%,
-    43%,
-    47%,
-    100% {
-        transform: scaleY(1);
-    }
-
-    45% {
-        transform: scaleY(0.08);
-    }
-}
-
-
-/* =========================================================
-   SMILE
-   ========================================================= */
-
-.zarvis-smile {
-    position: absolute;
-
-    left: 50%;
-    bottom: 10px;
-
-    width: 27px;
-    height: 13px;
-
-    transform: translateX(-50%);
-
-    border-bottom: 3px solid #81eaff;
-
-    border-radius: 0 0 50% 50%;
-
-    filter:
-        drop-shadow(0 0 7px rgba(70, 220, 255, 0.95));
-}
-
-
-/* =========================================================
-   HEAD SHINE
-   ========================================================= */
-
-.zarvis-head-shine {
-    position: absolute;
-
-    top: 8px;
-    left: 22px;
-
-    width: 45px;
-    height: 11px;
-
-    border-radius: 50%;
-
-    background: rgba(255, 255, 255, 0.76);
-
-    filter: blur(5px);
-}
-
-
-/* =========================================================
-   NECK
-   ========================================================= */
-
-.zarvis-neck {
-    width: 32px;
-    height: 13px;
-
-    margin-top: -1px;
-
-    border-radius: 0 0 10px 10px;
-
-    background:
-        linear-gradient(180deg,
-            #eeeaff,
-            #aaa0e8);
-}
-
-
-/* =========================================================
-   BODY
-   ========================================================= */
-
-.zarvis-body {
-    position: relative;
-
-    width: 88px;
-    height: 73px;
-
-    border-radius:
-        24px 24px 31px 31px;
-
-    background:
-        linear-gradient(145deg,
-            #ffffff,
-            #f1eeff 38%,
-            #ddd8ff 65%,
-            #aaa0e9);
-
-    box-shadow:
-        inset 7px 7px 13px rgba(255, 255, 255, 0.9),
-        inset -9px -10px 17px rgba(72, 55, 180, 0.2),
-        0 0 22px rgba(136, 70, 255, 0.4);
-}
-
-
-/* =========================================================
-   Z LOGO
-   ========================================================= */
-
-.zarvis-chest {
-    position: absolute;
-
-    top: 15px;
-    left: 50%;
-
-    width: 41px;
-    height: 41px;
-
-    transform: translateX(-50%);
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 50%;
-
-    background:
-        radial-gradient(circle,
-            #876bff,
-            #5a3be0 55%,
-            #36219e);
-
-    border:
-        2px solid rgba(255, 255, 255, 0.5);
-
-    color: white;
-
-    font-size: 20px;
-    font-weight: 700;
-
-    box-shadow:
-        0 0 15px rgba(139, 70, 255, 0.95),
-        inset 0 0 9px rgba(255, 255, 255, 0.2);
-}
-
-
-/* =========================================================
-   BODY SHINE
-   ========================================================= */
-
-.zarvis-body-shine {
-    position: absolute;
-
-    top: 8px;
-    left: 16px;
-
-    width: 32px;
-    height: 8px;
-
-    border-radius: 50%;
-
-    background: rgba(255, 255, 255, 0.65);
-
-    filter: blur(4px);
-}
-
-
-/* =========================================================
-   ARMS
-   ========================================================= */
-
-.zarvis-arm {
-    position: absolute;
-
-    top: 113px;
-
-    width: 20px;
-    height: 49px;
-
-    border-radius: 14px;
-
-    background:
-        linear-gradient(180deg,
-            #ffffff,
-            #e6e2ff 55%,
-            #aaa0e8);
-
-    box-shadow:
-        inset 2px 2px 5px rgba(255, 255, 255, 0.8),
-        0 0 11px rgba(139, 74, 255, 0.3);
-}
-
-.zarvis-arm-left {
-    left: 6px;
-    transform: rotate(20deg);
-}
-
-.zarvis-arm-right {
-    right: 6px;
-    transform: rotate(-20deg);
-}
-
-
-/* =========================================================
-   HANDS
-   ========================================================= */
-
-.zarvis-hand {
-    position: absolute;
-
-    left: 50%;
-    bottom: -5px;
-
-    width: 22px;
-    height: 16px;
-
-    transform: translateX(-50%);
-
-    border-radius: 50%;
-
-    background:
-        linear-gradient(180deg,
-            #eeeaff,
-            #aaa0e8);
-}
-
 
 /* =========================================================
    ORBIT RINGS
-   ========================================================= */
+========================================================= */
 
 .robot-orbit {
     position: absolute;
 
     left: 50%;
-    top: 60%;
+    top: 59%;
 
     border-radius: 50%;
 
     pointer-events: none;
-    transform-style: preserve-3d;
-}
 
-
-/* PURPLE ORBIT */
-
-.robot-orbit-1 {
-    width: 315px;
-    height: 85px;
+    background: transparent;
 
     border:
-        1.5px solid rgba(146, 72, 255, 0.9);
+        1.5px solid
+        rgba(86, 91, 255, 0.65);
 
     box-shadow:
-        0 0 10px rgba(146, 72, 255, 0.55);
+        0 0 8px
+        rgba(65, 100, 255, 0.35),
+
+        0 0 22px
+        rgba(105, 65, 255, 0.22);
 
     transform:
-        translate(-50%, -50%) rotateX(67deg) rotateZ(7deg);
-
-    animation:
-        orbitPurple 8s linear infinite;
+        translate(-50%, -50%);
 }
 
-@keyframes orbitPurple {
-    from {
-        transform:
-            translate(-50%, -50%) rotateX(67deg) rotateZ(7deg);
-    }
-
-    to {
-        transform:
-            translate(-50%, -50%) rotateX(67deg) rotateZ(367deg);
-    }
-}
-
-
-/* BLUE ORBIT */
-
-.robot-orbit-2 {
-    width: 280px;
-    height: 73px;
-
-    border:
-        1.5px solid rgba(55, 205, 255, 0.82);
-
-    box-shadow:
-        0 0 12px rgba(55, 205, 255, 0.4);
+.orbit-1 {
+    width: 420px;
+    height: 105px;
 
     transform:
-        translate(-50%, -50%) rotateX(67deg) rotateZ(-20deg);
-
-    animation:
-        orbitBlue 10s linear infinite reverse;
+        translate(-50%, -50%)
+        rotate(-12deg);
 }
 
-@keyframes orbitBlue {
-    from {
-        transform:
-            translate(-50%, -50%) rotateX(67deg) rotateZ(-20deg);
-    }
+.orbit-2 {
+    width: 390px;
+    height: 92px;
 
-    to {
-        transform:
-            translate(-50%, -50%) rotateX(67deg) rotateZ(-380deg);
-    }
-}
-
-
-/* PINK ORBIT */
-
-.robot-orbit-3 {
-    width: 240px;
-    height: 97px;
-
-    border:
-        1px solid rgba(230, 76, 255, 0.58);
-
-    box-shadow:
-        0 0 12px rgba(230, 76, 255, 0.28);
+    border-color:
+        rgba(55, 145, 255, 0.58);
 
     transform:
-        translate(-50%, -50%) rotateX(64deg) rotateZ(72deg);
-
-    animation:
-        orbitPink 12s linear infinite;
+        translate(-50%, -50%)
+        rotate(10deg);
 }
 
-@keyframes orbitPink {
-    from {
-        transform:
-            translate(-50%, -50%) rotateX(64deg) rotateZ(72deg);
-    }
+.orbit-3 {
+    width: 340px;
+    height: 75px;
 
-    to {
-        transform:
-            translate(-50%, -50%) rotateX(64deg) rotateZ(432deg);
-    }
+    border-color:
+        rgba(175, 75, 255, 0.58);
+
+    transform:
+        translate(-50%, -50%)
+        rotate(-17deg);
 }
-
 
 /* =========================================================
-   ORBIT PARTICLES
-   ========================================================= */
+   ORBIT GLOW
+========================================================= */
 
-.orbit-particle {
-    position: absolute;
-
-    width: 8px;
-    height: 8px;
-
-    top: 50%;
-    right: -4px;
-
-    transform: translateY(-50%);
-
-    border-radius: 50%;
-
-    background: white;
-
-    box-shadow:
-        0 0 7px white,
-        0 0 16px #51dfff,
-        0 0 27px #914cff;
-}
-
-
-/* =========================================================
-   GLOWING PLATFORM
-   ========================================================= */
-
-.zarvis-platform {
+.orbit-glow {
     position: absolute;
 
     left: 50%;
-    bottom: 15px;
-
-    width: 210px;
-    height: 42px;
-
-    transform: translateX(-50%);
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    z-index: 5;
-}
-
-.platform-light {
-    position: absolute;
-
-    width: 210px;
-    height: 36px;
+    top: 59%;
 
     border-radius: 50%;
 
+    pointer-events: none;
+
+    filter: blur(6px);
+
+    opacity: 0.7;
+}
+
+.glow-1 {
+    width: 340px;
+    height: 65px;
+
+    transform:
+        translate(-50%, -50%)
+        rotate(-12deg);
+
+    box-shadow:
+        0 0 35px
+        rgba(55, 90, 255, 0.28);
+}
+
+.glow-2 {
+    width: 285px;
+    height: 52px;
+
+    transform:
+        translate(-50%, -50%)
+        rotate(10deg);
+
+    box-shadow:
+        0 0 32px
+        rgba(150, 65, 255, 0.24);
+}
+
+/* =========================================================
+   SPEECH BUBBLE
+========================================================= */
+
+.robot-speech-bubble {
+    position: absolute;
+
+    right: -10px;
+    top: 20px;
+
+    width: 260px;
+
+    padding: 15px 20px;
+
+    border-radius: 24px;
+
+    border:
+        1.5px solid
+        rgba(130, 90, 255, 0.85);
+
     background:
-        radial-gradient(ellipse,
-            rgba(153, 70, 255, 0.9),
-            rgba(61, 190, 255, 0.25),
-            transparent 72%);
+        rgba(7, 8, 38, 0.68);
 
-    filter: blur(8px);
+    backdrop-filter: blur(12px);
 
-    animation:
-        platformPulse 3s ease-in-out infinite;
+    box-shadow:
+        0 0 18px
+        rgba(105, 70, 255, 0.30),
+
+        inset 0 0 18px
+        rgba(80, 65, 255, 0.08);
+
+    z-index: 30;
+}
+
+.robot-speech-bubble strong {
+    display: block;
+
+    color: #ffffff;
+
+    font-size: 15px;
+
+    margin-bottom: 5px;
+}
+
+.robot-speech-bubble span {
+    display: block;
+
+    color: #bbb9df;
+
+    font-size: 13px;
+
+    line-height: 1.45;
+}
+
+.speech-arrow {
+    position: absolute;
+
+    left: 28px;
+    bottom: -17px;
+
+    width: 32px;
+    height: 24px;
+
+    background:
+        rgba(7, 8, 38, 0.68);
+
+    border-left:
+        1.5px solid
+        rgba(130, 90, 255, 0.85);
+
+    border-bottom:
+        1.5px solid
+        rgba(130, 90, 255, 0.85);
+
+    transform:
+        skewX(-25deg)
+        rotate(-10deg);
+}
+
+/* =========================================================
+   GLOWING PLATFORM
+========================================================= */
+
+.robot-platform {
+    position: absolute;
+
+    left: 50%;
+    bottom: 42px;
+
+    width: 330px;
+    height: 80px;
+
+    transform: translateX(-50%);
+
+    z-index: 5;
 }
 
 .platform-ring {
     position: absolute;
 
-    width: 162px;
-    height: 27px;
+    left: 50%;
+    top: 50%;
+
+    transform:
+        translate(-50%, -50%);
 
     border-radius: 50%;
+}
+
+.ring-1 {
+    width: 330px;
+    height: 58px;
 
     border:
-        2px solid rgba(146, 72, 255, 0.9);
+        1.5px solid
+        rgba(90, 75, 255, 0.65);
 
     box-shadow:
-        0 0 10px rgba(146, 72, 255, 0.8),
-        0 0 25px rgba(91, 76, 255, 0.5);
+        0 0 12px
+        rgba(80, 75, 255, 0.45),
+
+        0 0 30px
+        rgba(100, 60, 255, 0.25);
+}
+
+.ring-2 {
+    width: 255px;
+    height: 44px;
+
+    border:
+        1.5px solid
+        rgba(180, 75, 255, 0.65);
+
+    box-shadow:
+        0 0 14px
+        rgba(175, 70, 255, 0.45);
+}
+
+.ring-3 {
+    width: 175px;
+    height: 30px;
+
+    border:
+        1.5px solid
+        rgba(55, 195, 255, 0.65);
+
+    box-shadow:
+        0 0 15px
+        rgba(50, 190, 255, 0.50);
 }
 
 .platform-core {
     position: absolute;
 
-    width: 65px;
-    height: 13px;
+    left: 50%;
+    top: 50%;
+
+    width: 95px;
+    height: 17px;
+
+    transform:
+        translate(-50%, -50%);
 
     border-radius: 50%;
 
     background:
-        radial-gradient(ellipse,
-            rgba(255, 255, 255, 0.85),
-            rgba(119, 68, 255, 0.7),
-            transparent 70%);
+        radial-gradient(
+            ellipse,
+            rgba(90, 220, 255, 0.80),
+            rgba(120, 80, 255, 0.42) 45%,
+            transparent 75%
+        );
 
-    filter: blur(3px);
-
-    animation:
-        platformCore 2.5s ease-in-out infinite;
-}
-
-@keyframes platformPulse {
-
-    0%,
-    100% {
-        transform: scaleX(0.84);
-        opacity: 0.65;
-    }
-
-    50% {
-        transform: scaleX(1.1);
-        opacity: 1;
-    }
-}
-
-@keyframes platformCore {
-
-    0%,
-    100% {
-        transform: scaleX(0.8);
-        opacity: 0.65;
-    }
-
-    50% {
-        transform: scaleX(1.15);
-        opacity: 1;
-    }
-}
-
-
-/* =========================================================
-   SPEECH BUBBLE
-   ========================================================= */
-
-.robot-message {
-    position: absolute;
-
-    top: 8px;
-    right: -5px;
-
-    z-index: 20;
-
-    min-width: 160px;
-
-    padding: 11px 15px;
-
-    border-radius:
-        15px 15px 5px 15px;
-
-    background:
-        linear-gradient(135deg,
-            rgba(34, 23, 104, 0.94),
-            rgba(12, 15, 59, 0.92));
-
-    border:
-        1px solid rgba(115, 78, 255, 0.42);
+    filter: blur(2px);
 
     box-shadow:
-        0 0 20px rgba(99, 55, 255, 0.18),
-        inset 0 0 15px rgba(120, 70, 255, 0.05);
+        0 0 22px
+        rgba(80, 210, 255, 0.65),
 
-    backdrop-filter: blur(12px);
+        0 0 45px
+        rgba(120, 75, 255, 0.45);
 }
 
-.robot-message::after {
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1280px) {
+
+    .robot-visual {
+        left: 55%;
+    }
+
+    .zarvis-robot-image {
+        width: 260px;
+    }
+
+    .robot-speech-bubble {
+        width: 240px;
+        right: -20px;
+    }
+}
+
+@media (max-width: 1050px) {
+
+    .robot-visual {
+        left: 56%;
+    }
+
+    .zarvis-robot-image {
+        width: 240px;
+    }
+
+    .robot-speech-bubble {
+        width: 220px;
+        right: -10px;
+    }
+}
+
+@media (max-width: 800px) {
+
+    .zarvis-robot-area {
+        min-height: 500px;
+    }
+
+    .robot-visual {
+        position: relative;
+
+        left: auto;
+        top: auto;
+
+        width: 100%;
+        height: 500px;
+
+        transform: none;
+    }
+
+    .zarvis-robot-image {
+        width: 220px;
+    }
+
+    .robot-speech-bubble {
+        top: 25px;
+        right: 5%;
+    }
+
+    .robot-platform {
+        bottom: 35px;
+    }
+}
+
+@media (max-width: 520px) {
+
+    .zarvis-robot-area {
+        min-height: 450px;
+    }
+
+    .robot-visual {
+        height: 450px;
+    }
+
+    .zarvis-robot-image {
+        width: 190px;
+    }
+
+    .robot-speech-bubble {
+        width: 200px;
+        padding: 12px 16px;
+    }
+
+    .robot-platform {
+        width: 280px;
+    }
+
+    .ring-1 {
+        width: 280px;
+    }
+
+    .ring-2 {
+        width: 220px;
+    }
+
+    .ring-3 {
+        width: 155px;
+    }
+
+    .robot-orbit {
+        opacity: 0.7;
+    }
+}
+/* =========================================================
+   ROBOT — MOVE CLOSER TO CENTER
+========================================================= */
+
+.robot-visual {
+    left: 50% !important;
+}
+
+@media (max-width: 1280px) {
+    .robot-visual {
+        left: 50% !important;
+    }
+}
+
+@media (max-width: 1050px) {
+    .robot-visual {
+        left: 51% !important;
+    }
+}
+/* ROBOT — MOVE MORE LEFT */
+
+.robot-visual {
+    left: 47% !important;
+}
+
+@media (max-width: 1280px) {
+    .robot-visual {
+        left: 47% !important;
+    }
+}
+
+@media (max-width: 1050px) {
+    .robot-visual {
+        left: 49% !important;
+    }
+}
+/* =========================================================
+   ZARVIS SPEECH BUBBLE — REFERENCE POSITION
+========================================================= */
+
+.robot-speech-bubble {
+    top: 18px !important;
+    right: 20px !important;
+
+    width: 255px !important;
+
+    padding: 14px 18px !important;
+
+    border-radius: 22px !important;
+
+    background:
+        rgba(8, 8, 38, 0.62) !important;
+
+    border:
+        1.5px solid
+        rgba(145, 95, 255, 0.82) !important;
+
+    box-shadow:
+        0 0 18px
+        rgba(105, 70, 255, 0.25),
+
+        inset 0 0 18px
+        rgba(80, 65, 255, 0.06) !important;
+
+    backdrop-filter: blur(14px);
+
+    z-index: 35;
+}
+
+.robot-speech-bubble strong {
+    font-size: 14px !important;
+
+    margin-bottom: 5px !important;
+}
+
+.robot-speech-bubble span {
+    font-size: 12px !important;
+
+    line-height: 1.45 !important;
+}
+
+.speech-arrow {
+    left: 30px !important;
+    bottom: -16px !important;
+}
+
+
+/* Responsive */
+
+@media (max-width: 1280px) {
+    .robot-speech-bubble {
+        right: 5px !important;
+        width: 240px !important;
+    }
+}
+
+@media (max-width: 1050px) {
+    .robot-speech-bubble {
+        right: 0 !important;
+        width: 225px !important;
+    }
+}
+
+@media (max-width: 800px) {
+    .robot-speech-bubble {
+        top: 22px !important;
+        right: 4% !important;
+        width: 220px !important;
+    }
+}
+/* =========================================================
+   ZARVIS — PURPLE GALAXY BEHIND ROBOT
+========================================================= */
+
+.robot-cosmos {
+    opacity: 1 !important;
+
+    background:
+        radial-gradient(
+            ellipse 55% 65% at 68% 42%,
+            rgba(110, 65, 255, 0.34),
+            transparent 62%
+        ),
+        radial-gradient(
+            ellipse 45% 55% at 82% 52%,
+            rgba(160, 55, 235, 0.30),
+            transparent 65%
+        ),
+        radial-gradient(
+            ellipse 60% 35% at 70% 72%,
+            rgba(55, 90, 255, 0.22),
+            transparent 68%
+        ),
+        radial-gradient(
+            ellipse 35% 45% at 52% 35%,
+            rgba(80, 55, 210, 0.18),
+            transparent 70%
+        ) !important;
+}
+
+/* Large soft purple galaxy cloud */
+
+.robot-cosmos::before {
     content: "";
 
     position: absolute;
 
-    left: 20px;
-    bottom: -7px;
+    width: 720px;
+    height: 500px;
 
-    width: 13px;
-    height: 13px;
+    right: -80px;
+    top: 35px;
+
+    border-radius: 50%;
 
     background:
-        rgba(25, 20, 82, 0.96);
+        radial-gradient(
+            ellipse at center,
+            rgba(150, 85, 255, 0.28) 0%,
+            rgba(110, 65, 235, 0.20) 30%,
+            rgba(70, 85, 220, 0.12) 50%,
+            transparent 74%
+        );
 
-    border-right:
-        1px solid rgba(115, 78, 255, 0.42);
+    filter: blur(42px);
 
-    border-bottom:
-        1px solid rgba(115, 78, 255, 0.42);
+    transform: rotate(-22deg);
 
-    transform: rotate(45deg);
+    pointer-events: none;
+
+    z-index: 2;
 }
 
-.robot-message strong {
-    display: block;
+/* Purple-blue galaxy streak */
 
-    color: white;
+.robot-cosmos::after {
+    content: "";
 
-    font-size: 13px;
-    font-weight: 600;
-
-    margin-bottom: 5px;
-}
-
-.robot-message span {
-    display: block;
-
-    color: #c7c1ff;
-
-    font-size: 8px;
-
-    white-space: nowrap;
-}
-
-
-/* =========================================================
-   VOICE READY
-   ========================================================= */
-
-.robot-voice {
     position: absolute;
 
-    right: 18px;
-    bottom: 25px;
+    width: 850px;
+    height: 125px;
 
-    z-index: 20;
+    right: -130px;
+    top: 155px;
 
-    display: flex;
-    align-items: center;
+    border-radius: 50%;
 
-    gap: 5px;
+    background:
+        linear-gradient(
+            105deg,
+            transparent 5%,
+            rgba(70, 100, 255, 0.05) 20%,
+            rgba(130, 65, 255, 0.20) 42%,
+            rgba(190, 75, 255, 0.18) 52%,
+            rgba(75, 105, 255, 0.12) 67%,
+            transparent 90%
+        );
 
-    color: #69eaff;
+    filter: blur(20px);
 
-    font-size: 7px;
+    transform: rotate(-25deg);
 
-    letter-spacing: 1px;
+    pointer-events: none;
 
-    opacity: 0.75;
+    z-index: 3;
 }
 
-.robot-voice svg {
+/* Keep robot above galaxy */
+
+.robot-visual {
+    z-index: 20 !important;
+}
+
+.robot-image-wrap {
+    z-index: 25 !important;
+}
+/* =========================================================
+   ZARVIS — GALAXY STAR DUST
+========================================================= */
+
+.robot-cosmos {
+    overflow: visible !important;
+}
+
+/* Soft galaxy dust */
+
+.robot-cosmos .nebula-purple {
+    opacity: 0.9 !important;
+    filter: blur(48px) !important;
+}
+
+.robot-cosmos .nebula-blue {
+    opacity: 0.75 !important;
+    filter: blur(42px) !important;
+}
+
+/* Make existing stars blend into the galaxy */
+
+.robot-cosmos .cosmic-star {
+    z-index: 8 !important;
+
+    text-shadow:
+        0 0 5px rgba(255, 255, 255, 0.95),
+        0 0 12px rgba(105, 130, 255, 0.85),
+        0 0 22px rgba(145, 75, 255, 0.55) !important;
+}
+
+/* Tiny stars */
+
+.robot-cosmos .tiny-star {
+    z-index: 9 !important;
+
+    box-shadow:
+        0 0 5px rgba(255, 255, 255, 0.9),
+        0 0 11px rgba(85, 135, 255, 0.75),
+        0 0 18px rgba(145, 75, 255, 0.5) !important;
+}
+
+/* Extra galaxy glow directly behind robot */
+
+.robot-cosmos {
+    box-shadow:
+        inset -180px 0 220px
+        rgba(100, 55, 240, 0.08);
+}
+
+/* Robot stays completely above everything */
+
+.robot-visual,
+.robot-image-wrap,
+.zarvis-robot-image {
+    position: relative;
+    z-index: 30 !important;
+}
+/* =========================================================
+   ZARVIS — FUTURISTIC ENERGY FIELD
+========================================================= */
+
+.robot-cosmos {
+    isolation: isolate;
+}
+
+/* Soft energy halo behind Zarvis */
+
+.robot-cosmos .nebula-center {
+    width: 520px !important;
+    height: 420px !important;
+
+    right: 180px !important;
+    bottom: 10px !important;
+
+    background:
+        radial-gradient(
+            ellipse at center,
+            rgba(95, 75, 255, 0.20),
+            rgba(90, 55, 220, 0.10) 38%,
+            transparent 72%
+        ) !important;
+
+    filter: blur(38px) !important;
+
+    opacity: 0.9;
+}
+
+/* Deep blue edge glow */
+
+.robot-cosmos .nebula-blue {
+    background:
+        radial-gradient(
+            ellipse,
+            rgba(45, 110, 255, 0.20),
+            rgba(80, 65, 230, 0.08) 45%,
+            transparent 75%
+        ) !important;
+}
+
+/* Purple depth */
+
+.robot-cosmos .nebula-purple {
+    background:
+        radial-gradient(
+            ellipse,
+            rgba(135, 65, 255, 0.26),
+            rgba(90, 50, 220, 0.13) 42%,
+            transparent 75%
+        ) !important;
+}
+
+/* Keep stars above energy field */
+
+.robot-cosmos .cosmic-star,
+.robot-cosmos .tiny-star {
+    position: absolute;
+    z-index: 12 !important;
+}
+
+/* Robot always stays clean and sharp */
+
+.robot-visual {
+    filter: none !important;
+}
+
+.zarvis-robot-image {
     filter:
-        drop-shadow(0 0 5px rgba(70, 220, 255, 0.8));
+        drop-shadow(
+            0 0 14px
+            rgba(55, 100, 255, 0.30)
+        )
+        drop-shadow(
+            0 0 30px
+            rgba(109, 55, 255, 0.18)
+        ) !important;
+}
+/* =========================================================
+   ZARVIS — CONTINUOUS MILKY WAY BAND
+========================================================= */
+
+.robot-cosmos {
+    background:
+        radial-gradient(
+            ellipse 80% 70% at 72% 48%,
+            rgba(70, 75, 220, 0.14),
+            transparent 65%
+        ),
+        radial-gradient(
+            ellipse 55% 45% at 82% 50%,
+            rgba(145, 55, 245, 0.18),
+            transparent 68%
+        ) !important;
 }
 
+/* Main diagonal galaxy */
+
+.robot-cosmos .galaxy-streak {
+    width: 1050px !important;
+    height: 190px !important;
+
+    right: -180px !important;
+    top: 95px !important;
+
+    background:
+        linear-gradient(
+            108deg,
+            transparent 2%,
+            rgba(45, 90, 255, 0.025) 18%,
+            rgba(75, 100, 255, 0.10) 30%,
+            rgba(125, 65, 255, 0.20) 43%,
+            rgba(185, 80, 255, 0.17) 51%,
+            rgba(105, 80, 255, 0.13) 61%,
+            rgba(55, 100, 240, 0.07) 72%,
+            transparent 94%
+        ) !important;
+
+    filter: blur(19px) !important;
+
+    transform: rotate(-25deg) !important;
+
+    opacity: 0.95 !important;
+}
+
+/* Fine bright core of the galaxy */
+
+.robot-cosmos .galaxy-streak::after {
+    content: "";
+
+    position: absolute;
+
+    width: 78%;
+    height: 2px;
+
+    left: 10%;
+    top: 50%;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(110, 140, 255, 0.16),
+            rgba(190, 125, 255, 0.28),
+            rgba(100, 125, 255, 0.14),
+            transparent
+        );
+
+    filter: blur(2px);
+
+    transform: rotate(0deg);
+}
+
+/* Slight purple atmospheric glow */
+
+.robot-cosmos .galaxy-streak::before {
+    content: "";
+
+    position: absolute;
+
+    inset: -80px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            ellipse,
+            rgba(120, 65, 255, 0.10),
+            transparent 70%
+        );
+
+    filter: blur(30px);
+}
+/* =========================================================
+   ZARVIS — PREMIUM GALAXY ORBIT RINGS
+========================================================= */
+
+.robot-visual {
+    position: absolute;
+}
+
+/* Main orbit rings */
+
+.robot-orbit {
+    position: absolute;
+
+    left: 50%;
+    top: 53%;
+
+    border-radius: 50%;
+
+    transform:
+        translate(-50%, -50%)
+        rotate(-14deg);
+
+    pointer-events: none;
+
+    background: transparent !important;
+
+    border: 1px solid
+        rgba(85, 110, 255, 0.55);
+
+    box-shadow:
+        0 0 7px
+        rgba(55, 115, 255, 0.45),
+        0 0 18px
+        rgba(105, 65, 255, 0.28),
+        inset 0 0 10px
+        rgba(80, 90, 255, 0.12);
+
+    opacity: 0.9;
+
+    z-index: 8 !important;
+}
+
+/* Large horizontal orbit */
+
+.orbit-1 {
+    width: 470px !important;
+    height: 150px !important;
+
+    border-color:
+        rgba(70, 120, 255, 0.55);
+
+    transform:
+        translate(-50%, -50%)
+        rotate(-16deg);
+}
+
+/* Purple crossing orbit */
+
+.orbit-2 {
+    width: 430px !important;
+    height: 135px !important;
+
+    border-color:
+        rgba(170, 70, 255, 0.58);
+
+    transform:
+        translate(-50%, -50%)
+        rotate(18deg);
+
+    box-shadow:
+        0 0 8px
+        rgba(155, 70, 255, 0.45),
+        0 0 20px
+        rgba(115, 65, 255, 0.25);
+}
+
+/* Thin blue inner orbit */
+
+.orbit-3 {
+    width: 350px !important;
+    height: 105px !important;
+
+    border-color:
+        rgba(65, 195, 255, 0.42);
+
+    transform:
+        translate(-50%, -50%)
+        rotate(-4deg);
+
+    opacity: 0.72;
+}
 
 /* =========================================================
-   RESPONSIVE
-   ========================================================= */
+   GLOWING ORBIT ENERGY
+========================================================= */
 
-@media (max-width: 900px) {
-    .zarvis-robot-area {
-        width: 360px;
-        height: 290px;
+.orbit-glow {
+    position: absolute;
+
+    left: 50%;
+    top: 53%;
+
+    border-radius: 50%;
+
+    pointer-events: none;
+
+    transform:
+        translate(-50%, -50%)
+        rotate(-15deg);
+
+    filter: blur(5px);
+
+    z-index: 7 !important;
+}
+
+.glow-1 {
+    width: 410px;
+    height: 115px;
+
+    border-top:
+        2px solid
+        rgba(110, 75, 255, 0.42);
+
+    border-bottom:
+        1px solid
+        rgba(55, 135, 255, 0.28);
+}
+
+.glow-2 {
+    width: 300px;
+    height: 82px;
+
+    border-top:
+        1px solid
+        rgba(70, 205, 255, 0.38);
+
+    opacity: 0.8;
+}
+
+/* =========================================================
+   GALAXY ENERGY PARTICLES
+========================================================= */
+
+.robot-cosmos .cosmic-star {
+    animation:
+        galaxyStarPulse 3.5s ease-in-out infinite;
+}
+
+@keyframes galaxyStarPulse {
+
+    0%,
+    100% {
+        opacity: 0.35;
+        transform: scale(0.8);
     }
 
-    .robot-message {
-        right: 0;
-    }
-
-    .robot-orbit-1 {
-        width: 275px;
-    }
-
-    .robot-orbit-2 {
-        width: 245px;
-    }
-
-    .robot-orbit-3 {
-        width: 215px;
+    50% {
+        opacity: 1;
+        transform: scale(1.15);
     }
 }
 
-@media (max-width: 700px) {
-    .zarvis-robot-area {
-        width: 100%;
-        height: 280px;
+/* =========================================================
+   ROBOT PLATFORM — BLUE/PURPLE ENERGY
+========================================================= */
 
-        margin: 0 auto;
+.robot-platform {
+    z-index: 18 !important;
+
+    filter:
+        drop-shadow(
+            0 0 10px
+            rgba(70, 120, 255, 0.45)
+        )
+        drop-shadow(
+            0 0 22px
+            rgba(135, 60, 255, 0.25)
+        );
+}
+
+.platform-ring {
+    border-color:
+        rgba(100, 90, 255, 0.65) !important;
+
+    box-shadow:
+        0 0 8px
+        rgba(75, 120, 255, 0.45),
+        0 0 18px
+        rgba(135, 65, 255, 0.30);
+}
+
+.platform-core {
+    background:
+        radial-gradient(
+            circle,
+            rgba(190, 235, 255, 0.95) 0%,
+            rgba(75, 185, 255, 0.75) 22%,
+            rgba(105, 65, 255, 0.48) 48%,
+            transparent 72%
+        ) !important;
+
+    box-shadow:
+        0 0 15px
+        rgba(80, 190, 255, 0.65),
+        0 0 35px
+        rgba(115, 65, 255, 0.40);
+}
+/* =========================================================
+   ZARVIS — GALAXY RINGS FINAL REFINEMENT
+========================================================= */
+
+.robot-orbit {
+    border-style: solid !important;
+    mix-blend-mode: screen;
+
+    opacity: 0.72 !important;
+
+    filter:
+        blur(0.15px)
+        drop-shadow(
+            0 0 5px
+            rgba(80, 125, 255, 0.45)
+        );
+}
+
+/* Blue outer ring */
+
+.orbit-1 {
+    border-width: 1px !important;
+
+    border-color:
+        rgba(70, 145, 255, 0.48) !important;
+
+    box-shadow:
+        0 0 7px
+        rgba(55, 125, 255, 0.30),
+        0 0 18px
+        rgba(75, 85, 255, 0.16);
+}
+
+/* Purple crossing ring */
+
+.orbit-2 {
+    border-width: 1px !important;
+
+    border-color:
+        rgba(170, 80, 255, 0.50) !important;
+
+    box-shadow:
+        0 0 8px
+        rgba(160, 70, 255, 0.32),
+        0 0 20px
+        rgba(125, 60, 255, 0.15);
+}
+
+/* Cyan inner ring */
+
+.orbit-3 {
+    border-width: 1px !important;
+
+    border-color:
+        rgba(65, 205, 255, 0.36) !important;
+
+    box-shadow:
+        0 0 7px
+        rgba(60, 190, 255, 0.25);
+
+    opacity: 0.58 !important;
+}
+
+/* Soft light passing through the rings */
+
+.orbit-glow {
+    mix-blend-mode: screen;
+
+    pointer-events: none;
+
+    filter: blur(4px);
+
+    opacity: 0.55 !important;
+}
+
+/* Tiny energy points on the orbit area */
+
+.robot-visual::after {
+    content: "";
+
+    position: absolute;
+
+    width: 4px;
+    height: 4px;
+
+    top: 37%;
+    left: 70%;
+
+    border-radius: 50%;
+
+    background: #8bdcff;
+
+    box-shadow:
+        0 0 6px
+        rgba(80, 190, 255, 0.95),
+        0 0 15px
+        rgba(110, 75, 255, 0.75);
+
+    animation:
+        orbitPointPulse 2.4s ease-in-out infinite;
+
+    z-index: 16;
+}
+
+@keyframes orbitPointPulse {
+    0%,
+    100% {
+        opacity: 0.35;
+        transform: scale(0.7);
     }
 
-    .cute-zarvis {
-        transform: scale(0.85);
+    50% {
+        opacity: 1;
+        transform: scale(1.25);
+    }
+}
+/* =========================================================
+   ZARVIS — COSMIC DUST LAYER
+========================================================= */
+
+.robot-cosmos {
+    position: absolute;
+    overflow: hidden;
+
+    isolation: isolate;
+}
+
+/* Main cosmic dust cloud */
+
+.robot-cosmos .nebula-purple {
+    width: 760px !important;
+    height: 520px !important;
+
+    right: -110px !important;
+    top: 20px !important;
+
+    background:
+        radial-gradient(
+            ellipse at 55% 50%,
+            rgba(155, 70, 255, 0.20),
+            rgba(105, 65, 235, 0.13) 32%,
+            rgba(55, 90, 225, 0.07) 52%,
+            transparent 74%
+        ) !important;
+
+    filter: blur(48px) !important;
+
+    transform: rotate(-20deg) !important;
+
+    opacity: 0.85 !important;
+
+    z-index: 3;
+}
+
+/* Blue atmospheric cloud */
+
+.robot-cosmos .nebula-blue {
+    width: 620px !important;
+    height: 430px !important;
+
+    right: 20px !important;
+    top: 85px !important;
+
+    background:
+        radial-gradient(
+            ellipse at center,
+            rgba(55, 125, 255, 0.15),
+            rgba(70, 75, 220, 0.08) 45%,
+            transparent 74%
+        ) !important;
+
+    filter: blur(52px) !important;
+
+    opacity: 0.75 !important;
+
+    z-index: 4;
+}
+
+/* Central soft glow */
+
+.robot-cosmos .nebula-center {
+    width: 470px !important;
+    height: 350px !important;
+
+    right: 220px !important;
+    bottom: 20px !important;
+
+    background:
+        radial-gradient(
+            ellipse,
+            rgba(125, 75, 255, 0.16),
+            rgba(65, 95, 240, 0.07) 45%,
+            transparent 75%
+        ) !important;
+
+    filter: blur(45px) !important;
+
+    z-index: 5;
+}
+
+/* Keep galaxy streak above the clouds */
+
+.robot-cosmos .galaxy-streak {
+    z-index: 7 !important;
+}
+
+/* Keep stars visible */
+
+.robot-cosmos .cosmic-star,
+.robot-cosmos .tiny-star {
+    z-index: 10 !important;
+}
+
+/* Keep all robot elements sharp */
+
+.robot-visual {
+    z-index: 20 !important;
+}
+
+.robot-image-wrap,
+.zarvis-robot-image {
+    z-index: 30 !important;
+}
+/* =========================================================
+   ZARVIS — COSMIC PARTICLES
+========================================================= */
+
+.robot-cosmos {
+    position: absolute;
+}
+
+/* Floating cosmic particles */
+
+.robot-cosmos::marker {
+    display: none;
+}
+
+/* Existing tiny stars get softer glow */
+
+.robot-cosmos .tiny-star {
+    width: 2px !important;
+    height: 2px !important;
+
+    background: #d9e8ff !important;
+
+    box-shadow:
+        0 0 5px rgba(150, 190, 255, 0.9),
+        0 0 12px rgba(125, 80, 255, 0.55) !important;
+
+    animation:
+        cosmicDust 4s ease-in-out infinite;
+}
+
+/* Different timing for natural movement */
+
+.robot-cosmos .tiny-1 { animation-delay: 0s; }
+.robot-cosmos .tiny-2 { animation-delay: .7s; }
+.robot-cosmos .tiny-3 { animation-delay: 1.4s; }
+.robot-cosmos .tiny-4 { animation-delay: 2.1s; }
+.robot-cosmos .tiny-5 { animation-delay: .5s; }
+.robot-cosmos .tiny-6 { animation-delay: 1.8s; }
+.robot-cosmos .tiny-7 { animation-delay: 2.7s; }
+.robot-cosmos .tiny-8 { animation-delay: 1.1s; }
+.robot-cosmos .tiny-9 { animation-delay: 3s; }
+.robot-cosmos .tiny-10 { animation-delay: 2.4s; }
+
+@keyframes cosmicDust {
+
+    0%,
+    100% {
+        opacity: .25;
+        transform: translate(0, 0) scale(.75);
     }
 
-    .robot-message {
-        right: 10px;
-
-        transform: scale(0.85);
-        transform-origin: top right;
+    50% {
+        opacity: .85;
+        transform: translate(3px, -4px) scale(1.15);
     }
+}
 
-    .robot-voice {
-        display: none;
-    }
+/* Bright stars */
+
+.robot-cosmos .cosmic-star {
+    color: #eef3ff !important;
+
+    text-shadow:
+        0 0 5px rgba(255,255,255,.95),
+        0 0 12px rgba(100,150,255,.85),
+        0 0 22px rgba(150,70,255,.55) !important;
+}
+
+/* Keep cosmic layers behind robot */
+
+.robot-cosmos {
+    z-index: 1;
+}
+
+.robot-cosmos > * {
+    pointer-events: none;
+}
+
+.robot-visual {
+    z-index: 20 !important;
 }

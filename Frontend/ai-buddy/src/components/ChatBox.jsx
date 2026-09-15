@@ -1,132 +1,80 @@
-import {
-    Mic,
-    Sparkles,
-} from "lucide-react";
+import robotImage from "../images/zarvis_robot_transparent.png";
 
 function ChatBox() {
     return (
         <div className="zarvis-robot-area">
 
-            {/* Galaxy glow */}
-            <div className="galaxy-glow galaxy-glow-one"></div>
-            <div className="galaxy-glow galaxy-glow-two"></div>
-            <div className="galaxy-glow galaxy-glow-three"></div>
+            {/* COSMIC BACKGROUND */}
+            <div className="robot-cosmos">
 
-            {/* Stars */}
-            <div className="galaxy-stars stars-one"></div>
-            <div className="galaxy-stars stars-two"></div>
+                {/* Nebula Glow */}
+                <div className="cosmic-nebula nebula-purple"></div>
+                <div className="cosmic-nebula nebula-blue"></div>
+                <div className="cosmic-nebula nebula-center"></div>
 
-            <span className="space-star star-one">✦</span>
-            <span className="space-star star-two">✦</span>
-            <span className="space-star star-three">✧</span>
-            <span className="space-star star-four">✦</span>
-            <span className="space-star star-five">·</span>
+                {/* Large Stars */}
+                <span className="cosmic-star star-1">✦</span>
+                <span className="cosmic-star star-2">✦</span>
+                <span className="cosmic-star star-3">✦</span>
+                <span className="cosmic-star star-4">✦</span>
+                <span className="cosmic-star star-5">✦</span>
+                <span className="cosmic-star star-6">✦</span>
+                <span className="cosmic-star star-7">✦</span>
+                <span className="cosmic-star star-8">✦</span>
 
-            {/* Robot glow */}
-            <div className="robot-glow"></div>
+                {/* Tiny Stars */}
+                <span className="tiny-star tiny-1"></span>
+                <span className="tiny-star tiny-2"></span>
+                <span className="tiny-star tiny-3"></span>
+                <span className="tiny-star tiny-4"></span>
+                <span className="tiny-star tiny-5"></span>
+                <span className="tiny-star tiny-6"></span>
+                <span className="tiny-star tiny-7"></span>
+                <span className="tiny-star tiny-8"></span>
+                <span className="tiny-star tiny-9"></span>
+                <span className="tiny-star tiny-10"></span>
 
-            {/* Orbit rings */}
-            <div className="robot-orbit robot-orbit-1">
-                <span className="orbit-particle"></span>
-            </div>
-
-            <div className="robot-orbit robot-orbit-2">
-                <span className="orbit-particle"></span>
-            </div>
-
-            <div className="robot-orbit robot-orbit-3">
-                <span className="orbit-particle"></span>
-            </div>
-
-            {/* Robot */}
-            <div className="cute-zarvis">
-
-                {/* Left ear */}
-                <div className="zarvis-ear zarvis-ear-left">
-                    <div className="ear-inner"></div>
-                </div>
-
-                {/* Right ear */}
-                <div className="zarvis-ear zarvis-ear-right">
-                    <div className="ear-inner"></div>
-                </div>
-
-                {/* Head */}
-                <div className="zarvis-head">
-
-                    <div className="zarvis-face">
-
-                        <div className="zarvis-eye">
-                            <span></span>
-                        </div>
-
-                        <div className="zarvis-eye">
-                            <span></span>
-                        </div>
-
-                        <div className="zarvis-smile"></div>
-
-                    </div>
-
-                    <div className="zarvis-head-shine"></div>
-
-                </div>
-
-                {/* Neck */}
-                <div className="zarvis-neck"></div>
-
-                {/* Body */}
-                <div className="zarvis-body">
-
-                    <div className="zarvis-chest">
-                        Z
-                    </div>
-
-                    <div className="zarvis-body-shine"></div>
-
-                </div>
-
-                {/* Arms */}
-                <div className="zarvis-arm zarvis-arm-left">
-                    <div className="zarvis-hand"></div>
-                </div>
-
-                <div className="zarvis-arm zarvis-arm-right">
-                    <div className="zarvis-hand"></div>
-                </div>
+                {/* Galaxy Light */}
+                <div className="galaxy-streak"></div>
 
             </div>
 
-            {/* Platform */}
-            <div className="zarvis-platform">
+            {/* ROBOT VISUAL */}
+            <div className="robot-visual">
 
-                <div className="platform-light"></div>
+                {/* Orbit Rings */}
+                <div className="robot-orbit orbit-1"></div>
+                <div className="robot-orbit orbit-2"></div>
+                <div className="robot-orbit orbit-3"></div>
 
-                <div className="platform-ring"></div>
+                {/* Orbit Glow */}
+                <div className="orbit-glow glow-1"></div>
+                <div className="orbit-glow glow-2"></div>
 
-                <div className="platform-core"></div>
+                {/* Robot */}
+                <div className="robot-image-wrap">
+                    <img
+                        src={robotImage}
+                        alt="Zarvis AI Assistant"
+                        className="zarvis-robot-image"
+                    />
+                </div>
 
-            </div>
+                {/* Speech Bubble */}
+                <div className="robot-speech-bubble">
+                    <strong>Hi! I'm Zarvis 👋</strong>
+                    <span>Your smart AI assistant.</span>
+                    <span>How can I help you today?</span>
+                    <div className="speech-arrow"></div>
+                </div>
 
-            {/* Speech bubble */}
-            <div className="robot-message">
-
-                <strong>
-                    I'm here for you!
-                </strong>
-
-                <span>
-                    Plan&nbsp; · &nbsp;Organize&nbsp; · &nbsp;Achieve
-                </span>
-
-            </div>
-
-            {/* Small voice indicator */}
-            <div className="robot-voice">
-
-                <Mic size={13} />
-
-                <span>Ready</span>
+                {/* Platform */}
+                <div className="robot-platform">
+                    <div className="platform-ring ring-1"></div>
+                    <div className="platform-ring ring-2"></div>
+                    <div className="platform-ring ring-3"></div>
+                    <div className="platform-core"></div>
+                </div>
 
             </div>
 
