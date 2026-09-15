@@ -1,24 +1,33 @@
-import threading
+from app.timer.timer_manager import TimerManager
 
 
 class TimerTool:
 
     def __init__(self):
-        self.active_timer = None
-        self.timer_running = False
+
+        self.timer_manager = TimerManager()
+
+    # ---------------------------------
+    # SET TIMER
+    # ---------------------------------
 
     def set_timer(
         self,
         duration_seconds: int
     ) -> dict:
 
-        if not isinstance(duration_seconds, int):
+        if not isinstance(
+            duration_seconds,
+            (int, float)
+        ):
+
             return {
                 "success": False,
-                "message": "Timer duration must be an integer."
+                "message": "Timer duration must be a number."
             }
 
         if duration_seconds <= 0:
+
             return {
                 "success": False,
                 "message": (
@@ -27,22 +36,29 @@ class TimerTool:
                 )
             }
 
-        # Cancel an existing timer
-        if self.active_timer is not None:
-            self.active_timer.cancel()
-
-        self.timer_running = True
-
-        self.active_timer = threading.Timer(
-            duration_seconds,
-            self._timer_finished
+        timer_result = self.timer_manager.create_timer(
+            duration_seconds=duration_seconds
         )
 
-        self.active_timer.daemon = True
-        self.active_timer.start()
+        if not timer_result.get("success"):
+
+            return timer_result
+
+        timer_id = timer_result.get(
+            "timer_id"
+        )
+
+        start_result = self.timer_manager.start_timer(
+            timer_id=timer_id
+        )
+
+        if not start_result.get("success"):
+
+            return start_result
 
         return {
             "success": True,
+            "timer_id": timer_id,
             "duration_seconds": duration_seconds,
             "status": "running",
             "message": (
@@ -51,43 +67,121 @@ class TimerTool:
             )
         }
 
-    def _timer_finished(self):
+    # ---------------------------------
+    # CANCEL TIMER
+    # ---------------------------------
 
-        self.timer_running = False
-        self.active_timer = None
+    def cancel_timer(
+        self,
+        timer_id: int
+    ) -> dict:
 
-        print("AI Buddy Timer Finished!")
+        if not isinstance(
+            timer_id,
+            int
+        ):
 
-    def cancel_timer(self) -> dict:
-
-        if self.active_timer is None:
             return {
                 "success": False,
-                "message": "No active timer found."
+                "message": "Timer ID must be an integer."
             }
 
-        self.active_timer.cancel()
+        return self.timer_manager.cancel_timer(
+            timer_id=timer_id
+        )
 
-        self.active_timer = None
-        self.timer_running = False
+    # ---------------------------------
+    # GET TIMER STATUS
+    # ---------------------------------
+
+    def get_timer_status(
+        self,
+        timer_id: int
+    ) -> dict:
+
+        if not isinstance(
+            timer_id,
+            int
+        ):
+
+            return {
+                "success": False,
+                "message": "Timer ID must be an integer."
+            }
+
+        return self.timer_manager.get_timer(
+            timer_id=timer_id
+        )
+
+    # ---------------------------------
+    # GET ALL TIMERS
+    # ---------------------------------
+
+    def get_all_timers(self) -> dict:
 
         return {
             "success": True,
-            "status": "cancelled",
-            "message": "Timer cancelled successfully."
+            "timers": self.timer_manager.get_all_timers()
         }
 
-    def get_timer_status(self) -> dict:
+    # ---------------------------------
+    # GET ACTIVE TIMER COUNT
+    # ---------------------------------
 
-        if self.timer_running:
-            return {
-                "success": True,
-                "status": "running",
-                "message": "Timer is currently running."
-            }
+    def get_active_count(self) -> dict:
 
         return {
             "success": True,
-            "status": "inactive",
-            "message": "No timer is currently running."
+            "active_timers": (
+                self.timer_manager.get_active_count()
+            )
+        }
+
+    # ---------------------------------
+    # GET TOTAL TIMER COUNT
+    # ---------------------------------
+
+    def get_count(self) -> dict:
+
+        return {
+            "success": True,
+            "total_timers": (
+                self.timer_manager.get_count()
+            )
+        }
+
+    # ---------------------------------
+    # REMOVE TIMER
+    # ---------------------------------
+
+    def remove_timer(
+        self,
+        timer_id: int
+    ) -> dict:
+
+        if not isinstance(
+            timer_id,
+            int
+        ):
+
+            return {
+                "success": False,
+                "message": "Timer ID must be an integer."
+            }
+
+        return self.timer_manager.remove_timer(
+            timer_id=timer_id
+        )
+
+    # ---------------------------------
+    # CLEAR ALL TIMERS
+    # ---------------------------------
+
+    def clear_all_timers(self) -> dict:
+
+        self.timer_manager.clear_all()
+
+        return {
+            "success": True,
+            "message": "All timers cleared successfully."
         }

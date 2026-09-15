@@ -1,3 +1,6 @@
+from sqlalchemy.orm import Session
+
+from app.agent.brain import AIBrain
 from app.voice.voice_manager import VoiceManager
 from app.voice.voice_command import VoiceCommand
 
@@ -12,6 +15,8 @@ class VoiceConversation:
         self.voice_manager = VoiceManager(
             wake_word
         )
+
+        self.ai_brain = AIBrain()
 
         self.active = False
         self.history = []
@@ -51,7 +56,16 @@ class VoiceConversation:
         self.active = False
 
         if self.voice_manager.command_listener.is_listening():
+
             self.voice_manager.stop_listening()
+
+        if self.voice_manager.audio_manager.is_recording():
+
+            self.voice_manager.stop_recording()
+
+        if self.voice_manager.audio_manager.is_playing():
+
+            self.voice_manager.stop_playback()
 
         return {
             "success": True,
@@ -63,7 +77,9 @@ class VoiceConversation:
 
     def process_input(
         self,
-        text: str
+        text: str,
+        user_id: int,
+        db: Session
     ) -> dict:
 
         if not self.active:
@@ -75,20 +91,78 @@ class VoiceConversation:
                 )
             }
 
-        result = self.voice_manager.process_text(
+        if not isinstance(
+            text,
+            str
+        ) or not text.strip():
+
+            return {
+                "success": False,
+                "active": True,
+                "message": (
+                    "Voice input cannot be empty."
+                )
+            }
+
+        if not isinstance(
+            user_id,
+            int
+        ) or user_id <= 0:
+
+            return {
+                "success": False,
+                "active": True,
+                "message": (
+                    "User ID must be a valid positive integer."
+                )
+            }
+
+        if db is None:
+
+            return {
+                "success": False,
+                "active": True,
+                "message": (
+                    "Database session is required."
+                )
+            }
+
+        text = text.strip()
+
+        # ---------------------------------
+        # STEP 1: PROCESS VOICE TEXT
+        # ---------------------------------
+
+        voice_result = self.voice_manager.process_text(
             text
         )
 
-        if not result.get(
+        if not voice_result.get(
             "success",
             False
         ):
+
             return {
-                **result,
+                **voice_result,
                 "active": True
             }
 
-        command_data = result.get(
+        # ---------------------------------
+        # STEP 2: WAKE WORD CHECK
+        # ---------------------------------
+
+        wake_word_detected = (
+            voice_result.get(
+                "wake_word_detected",
+                False
+            )
+        )
+
+        # ---------------------------------
+        # STEP 3: CREATE VOICE COMMAND
+        # ---------------------------------
+
+        command_data = voice_result.get(
             "command"
         )
 
@@ -101,19 +175,27 @@ class VoiceConversation:
 
             command = VoiceCommand()
 
-            command.set_text(
-                command_data.get(
-                    "text",
-                    ""
-                )
+            command_text = command_data.get(
+                "text",
+                ""
             )
 
-            command.set_command(
-                command_data.get(
-                    "command",
-                    ""
+            if command_text:
+
+                command.set_text(
+                    command_text
                 )
+
+            command_name = command_data.get(
+                "command",
+                ""
             )
+
+            if command_name:
+
+                command.set_command(
+                    command_name
+                )
 
             command.set_parameters(
                 command_data.get(
@@ -122,16 +204,61 @@ class VoiceConversation:
                 )
             )
 
+        # ---------------------------------
+        # STEP 4: AI BRAIN
+        # ---------------------------------
+
+        brain_result = self.ai_brain.respond(
+            text,
+            user_id,
+            db
+        )
+
+        response_text = brain_result.get(
+            "message",
+            ""
+        )
+
+        # ---------------------------------
+        # STEP 5: TEXT-TO-SPEECH
+        # ---------------------------------
+
+        voice_response_result = None
+
+        if (
+            brain_result.get(
+                "success",
+                False
+            )
+            and isinstance(
+                response_text,
+                str
+            )
+            and response_text.strip()
+        ):
+
+            voice_response_result = (
+                self.voice_manager.speak(
+                    response_text
+                )
+            )
+
+        # ---------------------------------
+        # STEP 6: SAVE VOICE HISTORY
+        # ---------------------------------
+
         history_item = {
             "user": text,
-            "wake_word_detected": result.get(
-                "wake_word_detected",
-                False
-            ),
+            "wake_word_detected": wake_word_detected,
             "command": (
                 command.to_dict()
                 if command is not None
                 else None
+            ),
+            "assistant": response_text,
+            "brain_response": brain_result,
+            "voice_response": (
+                voice_response_result
             )
         }
 
@@ -139,14 +266,46 @@ class VoiceConversation:
             history_item
         )
 
+        # ---------------------------------
+        # STEP 7: RETURN RESPONSE
+        # ---------------------------------
+
         return {
-            **result,
-            "active": True
+            "success": brain_result.get(
+                "success",
+                False
+            ),
+            "active": True,
+            "wake_word_detected": wake_word_detected,
+            "text": text,
+            "command": (
+                command.to_dict()
+                if command is not None
+                else None
+            ),
+            "response": response_text,
+            "brain": brain_result,
+            "voice_response": (
+                voice_response_result
+            ),
+            "message": (
+                "Voice command processed successfully."
+                if brain_result.get(
+                    "success",
+                    False
+                )
+                else brain_result.get(
+                    "message",
+                    "Voice command could not be processed."
+                )
+            )
         }
 
     def process_audio(
         self,
-        audio_data
+        audio_data,
+        user_id: int,
+        db: Session
     ) -> dict:
 
         if not self.active:
@@ -158,14 +317,99 @@ class VoiceConversation:
                 )
             }
 
+        if audio_data is None:
+            return {
+                "success": False,
+                "active": True,
+                "message": (
+                    "Audio data is required."
+                )
+            }
+
         result = self.voice_manager.listen(
             audio_data
         )
 
-        return {
-            **result,
-            "active": True
-        }
+        if not result.get(
+            "success",
+            False
+        ):
+
+            return {
+                **result,
+                "active": True
+            }
+
+        text = result.get(
+            "text",
+            ""
+        )
+
+        if not text:
+
+            return {
+                "success": False,
+                "active": True,
+                "text": "",
+                "message": (
+                    "No speech was detected."
+                )
+            }
+
+        return self.process_input(
+            text,
+            user_id,
+            db
+        )
+
+    def process_recorded_audio(
+        self,
+        user_id: int,
+        db: Session
+    ) -> dict:
+
+        if not self.active:
+            return {
+                "success": False,
+                "active": False,
+                "message": (
+                    "Voice conversation is not active."
+                )
+            }
+
+        recording_result = (
+            self.voice_manager.stop_recording()
+        )
+
+        if not recording_result.get(
+            "success",
+            False
+        ):
+
+            return {
+                **recording_result,
+                "active": True
+            }
+
+        audio_data = recording_result.get(
+            "audio_data"
+        )
+
+        if not audio_data:
+
+            return {
+                "success": False,
+                "active": True,
+                "message": (
+                    "No recorded audio was available."
+                )
+            }
+
+        return self.process_audio(
+            audio_data,
+            user_id,
+            db
+        )
 
     def add_response(
         self,
@@ -176,6 +420,7 @@ class VoiceConversation:
             response,
             str
         ):
+
             return {
                 "success": False,
                 "message": (
@@ -186,6 +431,7 @@ class VoiceConversation:
         response = response.strip()
 
         if not response:
+
             return {
                 "success": False,
                 "message": (
@@ -194,6 +440,7 @@ class VoiceConversation:
             }
 
         if not self.active:
+
             return {
                 "success": False,
                 "message": (
@@ -228,6 +475,7 @@ class VoiceConversation:
     ) -> dict:
 
         if not self.active:
+
             return {
                 "success": False,
                 "message": (
@@ -243,6 +491,7 @@ class VoiceConversation:
             "success",
             False
         ):
+
             self.add_response(
                 response
             )
@@ -252,6 +501,7 @@ class VoiceConversation:
     def start_listening(self) -> dict:
 
         if not self.active:
+
             return {
                 "success": False,
                 "message": (
@@ -268,6 +518,7 @@ class VoiceConversation:
     def start_recording(self) -> dict:
 
         if not self.active:
+
             return {
                 "success": False,
                 "recording": False,
@@ -305,5 +556,8 @@ class VoiceConversation:
             ),
             "voice_manager": (
                 self.voice_manager.get_status()
-            )
+            ),
+            "ai_brain": {
+                "available": self.ai_brain is not None
+            }
         }

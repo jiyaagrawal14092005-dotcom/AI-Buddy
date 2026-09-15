@@ -18,6 +18,10 @@ class IntentDetector:
 
             self.client = None
 
+    # =========================================
+    # CLEAN GEMINI JSON RESPONSE
+    # =========================================
+
     def _clean_json_response(
         self,
         response_text: str
@@ -27,6 +31,7 @@ class IntentDetector:
             response_text,
             str
         ):
+
             raise ValueError(
                 "Invalid AI response."
             )
@@ -56,6 +61,10 @@ class IntentDetector:
             response_text
         )
 
+    # =========================================
+    # VALIDATE INTENT RESULT
+    # =========================================
+
     def _validate_result(
         self,
         result: dict
@@ -65,6 +74,7 @@ class IntentDetector:
             result,
             dict
         ):
+
             raise ValueError(
                 "Intent result must be a dictionary."
             )
@@ -119,6 +129,100 @@ class IntentDetector:
             "parameters": parameters
         }
 
+    # =========================================
+    # REPAIR MISSING PARAMETERS
+    # =========================================
+
+    def _repair_parameters(
+        self,
+        message: str,
+        result: dict
+    ) -> dict:
+
+        if not isinstance(
+            result,
+            dict
+        ):
+
+            return result
+
+        intent = result.get(
+            "intent",
+            "GENERAL_QUERY"
+        )
+
+        parameters = result.get(
+            "parameters",
+            {}
+        )
+
+        if not isinstance(
+            parameters,
+            dict
+        ):
+
+            parameters = {}
+
+        # =====================================
+        # CREATE TASK PARAMETER REPAIR
+        # =====================================
+
+        if intent == "CREATE_TASK":
+
+            task_name = parameters.get(
+                "task_name",
+                ""
+            )
+
+            if (
+                not isinstance(
+                    task_name,
+                    str
+                )
+                or not task_name.strip()
+            ):
+
+                local_result = self._local_detect(
+                    message
+                )
+
+                local_parameters = local_result.get(
+                    "parameters",
+                    {}
+                )
+
+                if isinstance(
+                    local_parameters,
+                    dict
+                ):
+
+                    local_task_name = (
+                        local_parameters.get(
+                            "task_name",
+                            ""
+                        )
+                    )
+
+                    if (
+                        isinstance(
+                            local_task_name,
+                            str
+                        )
+                        and local_task_name.strip()
+                    ):
+
+                        parameters["task_name"] = (
+                            local_task_name.strip()
+                        )
+
+        result["parameters"] = parameters
+
+        return result
+
+    # =========================================
+    # LOCAL INTENT DETECTION
+    # =========================================
+
     def _local_detect(
         self,
         message: str
@@ -127,9 +231,9 @@ class IntentDetector:
         text = message.strip()
         lower_text = text.lower()
 
-        # -----------------------------------------
+        # =====================================
         # CREATE TASK
-        # -----------------------------------------
+        # =====================================
 
         task_patterns = [
             r"\bcreate\s+(a\s+)?task\b",
@@ -173,9 +277,9 @@ class IntentDetector:
                 }
             }
 
-        # -----------------------------------------
+        # =====================================
         # CREATE REMINDER
-        # -----------------------------------------
+        # =====================================
 
         reminder_patterns = [
             r"\bremind\s+me\b",
@@ -213,9 +317,9 @@ class IntentDetector:
                 }
             }
 
-        # -----------------------------------------
+        # =====================================
         # SET TIMER
-        # -----------------------------------------
+        # =====================================
 
         timer_match = re.search(
             r"\b(?:set\s+)?(?:a\s+)?timer\b"
@@ -232,17 +336,26 @@ class IntentDetector:
                 )
             )
 
-            unit = timer_match.group(
-                2
-            ) or "minutes"
+            unit = (
+                timer_match.group(
+                    2
+                )
+                or "minutes"
+            )
 
             unit = unit.lower()
 
-            if unit.startswith("second") or unit.startswith("sec"):
+            if (
+                unit.startswith("second")
+                or unit.startswith("sec")
+            ):
 
                 duration = value / 60
 
-            elif unit.startswith("hour") or unit.startswith("hr"):
+            elif (
+                unit.startswith("hour")
+                or unit.startswith("hr")
+            ):
 
                 duration = value * 60
 
@@ -258,9 +371,9 @@ class IntentDetector:
                 }
             }
 
-        # -----------------------------------------
+        # =====================================
         # GET WEATHER
-        # -----------------------------------------
+        # =====================================
 
         weather_patterns = [
             r"\bweather\b",
@@ -300,9 +413,9 @@ class IntentDetector:
                 }
             }
 
-        # -----------------------------------------
+        # =====================================
         # SEND EMAIL
-        # -----------------------------------------
+        # =====================================
 
         email_patterns = [
             r"\bsend\s+(an\s+)?email\b",
@@ -337,7 +450,8 @@ class IntentDetector:
             subject = ""
 
             subject_match = re.search(
-                r"\bsubject\s*[:\-]?\s*(.+?)(?:\s+message\s*[:\-]?|\s*$)",
+                r"\bsubject\s*[:\-]?\s*(.+?)"
+                r"(?:\s+message\s*[:\-]?|\s*$)",
                 text,
                 flags=re.IGNORECASE
             )
@@ -358,9 +472,9 @@ class IntentDetector:
                 }
             }
 
-        # -----------------------------------------
+        # =====================================
         # CHECK CALENDAR
-        # -----------------------------------------
+        # =====================================
 
         calendar_patterns = [
             r"\bcalendar\b",
@@ -403,9 +517,9 @@ class IntentDetector:
                 }
             }
 
-        # -----------------------------------------
+        # =====================================
         # MANAGE FILE
-        # -----------------------------------------
+        # =====================================
 
         file_patterns = [
             r"\bcreate\s+(a\s+)?file\b",
@@ -451,7 +565,8 @@ class IntentDetector:
             file_path = ""
 
             file_match = re.search(
-                r"\b[\w.-]+\.(txt|pdf|docx?|xlsx?|csv|json|py|jpg|jpeg|png)\b",
+                r"\b[\w.-]+\."
+                r"(txt|pdf|docx?|xlsx?|csv|json|py|jpg|jpeg|png)\b",
                 text,
                 flags=re.IGNORECASE
             )
@@ -472,16 +587,65 @@ class IntentDetector:
                 }
             }
 
-        # -----------------------------------------
+        # =====================================
+        # APPLICATION LAUNCHER
+        # =====================================
+
+        application_patterns = [
+            r"\bopen\s+(calculator|calc)\b",
+            r"\bopen\s+(notepad)\b",
+            r"\bopen\s+(paint)\b",
+            r"\bopen\s+(chrome|google\s+chrome)\b",
+            r"\bopen\s+(edge|microsoft\s+edge)\b",
+            r"\bopen\s+(vs\s+code|visual\s+studio\s+code)\b",
+            r"\blaunch\s+(calculator|calc|notepad|paint|chrome|google\s+chrome|edge|microsoft\s+edge|vs\s+code|visual\s+studio\s+code)\b",
+            r"\bstart\s+(calculator|calc|notepad|paint|chrome|google\s+chrome|edge|microsoft\s+edge|vs\s+code|visual\s+studio\s+code)\b"
+        ]
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in application_patterns
+        ):
+
+            application = ""
+
+            application_match = re.search(
+                r"\b(?:open|launch|start)\s+"
+                r"(calculator|calc|notepad|paint|chrome|google\s+chrome|edge|microsoft\s+edge|vs\s+code|visual\s+studio\s+code)\b",
+                lower_text
+            )
+
+            if application_match:
+
+                application = application_match.group(
+                    1
+                ).strip()
+
+            return {
+                "intent": "OPEN_APPLICATION",
+                "confidence": 0.95,
+                "parameters": {
+                    "application": application,
+                    "action": "open_application"
+                }
+            }
+
+        # =====================================
         # BROWSE WEB
-        # -----------------------------------------
+        # =====================================
 
         browser_patterns = [
             r"\bopen\s+(google|youtube|website|browser)\b",
             r"\bopen\s+(https?://)",
             r"\bnavigate\s+to\b",
             r"\bgo\s+to\b",
-            r"\bbrowse\b"
+            r"\bbrowse\b",
+            r"\bsearch\s+this\s+on\s+google\b",
+            r"\bsearch\s+this\s+in\s+google\b",
+            r"\bgoogle\s+this\b"
         ]
 
         if any(
@@ -525,16 +689,58 @@ class IntentDetector:
                 }
             }
 
-        # -----------------------------------------
+        # =====================================
         # SEARCH INFORMATION
-        # -----------------------------------------
+        # =====================================
 
         search_patterns = [
+
+            # Explicit search commands
+
             r"\bsearch\s+for\b",
             r"\bsearch\b",
             r"\blook\s+up\b",
             r"\bfind\s+information\b",
-            r"\bfind\s+out\b"
+            r"\bfind\s+out\b",
+
+            # Information questions
+
+            r"^\s*what\s+is\b",
+            r"^\s*what\s+are\b",
+            r"^\s*who\s+is\b",
+            r"^\s*who\s+are\b",
+            r"^\s*where\s+is\b",
+            r"^\s*where\s+are\b",
+            r"^\s*when\s+is\b",
+            r"^\s*when\s+was\b",
+            r"^\s*when\s+did\b",
+            r"^\s*why\s+is\b",
+            r"^\s*why\s+are\b",
+            r"^\s*why\s+was\b",
+            r"^\s*why\s+were\b",
+            r"^\s*how\s+does\b",
+            r"^\s*how\s+do\b",
+            r"^\s*how\s+is\b",
+            r"^\s*how\s+are\b",
+            r"^\s*how\s+can\b",
+            r"^\s*how\s+to\b",
+
+            # Current/latest information
+
+            r"\blatest\b",
+            r"\bcurrent\b",
+            r"\btoday\b",
+            r"\brecent\b",
+            r"\bnews\b",
+            r"\bupdate\b",
+            r"\brecently\b",
+
+            # Knowledge-oriented phrases
+
+            r"\btell\s+me\s+about\b",
+            r"\bexplain\b.*\b(?:technology|company|person|topic|concept)\b",
+            r"\binformation\s+about\b",
+            r"\bdetails\s+about\b"
         ]
 
         if any(
@@ -547,16 +753,29 @@ class IntentDetector:
 
             query = text
 
-            match = re.search(
+            explicit_search_match = re.search(
                 r"(?:search\s+for|look\s+up|search)\s+(.+)",
                 lower_text
             )
 
-            if match:
+            if explicit_search_match:
 
-                query = match.group(
+                query = explicit_search_match.group(
                     1
                 ).strip()
+
+            else:
+
+                about_match = re.search(
+                    r"(?:tell\s+me\s+about|information\s+about|details\s+about)\s+(.+)",
+                    lower_text
+                )
+
+                if about_match:
+
+                    query = about_match.group(
+                        1
+                    ).strip()
 
             return {
                 "intent": "SEARCH_INFORMATION",
@@ -566,15 +785,19 @@ class IntentDetector:
                 }
             }
 
-        # -----------------------------------------
+        # =====================================
         # GENERAL QUERY
-        # -----------------------------------------
+        # =====================================
 
         return {
             "intent": "GENERAL_QUERY",
             "confidence": 0.7,
             "parameters": {}
         }
+
+    # =========================================
+    # GEMINI INTENT DETECTION
+    # =========================================
 
     def _detect_with_gemini(
         self,
@@ -602,16 +825,152 @@ SEARCH_INFORMATION
 SEND_EMAIL
 CHECK_CALENDAR
 MANAGE_FILE
+OPEN_APPLICATION
 BROWSE_WEB
 GENERAL_QUERY
 
-Return ONLY valid JSON in this format:
+IMPORTANT RULES:
+
+1. Questions asking for factual or informational
+knowledge should normally use SEARCH_INFORMATION.
+
+Examples:
+
+"What is Python?"
+"What is machine learning?"
+"Who is the CEO of Microsoft?"
+"How does cloud computing work?"
+"Where is Bengaluru?"
+"Why is Python popular?"
+"Tell me about Databricks."
+
+2. Requests that explicitly ask to search for
+information should use SEARCH_INFORMATION.
+
+Examples:
+
+"Search for Python"
+"Look up machine learning"
+"Find information about AI"
+
+3. Requests to open Google, Chrome, YouTube,
+a browser, or a website should use BROWSE_WEB.
+
+Examples:
+
+"Open Google"
+"Open Chrome"
+"Go to YouTube"
+"Search this on Google"
+
+4. Do NOT classify an ordinary factual question
+as BROWSE_WEB just because it could be searched
+on the internet.
+
+5. Do NOT classify an ordinary factual question as
+OPEN_APPLICATION.
+
+6. For CREATE_TASK, task_name is required.
+
+For example:
+
+User message:
+"Create a task to learn Python"
+
+Return:
 
 {{
-    "intent": "INTENT_NAME",
-    "confidence": 0.0,
-    "parameters": {{}}
+    "intent": "CREATE_TASK",
+    "confidence": 0.95,
+    "parameters": {{
+        "task_name": "learn Python"
+    }}
 }}
+
+Another example:
+
+User message:
+"Add a task to practice SQL"
+
+Return:
+
+{{
+    "intent": "CREATE_TASK",
+    "confidence": 0.95,
+    "parameters": {{
+        "task_name": "practice SQL"
+    }}
+}}
+
+7. For CREATE_REMINDER, return:
+
+{{
+    "intent": "CREATE_REMINDER",
+    "confidence": 0.9,
+    "parameters": {{
+        "reminder": "reminder text"
+    }}
+}}
+
+8. For SET_TIMER, return:
+
+{{
+    "intent": "SET_TIMER",
+    "confidence": 0.95,
+    "parameters": {{
+        "duration": 10
+    }}
+}}
+
+The duration should be in minutes unless the
+user clearly specifies another unit.
+
+9. For GET_WEATHER, return:
+
+{{
+    "intent": "GET_WEATHER",
+    "confidence": 0.9,
+    "parameters": {{
+        "city": "city name"
+    }}
+}}
+
+10. For SEARCH_INFORMATION, return:
+
+{{
+    "intent": "SEARCH_INFORMATION",
+    "confidence": 0.9,
+    "parameters": {{
+        "query": "user's information request"
+    }}
+}}
+
+11. For OPEN_APPLICATION, return:
+
+{{
+    "intent": "OPEN_APPLICATION",
+    "confidence": 0.95,
+    "parameters": {{
+        "application": "application name",
+        "action": "open_application"
+    }}
+}}
+
+12. For BROWSE_WEB, return:
+
+{{
+    "intent": "BROWSE_WEB",
+    "confidence": 0.95,
+    "parameters": {{
+        "action": "open",
+        "url": "website URL"
+    }}
+}}
+
+13. Always return the required parameters
+when the intent needs them.
+
+14. Return ONLY valid JSON.
 
 User message:
 {message}
@@ -622,25 +981,43 @@ User message:
             contents=prompt
         )
 
-        if not response.text:
+        response_text = getattr(
+            response,
+            "text",
+            None
+        )
+
+        if not response_text:
 
             raise ValueError(
                 "Empty response from Gemini."
             )
 
-        return self._clean_json_response(
-            response.text
+        result = self._clean_json_response(
+            response_text
         )
+
+        return self._repair_parameters(
+            message,
+            result
+        )
+
+    # =========================================
+    # PUBLIC DETECT METHOD
+    # =========================================
 
     def detect(
         self,
         message: str
     ) -> dict:
 
-        if not isinstance(
-            message,
-            str
-        ) or not message.strip():
+        if (
+            not isinstance(
+                message,
+                str
+            )
+            or not message.strip()
+        ):
 
             return {
                 "intent": "GENERAL_QUERY",

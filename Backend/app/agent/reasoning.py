@@ -1,74 +1,144 @@
 class ReasoningEngine:
 
-    def __init__(self):
+    # =================================
+    # EXECUTABLE INTENTS
+    # =================================
 
-        self.executable_intents = {
-            "CREATE_TASK": "task",
-            "CREATE_REMINDER": "reminder",
-            "SET_TIMER": "timer",
-            "GET_WEATHER": "weather",
-            "SEARCH_INFORMATION": "search",
-            "SEND_EMAIL": "email",
-            "CHECK_CALENDAR": "calendar",
-            "MANAGE_FILE": "file",
-            "BROWSE_WEB": "browser"
-        }
+    EXECUTABLE_INTENTS = {
+        "SET_TIMER",
+        "CREATE_TASK",
+        "CREATE_REMINDER",
+        "GET_WEATHER",
+        "OPEN_APPLICATION",
+        "SEARCH_INFORMATION"
+    }
 
-        self.future_intents = {
-            "SEND_NOTIFICATION",
-            "VOICE_COMMAND",
-            "CREATE_WORKFLOW",
-            "SCHEDULE_JOB"
-        }
+    # =================================
+    # FUTURE INTENTS
+    # =================================
 
-    def _validate_intent(
+    FUTURE_INTENTS = {
+        "SEND_EMAIL",
+        "BOOK_RIDE",
+        "SHOP_ONLINE",
+        "POST_SOCIAL_MEDIA",
+        "SUBMIT_ASSIGNMENT"
+    }
+
+    # =================================
+    # EXPECTED TOOLS
+    # =================================
+
+    EXPECTED_TOOLS = {
+        "SET_TIMER": "timer",
+        "CREATE_TASK": "task",
+        "CREATE_REMINDER": "reminder",
+        "GET_WEATHER": "weather",
+        "OPEN_APPLICATION": "application_launcher",
+        "SEARCH_INFORMATION": "search"
+    }
+
+    # =================================
+    # REQUIRED PARAMETERS
+    # =================================
+
+    REQUIRED_PARAMETERS = {
+        "SET_TIMER": [
+            "duration_seconds"
+        ],
+        "CREATE_TASK": [
+            "task_name"
+        ],
+        "CREATE_REMINDER": [
+            "reminder"
+        ],
+        "GET_WEATHER": [
+            "city"
+        ],
+        "OPEN_APPLICATION": [
+            "application"
+        ],
+        "SEARCH_INFORMATION": [
+            "query"
+        ]
+    }
+
+    # =================================
+    # MAIN REASONING METHOD
+    # =================================
+
+    def reason(
         self,
-        intent: dict
+        intent: str,
+        plan: dict | None = None
     ) -> dict:
 
         if not isinstance(
             intent,
-            dict
+            str
         ):
 
             return {
+                "success": False,
                 "intent": "UNKNOWN",
-                "parameters": {}
+                "executable": False,
+                "message": (
+                    "Intent must be a string."
+                )
             }
 
-        intent_name = intent.get(
-            "intent",
-            "UNKNOWN"
-        )
+        intent = intent.strip().upper()
 
-        if not isinstance(
-            intent_name,
-            str
-        ) or not intent_name.strip():
+        # ---------------------------------
+        # UNKNOWN INTENT
+        # ---------------------------------
 
-            intent_name = "UNKNOWN"
+        if not intent:
 
-        parameters = intent.get(
-            "parameters",
-            {}
-        )
+            return {
+                "success": False,
+                "intent": "UNKNOWN",
+                "executable": False,
+                "message": (
+                    "Intent cannot be empty."
+                )
+            }
 
-        if not isinstance(
-            parameters,
-            dict
-        ):
+        # ---------------------------------
+        # FUTURE INTENT
+        # ---------------------------------
 
-            parameters = {}
+        if intent in self.FUTURE_INTENTS:
 
-        return {
-            "intent": intent_name.strip().upper(),
-            "parameters": parameters
-        }
+            return {
+                "success": True,
+                "intent": intent,
+                "executable": False,
+                "message": (
+                    f"Intent '{intent}' is recognised "
+                    "but its execution is not available yet."
+                )
+            }
 
-    def _validate_plan(
-        self,
-        plan: dict
-    ) -> dict:
+        # ---------------------------------
+        # NOT EXECUTABLE
+        # ---------------------------------
+
+        if intent not in self.EXECUTABLE_INTENTS:
+
+            return {
+                "success": True,
+                "intent": intent,
+                "executable": False,
+                "message": (
+                    f"Intent '{intent}' cannot "
+                    "be executed by the current system."
+                )
+            }
+
+        # ---------------------------------
+        # PLAN VALIDATION
+        # ---------------------------------
 
         if not isinstance(
             plan,
@@ -77,9 +147,11 @@ class ReasoningEngine:
 
             return {
                 "success": False,
-                "tool": None,
-                "parameters": {},
-                "steps": []
+                "intent": intent,
+                "executable": False,
+                "message": (
+                    "Execution plan must be a dictionary."
+                )
             }
 
         tool = plan.get(
@@ -91,11 +163,6 @@ class ReasoningEngine:
             {}
         )
 
-        steps = plan.get(
-            "steps",
-            []
-        )
-
         if not isinstance(
             parameters,
             dict
@@ -103,184 +170,133 @@ class ReasoningEngine:
 
             parameters = {}
 
-        if not isinstance(
-            steps,
-            list
-        ):
-
-            steps = []
-
-        return {
-            "success": plan.get(
-                "success",
-                False
-            ),
-            "tool": tool,
-            "parameters": parameters,
-            "steps": steps
-        }
-
-    def analyze(
-        self,
-        intent: dict,
-        plan: dict
-    ) -> dict:
-
-        validated_intent = self._validate_intent(
+        expected_tool = self.EXPECTED_TOOLS.get(
             intent
         )
 
-        validated_plan = self._validate_plan(
-            plan
+        # ---------------------------------
+        # TOOL VALIDATION
+        # ---------------------------------
+
+        if tool != expected_tool:
+
+            return {
+                "success": False,
+                "intent": intent,
+                "executable": False,
+                "expected_tool": expected_tool,
+                "received_tool": tool,
+                "message": (
+                    f"Intent '{intent}' requires "
+                    f"tool '{expected_tool}'."
+                )
+            }
+
+        # ---------------------------------
+        # REQUIRED PARAMETER VALIDATION
+        # ---------------------------------
+
+        required_parameters = (
+            self.REQUIRED_PARAMETERS.get(
+                intent,
+                []
+            )
         )
 
-        intent_name = validated_intent[
-            "intent"
-        ]
+        missing_parameters = []
 
-        parameters = validated_intent[
-            "parameters"
-        ]
+        for parameter in required_parameters:
 
-        if intent_name in {
-            "GENERAL_QUERY"
-        }:
+            value = parameters.get(
+                parameter
+            )
 
-            return {
-                "success": True,
-                "decision": "RESPOND",
-                "tool": None,
-                "parameters": parameters,
-                "reason": (
-                    "This request requires an AI response, "
-                    "not a tool."
+            if value is None:
+
+                missing_parameters.append(
+                    parameter
                 )
-            }
 
-        if intent_name == "UNKNOWN":
+            elif isinstance(
+                value,
+                str
+            ) and not value.strip():
 
-            return {
-                "success": False,
-                "decision": "STOP",
-                "tool": None,
-                "parameters": parameters,
-                "reason": (
-                    "The user's request could not be understood."
+                missing_parameters.append(
+                    parameter
                 )
-            }
 
-        if intent_name in self.future_intents:
-
-            return {
-                "success": True,
-                "decision": "WAIT",
-                "tool": None,
-                "parameters": parameters,
-                "reason": (
-                    f"Intent '{intent_name}' is reserved "
-                    "for a future module."
-                )
-            }
-
-        expected_tool = self.executable_intents.get(
-            intent_name
-        )
-
-        if expected_tool is None:
+        if missing_parameters:
 
             return {
                 "success": False,
-                "decision": "STOP",
-                "tool": None,
-                "parameters": parameters,
-                "reason": (
-                    f"Intent '{intent_name}' is not "
-                    "supported by the reasoning engine."
+                "intent": intent,
+                "executable": False,
+                "missing_parameters": (
+                    missing_parameters
+                ),
+                "message": (
+                    "Required parameters are missing: "
+                    + ", ".join(
+                        missing_parameters
+                    )
                 )
             }
 
-        if not validated_plan["success"]:
-
-            return {
-                "success": False,
-                "decision": "STOP",
-                "tool": expected_tool,
-                "parameters": parameters,
-                "reason": (
-                    "The planner could not create "
-                    "a valid execution plan."
-                )
-            }
-
-        plan_tool = validated_plan["tool"]
-
-        if plan_tool != expected_tool:
-
-            return {
-                "success": False,
-                "decision": "STOP",
-                "tool": plan_tool,
-                "parameters": parameters,
-                "reason": (
-                    f"Tool mismatch. Intent '{intent_name}' "
-                    f"requires '{expected_tool}', but the "
-                    f"plan selected '{plan_tool}'."
-                )
-            }
-
-        if not validated_plan["steps"]:
-
-            return {
-                "success": False,
-                "decision": "STOP",
-                "tool": expected_tool,
-                "parameters": parameters,
-                "reason": (
-                    "The execution plan contains no steps."
-                )
-            }
+        # ---------------------------------
+        # EXECUTABLE
+        # ---------------------------------
 
         return {
             "success": True,
-            "decision": "EXECUTE",
-            "tool": expected_tool,
+            "intent": intent,
+            "executable": True,
+            "tool": tool,
             "parameters": parameters,
-            "reason": (
-                f"Intent '{intent_name}' can be executed "
-                f"using the {expected_tool} tool."
+            "message": (
+                f"Intent '{intent}' can be executed "
+                f"using tool '{tool}'."
             )
         }
 
+    # =================================
+    # CAN EXECUTE
+    # =================================
+
     def can_execute(
         self,
-        intent_name: str
+        intent: str
     ) -> bool:
 
         if not isinstance(
-            intent_name,
+            intent,
             str
         ):
 
             return False
 
         return (
-            intent_name.strip().upper()
-            in self.executable_intents
+            intent.strip().upper()
+            in self.EXECUTABLE_INTENTS
         )
+
+    # =================================
+    # IS FUTURE INTENT
+    # =================================
 
     def is_future_intent(
         self,
-        intent_name: str
+        intent: str
     ) -> bool:
 
         if not isinstance(
-            intent_name,
+            intent,
             str
         ):
 
             return False
 
         return (
-            intent_name.strip().upper()
-            in self.future_intents
+            intent.strip().upper()
+            in self.FUTURE_INTENTS
         )

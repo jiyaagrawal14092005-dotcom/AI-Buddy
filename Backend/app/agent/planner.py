@@ -13,6 +13,7 @@ class Planner:
             "CREATE_TASK": "task",
             "CREATE_REMINDER": "reminder",
             "GET_WEATHER": "weather",
+            "OPEN_APPLICATION": "application_launcher",
 
             # Future tools
             "SEARCH_INFORMATION": "search",

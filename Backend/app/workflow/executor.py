@@ -1,3 +1,5 @@
+from sqlalchemy.orm import Session
+
 from app.tools.task import TaskTool
 from app.tools.reminder import ReminderTool
 from app.tools.timer import TimerTool
@@ -26,7 +28,9 @@ class WorkflowExecutor:
 
     def execute_step(
         self,
-        step
+        step,
+        user_id: int,
+        db: Session
     ) -> dict:
 
         if step is None:
@@ -35,7 +39,36 @@ class WorkflowExecutor:
                 "message": "Workflow step is required."
             }
 
-        # Validate step attributes
+        # ---------------------------------
+        # VALIDATE USER ID
+        # ---------------------------------
+
+        if not isinstance(user_id, int):
+            return {
+                "success": False,
+                "message": "User ID must be an integer."
+            }
+
+        if user_id <= 0:
+            return {
+                "success": False,
+                "message": "User ID must be greater than zero."
+            }
+
+        # ---------------------------------
+        # VALIDATE DATABASE SESSION
+        # ---------------------------------
+
+        if db is None:
+            return {
+                "success": False,
+                "message": "Database session is required."
+            }
+
+        # ---------------------------------
+        # VALIDATE STEP ATTRIBUTES
+        # ---------------------------------
+
         if not hasattr(step, "tool"):
             return {
                 "success": False,
@@ -51,7 +84,10 @@ class WorkflowExecutor:
         tool = step.tool
         parameters = step.parameters
 
-        # Validate tool
+        # ---------------------------------
+        # VALIDATE TOOL
+        # ---------------------------------
+
         if not isinstance(tool, str):
             return {
                 "success": False,
@@ -75,7 +111,10 @@ class WorkflowExecutor:
                 )
             }
 
-        # Validate parameters
+        # ---------------------------------
+        # VALIDATE PARAMETERS
+        # ---------------------------------
+
         if parameters is None:
             parameters = {}
 
@@ -85,7 +124,10 @@ class WorkflowExecutor:
                 "message": "Tool parameters must be a dictionary."
             }
 
-        # Start step
+        # ---------------------------------
+        # START STEP
+        # ---------------------------------
+
         try:
 
             step.start()
@@ -113,7 +155,9 @@ class WorkflowExecutor:
                 )
 
                 result = self.task_tool.create_task(
-                    task_name
+                    task_name,
+                    user_id,
+                    db
                 )
 
             # -----------------------------
@@ -220,9 +264,11 @@ class WorkflowExecutor:
             error_message = str(error)
 
             try:
+
                 step.fail(
                     error_message
                 )
+
             except Exception:
                 pass
 
