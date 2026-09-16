@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
+
 import {
     Plus,
     Search,
@@ -12,6 +14,7 @@ import {
 
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
+
 
 const initialTasks = [
     {
@@ -52,10 +55,20 @@ const initialTasks = [
     },
 ];
 
+
 function Tasks() {
+
+    const location = useLocation();
+
     const [tasks, setTasks] = useState(initialTasks);
+
     const [search, setSearch] = useState("");
-    const [showForm, setShowForm] = useState(false);
+
+    // Opens automatically when coming from Dashboard → Create Task
+    const [showForm, setShowForm] = useState(
+        location.state?.openForm === true
+    );
+
 
     const [newTask, setNewTask] = useState({
         title: "",
@@ -64,7 +77,13 @@ function Tasks() {
         priority: "MEDIUM",
     });
 
+
+    /* =================================================
+       TOGGLE TASK
+    ================================================= */
+
     const toggleTask = (id) => {
+
         setTasks((prev) =>
             prev.map((task) =>
                 task.id === id
@@ -75,33 +94,62 @@ function Tasks() {
                     : task
             )
         );
+
     };
 
+
+    /* =================================================
+       DELETE TASK
+    ================================================= */
+
     const deleteTask = (id) => {
+
         setTasks((prev) =>
             prev.filter((task) => task.id !== id)
         );
+
     };
 
+
+    /* =================================================
+       ADD TASK
+    ================================================= */
+
     const addTask = (event) => {
+
         event.preventDefault();
 
         if (!newTask.title.trim()) return;
 
+
         const task = {
+
             id: Date.now(),
-            title: newTask.title,
+
+            title: newTask.title.trim(),
+
             description:
-                newTask.description ||
+                newTask.description.trim() ||
                 "Created with Zarvis",
+
             date: "Today",
+
             time: newTask.time || "Anytime",
+
             priority: newTask.priority,
+
             completed: false,
+
         };
 
-        setTasks((prev) => [task, ...prev]);
 
+        setTasks((prev) => [
+            task,
+            ...prev,
+        ]);
+
+
+        // Reset form
         setNewTask({
             title: "",
             description: "",
@@ -109,50 +157,98 @@ function Tasks() {
             priority: "MEDIUM",
         });
 
+
         setShowForm(false);
+
     };
 
+
+    /* =================================================
+       SEARCH
+    ================================================= */
+
     const filteredTasks = tasks.filter((task) =>
+
         `${task.title} ${task.description}`
             .toLowerCase()
             .includes(search.toLowerCase())
+
     );
+
+
+    /* =================================================
+       TASK STATS
+    ================================================= */
 
     const completedTasks = tasks.filter(
         (task) => task.completed
     ).length;
 
-    const pendingTasks = tasks.length - completedTasks;
+
+    const pendingTasks =
+        tasks.length - completedTasks;
+
+
+    const completionPercentage =
+        tasks.length
+            ? Math.round(
+                (completedTasks / tasks.length) * 100
+            )
+            : 0;
+
 
     return (
+
         <div className="app">
+
+            {/* =================================================
+                SIDEBAR
+            ================================================= */}
 
             <Sidebar />
 
+
             <main className="main-content">
+
+                {/* =================================================
+                    NAVBAR
+                ================================================= */}
 
                 <Navbar />
 
+
                 <div className="tasks-page">
 
-                    {/* HEADER */}
+
+                    {/* =================================================
+                        HEADER
+                    ================================================= */}
+
                     <section className="tasks-header">
 
                         <div>
+
                             <span className="tasks-eyebrow">
+
                                 <ListTodo size={14} />
+
                                 ZARVIS TASK SYSTEM
+
                             </span>
+
 
                             <h1>
                                 My Tasks
                             </h1>
 
+
                             <p>
                                 Organize your work and let Zarvis
                                 keep you on track.
                             </p>
+
                         </div>
+
 
                         <button
                             type="button"
@@ -161,57 +257,94 @@ function Tasks() {
                                 setShowForm(!showForm)
                             }
                         >
+
                             <Plus size={18} />
+
                             Add Task
+
                         </button>
 
                     </section>
 
 
-                    {/* STATS */}
+                    {/* =================================================
+                        STATS
+                    ================================================= */}
+
                     <section className="tasks-stats">
 
-                        <div className="tasks-stat-card">
-                            <span>Total Tasks</span>
-                            <strong>{tasks.length}</strong>
-                        </div>
 
                         <div className="tasks-stat-card">
-                            <span>Completed</span>
-                            <strong>{completedTasks}</strong>
-                        </div>
 
-                        <div className="tasks-stat-card">
-                            <span>Pending</span>
-                            <strong>{pendingTasks}</strong>
-                        </div>
+                            <span>
+                                Total Tasks
+                            </span>
 
-                        <div className="tasks-stat-card">
-                            <span>Completion</span>
                             <strong>
-                                {tasks.length
-                                    ? Math.round(
-                                        (completedTasks /
-                                            tasks.length) *
-                                        100
-                                    )
-                                    : 0}
-                                %
+                                {tasks.length}
                             </strong>
+
                         </div>
+
+
+                        <div className="tasks-stat-card">
+
+                            <span>
+                                Completed
+                            </span>
+
+                            <strong>
+                                {completedTasks}
+                            </strong>
+
+                        </div>
+
+
+                        <div className="tasks-stat-card">
+
+                            <span>
+                                Pending
+                            </span>
+
+                            <strong>
+                                {pendingTasks}
+                            </strong>
+
+                        </div>
+
+
+                        <div className="tasks-stat-card">
+
+                            <span>
+                                Completion
+                            </span>
+
+                            <strong>
+                                {completionPercentage}%
+                            </strong>
+
+                        </div>
+
 
                     </section>
 
 
-                    {/* ADD TASK FORM */}
+                    {/* =================================================
+                        ADD TASK FORM
+                    ================================================= */}
+
                     {showForm && (
+
                         <form
                             className="task-create-panel"
                             onSubmit={addTask}
                         >
 
+
                             <div className="task-create-header">
+
                                 <div>
+
                                     <span>
                                         TASK CREATOR
                                     </span>
@@ -219,25 +352,34 @@ function Tasks() {
                                     <h2>
                                         Create New Task
                                     </h2>
+
                                 </div>
+
 
                                 <button
                                     type="button"
                                     onClick={() =>
                                         setShowForm(false)
                                     }
+                                    aria-label="Close task form"
                                 >
                                     ×
                                 </button>
+
                             </div>
 
 
                             <div className="task-form-grid">
 
+
+                                {/* TASK NAME */}
+
                                 <div className="task-form-field">
+
                                     <label>
                                         Task Name
                                     </label>
+
 
                                     <input
                                         type="text"
@@ -250,13 +392,18 @@ function Tasks() {
                                             })
                                         }
                                     />
+
                                 </div>
 
 
+                                {/* TIME */}
+
                                 <div className="task-form-field">
+
                                     <label>
                                         Time
                                     </label>
+
 
                                     <input
                                         type="time"
@@ -268,13 +415,18 @@ function Tasks() {
                                             })
                                         }
                                     />
+
                                 </div>
 
 
+                                {/* DESCRIPTION */}
+
                                 <div className="task-form-field task-form-wide">
+
                                     <label>
                                         Description
                                     </label>
+
 
                                     <input
                                         type="text"
@@ -288,13 +440,18 @@ function Tasks() {
                                             })
                                         }
                                     />
+
                                 </div>
 
 
+                                {/* PRIORITY */}
+
                                 <div className="task-form-field">
+
                                     <label>
                                         Priority
                                     </label>
+
 
                                     <select
                                         value={newTask.priority}
@@ -306,6 +463,7 @@ function Tasks() {
                                             })
                                         }
                                     >
+
                                         <option value="HIGH">
                                             HIGH
                                         </option>
@@ -317,30 +475,43 @@ function Tasks() {
                                         <option value="LOW">
                                             LOW
                                         </option>
+
                                     </select>
+
                                 </div>
 
                             </div>
 
 
+                            {/* CREATE */}
+
                             <button
                                 type="submit"
                                 className="task-create-submit"
                             >
+
                                 <Plus size={16} />
+
                                 CREATE TASK
+
                             </button>
 
                         </form>
+
                     )}
 
 
-                    {/* SEARCH */}
+                    {/* =================================================
+                        SEARCH
+                    ================================================= */}
+
                     <section className="tasks-toolbar">
+
 
                         <div className="tasks-search">
 
                             <Search size={17} />
+
 
                             <input
                                 type="text"
@@ -353,20 +524,29 @@ function Tasks() {
 
                         </div>
 
+
                         <div className="tasks-toolbar-status">
+
                             <span></span>
+
                             {pendingTasks} TASKS ACTIVE
+
                         </div>
 
                     </section>
 
 
-                    {/* TASK LIST */}
+                    {/* =================================================
+                        TASK LIST
+                    ================================================= */}
+
                     <section className="tasks-list-panel">
+
 
                         <div className="tasks-list-header">
 
                             <div>
+
                                 <span>
                                     TASK QUEUE // 01
                                 </span>
@@ -374,7 +554,9 @@ function Tasks() {
                                 <h2>
                                     Today's Tasks
                                 </h2>
+
                             </div>
+
 
                             <div className="tasks-list-count">
                                 {filteredTasks.length}
@@ -385,7 +567,11 @@ function Tasks() {
 
                         <div className="tasks-list">
 
+
+                            {/* EMPTY STATE */}
+
                             {filteredTasks.length === 0 ? (
+
                                 <div className="tasks-empty">
 
                                     <ListTodo size={32} />
@@ -400,66 +586,106 @@ function Tasks() {
                                     </p>
 
                                 </div>
+
                             ) : (
+
                                 filteredTasks.map((task) => (
 
                                     <div
-                                        className={`task-page-row ${task.completed
+                                        className={`task-page-row ${
+                                            task.completed
                                                 ? "task-page-completed"
                                                 : ""
-                                            }`}
+                                        }`}
                                         key={task.id}
                                     >
 
-                                        {/* CHECK */}
+
+                                        {/* =================================================
+                                            CHECK
+                                        ================================================= */}
+
                                         <button
                                             type="button"
                                             className="task-page-check"
                                             onClick={() =>
                                                 toggleTask(task.id)
                                             }
+                                            aria-label={
+                                                task.completed
+                                                    ? "Mark task incomplete"
+                                                    : "Mark task complete"
+                                            }
                                         >
+
                                             {task.completed ? (
-                                                <CheckCircle2 size={21} />
+
+                                                <CheckCircle2
+                                                    size={21}
+                                                />
+
                                             ) : (
-                                                <Circle size={21} />
+
+                                                <Circle
+                                                    size={21}
+                                                />
+
                                             )}
+
                                         </button>
 
 
-                                        {/* CONTENT */}
+                                        {/* =================================================
+                                            CONTENT
+                                        ================================================= */}
+
                                         <div className="task-page-content">
+
 
                                             <strong>
                                                 {task.title}
                                             </strong>
 
+
                                             <span>
                                                 {task.description}
                                             </span>
 
+
                                             <div className="task-page-meta">
 
+
                                                 <span>
+
                                                     <CalendarDays
                                                         size={12}
                                                     />
+
                                                     {task.date}
+
                                                 </span>
 
+
                                                 <span>
+
                                                     <Clock3
                                                         size={12}
                                                     />
+
                                                     {task.time}
+
                                                 </span>
+
 
                                             </div>
 
                                         </div>
 
 
-                                        {/* PRIORITY */}
+                                        {/* =================================================
+                                            PRIORITY
+                                        ================================================= */}
+
                                         <span
                                             className={`task-page-priority priority-${task.priority.toLowerCase()}`}
                                         >
@@ -467,7 +693,10 @@ function Tasks() {
                                         </span>
 
 
-                                        {/* DELETE */}
+                                        {/* =================================================
+                                            DELETE
+                                        ================================================= */}
+
                                         <button
                                             type="button"
                                             className="task-page-delete"
@@ -475,13 +704,17 @@ function Tasks() {
                                                 deleteTask(task.id)
                                             }
                                             title="Delete task"
+                                            aria-label="Delete task"
                                         >
+
                                             <Trash2 size={16} />
+
                                         </button>
 
                                     </div>
 
                                 ))
+
                             )}
 
                         </div>
@@ -493,7 +726,9 @@ function Tasks() {
             </main>
 
         </div>
+
     );
 }
+
 
 export default Tasks;

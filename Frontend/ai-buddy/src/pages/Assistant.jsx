@@ -38,17 +38,10 @@ function Assistant() {
     const shouldListenRef = useRef(true);
     const speakingRef = useRef(false);
 
-    /* =====================================================
-       ZARVIS RESPONSE
-    ===================================================== */
-
     const getZarvisResponse = (text) => {
         const command = text.toLowerCase();
 
-        if (
-            command.includes("plan my day") ||
-            command.includes("plan my day")
-        ) {
+        if (command.includes("plan my day")) {
             return "Sure! I'll help you plan your day with a balanced schedule.";
         }
 
@@ -82,6 +75,14 @@ function Assistant() {
         }
 
         if (
+            command.includes("study") ||
+            command.includes("learn") ||
+            command.includes("explain")
+        ) {
+            return "Absolutely. Tell me the topic and I'll explain it simply.";
+        }
+
+        if (
             command.includes("hello") ||
             command.includes("hi") ||
             command.includes("hey")
@@ -99,10 +100,6 @@ function Assistant() {
         return `I heard you say "${text}". I'm ready to help you with that.`;
     };
 
-    /* =====================================================
-       VOICE OUTPUT
-    ===================================================== */
-
     const speak = (text) => {
         if (!window.speechSynthesis) {
             startListening();
@@ -117,8 +114,7 @@ function Assistant() {
         setIsListening(false);
         setIsThinking(false);
 
-        const speech =
-            new SpeechSynthesisUtterance(text);
+        const speech = new SpeechSynthesisUtterance(text);
 
         speech.lang = "en-IN";
         speech.rate = 0.95;
@@ -126,7 +122,6 @@ function Assistant() {
 
         speech.onend = () => {
             speakingRef.current = false;
-
             setIsSpeaking(false);
 
             if (shouldListenRef.current) {
@@ -138,7 +133,6 @@ function Assistant() {
 
         speech.onerror = () => {
             speakingRef.current = false;
-
             setIsSpeaking(false);
 
             if (shouldListenRef.current) {
@@ -148,10 +142,6 @@ function Assistant() {
 
         window.speechSynthesis.speak(speech);
     };
-
-    /* =====================================================
-       PROCESS COMMAND
-    ===================================================== */
 
     const processCommand = (text) => {
         if (!text.trim()) return;
@@ -186,10 +176,6 @@ function Assistant() {
         }, 700);
     };
 
-    /* =====================================================
-       START LISTENING
-    ===================================================== */
-
     const startListening = () => {
         if (speakingRef.current) return;
 
@@ -198,10 +184,6 @@ function Assistant() {
             window.webkitSpeechRecognition;
 
         if (!SpeechRecognition) {
-            alert(
-                "Voice recognition is not supported. Please use Google Chrome."
-            );
-
             return;
         }
 
@@ -213,13 +195,10 @@ function Assistant() {
             }
         }
 
-        const recognition =
-            new SpeechRecognition();
+        const recognition = new SpeechRecognition();
 
         recognition.lang = "en-IN";
-
         recognition.continuous = false;
-
         recognition.interimResults = false;
 
         recognition.onstart = () => {
@@ -251,10 +230,6 @@ function Assistant() {
                 event.error === "service-not-allowed"
             ) {
                 shouldListenRef.current = false;
-
-                alert(
-                    "Microphone permission is required for Zarvis."
-                );
             }
         };
 
@@ -284,17 +259,9 @@ function Assistant() {
         }
     };
 
-    /* =====================================================
-       QUICK COMMAND
-    ===================================================== */
-
     const handleQuickCommand = (command) => {
         processCommand(command);
     };
-
-    /* =====================================================
-       AUTO VOICE
-    ===================================================== */
 
     useEffect(() => {
         shouldListenRef.current = true;
@@ -322,26 +289,19 @@ function Assistant() {
 
     return (
         <div className="app">
-
             <Sidebar />
 
             <main className="main-content">
-
                 <Navbar />
 
                 <div className="assistant-page">
 
-                    {/* =================================================
-              HEADER
-          ================================================= */}
+                    {/* HEADER */}
 
                     <section className="assistant-header">
-
                         <div className="assistant-header-content">
-
                             <span className="assistant-eyebrow">
                                 <Sparkles size={13} />
-
                                 ZARVIS AI ASSISTANT
                             </span>
 
@@ -353,23 +313,16 @@ function Assistant() {
                                 Speak naturally. Zarvis listens,
                                 thinks and responds automatically.
                             </p>
-
                         </div>
 
                         <div className="assistant-online">
-
                             <span></span>
-
                             ZARVIS ONLINE
-
                         </div>
-
                     </section>
 
 
-                    {/* =================================================
-              QUICK COMMANDS
-          ================================================= */}
+                    {/* QUICK COMMANDS */}
 
                     <div className="assistant-quick-commands">
 
@@ -380,7 +333,6 @@ function Assistant() {
                             }
                         >
                             <CalendarDays size={15} />
-
                             Plan my day
                         </button>
 
@@ -393,7 +345,6 @@ function Assistant() {
                             }
                         >
                             <BookOpen size={15} />
-
                             Help with studies
                         </button>
 
@@ -406,7 +357,6 @@ function Assistant() {
                             }
                         >
                             <Bell size={15} />
-
                             Set a reminder
                         </button>
 
@@ -419,23 +369,17 @@ function Assistant() {
                             }
                         >
                             <CircleHelp size={15} />
-
                             Any question
                         </button>
 
                     </div>
 
 
-                    {/* =================================================
-              ASSISTANT GRID
-          ================================================= */}
+                    {/* MAIN LAYOUT */}
 
                     <div className="assistant-layout">
 
-
-                        {/* =================================================
-                MAIN VOICE PANEL
-            ================================================= */}
+                        {/* MAIN VOICE PANEL */}
 
                         <section className="assistant-main-panel">
 
@@ -460,7 +404,6 @@ function Assistant() {
                                 </div>
 
                                 <div className="assistant-panel-status">
-
                                     <span></span>
 
                                     {isListening
@@ -470,7 +413,6 @@ function Assistant() {
                                             : isThinking
                                                 ? "THINKING"
                                                 : "READY"}
-
                                 </div>
 
                             </div>
@@ -481,20 +423,19 @@ function Assistant() {
                             <div className="assistant-voice-center">
 
                                 <div
-                                    className={`assistant-voice-orb ${isListening
+                                    className={`assistant-voice-orb ${
+                                        isListening
                                             ? "voice-orb-listening"
                                             : isSpeaking
                                                 ? "voice-orb-speaking"
                                                 : isThinking
                                                     ? "voice-orb-thinking"
                                                     : ""
-                                        }`}
+                                    }`}
                                 >
 
                                     <div className="assistant-orb-ring orb-ring-1"></div>
-
                                     <div className="assistant-orb-ring orb-ring-2"></div>
-
                                     <div className="assistant-orb-ring orb-ring-3"></div>
 
                                     <div className="assistant-orb-particles">
@@ -519,7 +460,6 @@ function Assistant() {
 
 
                                 <h2>
-
                                     {isListening
                                         ? "I'm listening..."
                                         : isSpeaking
@@ -527,12 +467,10 @@ function Assistant() {
                                             : isThinking
                                                 ? "Thinking..."
                                                 : "Ready for you"}
-
                                 </h2>
 
 
                                 <p>
-
                                     {isListening
                                         ? "Tell me what you need."
                                         : isSpeaking
@@ -540,18 +478,17 @@ function Assistant() {
                                             : isThinking
                                                 ? "Processing your command..."
                                                 : "Just speak naturally."}
-
                                 </p>
 
 
                                 {/* WAVEFORM */}
 
                                 <div
-                                    className={`assistant-waveform ${isListening ||
-                                            isSpeaking
+                                    className={`assistant-waveform ${
+                                        isListening || isSpeaking
                                             ? "wave-active"
                                             : ""
-                                        }`}
+                                    }`}
                                 >
 
                                     {Array.from({
@@ -560,8 +497,8 @@ function Assistant() {
                                         <span
                                             key={index}
                                             style={{
-                                                animationDelay: `${index * 0.045
-                                                    }s`,
+                                                animationDelay:
+                                                    `${index * 0.045}s`,
                                             }}
                                         ></span>
                                     ))}
@@ -576,11 +513,8 @@ function Assistant() {
                             <div className="assistant-conversation">
 
                                 <div className="conversation-label">
-
                                     <Activity size={12} />
-
                                     LIVE CONVERSATION
-
                                 </div>
 
 
@@ -590,10 +524,11 @@ function Assistant() {
 
                                         <div
                                             key={index}
-                                            className={`conversation-message ${message.type === "user"
+                                            className={`conversation-message ${
+                                                message.type === "user"
                                                     ? "conversation-user"
                                                     : "conversation-zarvis"
-                                                }`}
+                                            }`}
                                         >
 
                                             <div className="conversation-avatar">
@@ -612,8 +547,7 @@ function Assistant() {
                                                 <div className="conversation-heading">
 
                                                     <strong>
-                                                        {message.type ===
-                                                            "user"
+                                                        {message.type === "user"
                                                             ? "YOU"
                                                             : "ZARVIS"}
                                                     </strong>
@@ -642,7 +576,6 @@ function Assistant() {
                             <div className="assistant-bottom-bar">
 
                                 <div>
-
                                     <span className="bottom-status-dot"></span>
 
                                     {isListening
@@ -650,11 +583,10 @@ function Assistant() {
                                         : isSpeaking
                                             ? "VOICE OUTPUT ACTIVE"
                                             : "VOICE SYSTEM READY"}
-
                                 </div>
 
                                 <span>
-                                    NO SEND BUTTON REQUIRED
+                                    VOICE ENABLED
                                 </span>
 
                                 <span>
@@ -666,12 +598,9 @@ function Assistant() {
                         </section>
 
 
-                        {/* =================================================
-                RIGHT PANEL
-            ================================================= */}
+                        {/* RIGHT PANEL */}
 
                         <aside className="assistant-side-panel">
-
 
                             {/* TODAY FOCUS */}
 
@@ -707,43 +636,31 @@ function Assistant() {
                                 <div className="focus-list">
 
                                     <div className="focus-item completed">
-
                                         <CheckCircle2 size={16} />
-
                                         <span>
                                             Complete AI assignment
                                         </span>
-
                                     </div>
 
                                     <div className="focus-item">
-
                                         <div className="empty-check"></div>
-
                                         <span>
                                             Study Machine Learning
                                         </span>
-
                                     </div>
 
                                     <div className="focus-item">
-
                                         <div className="empty-check"></div>
-
                                         <span>
                                             Work on Zarvis frontend
                                         </span>
-
                                     </div>
 
                                     <div className="focus-item">
-
                                         <div className="empty-check"></div>
-
                                         <span>
                                             Review today's notes
                                         </span>
-
                                     </div>
 
                                 </div>
@@ -789,7 +706,6 @@ function Assistant() {
                                         }
                                     >
                                         <Sparkles size={13} />
-
                                         "Plan my day"
                                     </button>
 
@@ -802,7 +718,6 @@ function Assistant() {
                                         }
                                     >
                                         <Clock3 size={13} />
-
                                         "Remind me at 6 PM"
                                     </button>
 
@@ -815,7 +730,6 @@ function Assistant() {
                                         }
                                     >
                                         <Zap size={13} />
-
                                         "What's next?"
                                     </button>
 
@@ -828,7 +742,6 @@ function Assistant() {
                                         }
                                     >
                                         <BookOpen size={13} />
-
                                         "Explain this topic"
                                     </button>
 
@@ -861,7 +774,6 @@ function Assistant() {
 
 
                                 <div className="system-status-row">
-
                                     <span>
                                         Voice recognition
                                     </span>
@@ -869,11 +781,9 @@ function Assistant() {
                                     <strong>
                                         ACTIVE
                                     </strong>
-
                                 </div>
 
                                 <div className="system-status-row">
-
                                     <span>
                                         Voice response
                                     </span>
@@ -881,11 +791,9 @@ function Assistant() {
                                     <strong>
                                         ACTIVE
                                     </strong>
-
                                 </div>
 
                                 <div className="system-status-row">
-
                                     <span>
                                         Zarvis Core
                                     </span>
@@ -893,7 +801,6 @@ function Assistant() {
                                     <strong>
                                         ONLINE
                                     </strong>
-
                                 </div>
 
                             </section>

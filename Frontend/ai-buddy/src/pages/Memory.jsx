@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
+
 import {
     Plus,
     Search,
@@ -9,6 +11,7 @@ import {
 
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
+
 
 const initialMemories = [
     {
@@ -41,14 +44,29 @@ const initialMemories = [
     },
 ];
 
+
 function Memory() {
+
+    const location = useLocation();
+
+
     const [memories, setMemories] =
         useState(initialMemories);
 
-    const [search, setSearch] = useState("");
 
+    const [search, setSearch] =
+        useState("");
+
+
+    /*
+     * Dashboard → Save Memory
+     * Automatically opens the memory creator.
+     */
     const [showForm, setShowForm] =
-        useState(false);
+        useState(
+            location.state?.openForm === true
+        );
+
 
     const [newMemory, setNewMemory] =
         useState({
@@ -57,29 +75,48 @@ function Memory() {
             category: "PERSONAL",
         });
 
-    const filteredMemories = memories.filter(
-        (memory) =>
-            `${memory.title} ${memory.description} ${memory.category}`
-                .toLowerCase()
-                .includes(search.toLowerCase())
-    );
 
-    const projectCount = memories.filter(
-        (memory) => memory.category === "PROJECT"
-    ).length;
+    const filteredMemories =
+        memories.filter(
+            (memory) =>
+                `${memory.title} ${memory.description} ${memory.category}`
+                    .toLowerCase()
+                    .includes(
+                        search.toLowerCase()
+                    )
+        );
 
-    const preferenceCount = memories.filter(
-        (memory) => memory.category === "PREFERENCE"
-    ).length;
+
+    const projectCount =
+        memories.filter(
+            (memory) =>
+                memory.category === "PROJECT"
+        ).length;
+
+
+    const preferenceCount =
+        memories.filter(
+            (memory) =>
+                memory.category === "PREFERENCE"
+        ).length;
+
 
     const deleteMemory = (id) => {
+
         setMemories((current) =>
-            current.filter((memory) => memory.id !== id)
+            current.filter(
+                (memory) =>
+                    memory.id !== id
+            )
         );
+
     };
 
+
     const handleAddMemory = (e) => {
+
         e.preventDefault();
+
 
         if (
             !newMemory.title.trim() ||
@@ -88,18 +125,28 @@ function Memory() {
             return;
         }
 
+
         const memory = {
+
             id: Date.now(),
-            title: newMemory.title.trim(),
+
+            title:
+                newMemory.title.trim(),
+
             description:
                 newMemory.description.trim(),
-            category: newMemory.category,
+
+            category:
+                newMemory.category,
+
         };
+
 
         setMemories((current) => [
             memory,
             ...current,
         ]);
+
 
         setNewMemory({
             title: "",
@@ -107,19 +154,26 @@ function Memory() {
             category: "PERSONAL",
         });
 
+
         setShowForm(false);
+
     };
 
+
     return (
+
         <div className="app">
 
             <Sidebar />
+
 
             <main className="main-content">
 
                 <Navbar />
 
+
                 <div className="memory-page-final">
+
 
                     {/* ================= HEADER ================= */}
 
@@ -128,11 +182,20 @@ function Memory() {
                         <div className="memory-header-left-final">
 
                             <div className="memory-eyebrow-final">
+
                                 <Brain size={14} />
-                                <span>ZARVIS MEMORY SYSTEM</span>
+
+                                <span>
+                                    ZARVIS MEMORY SYSTEM
+                                </span>
+
                             </div>
 
-                            <h1>Memory</h1>
+
+                            <h1>
+                                Memory
+                            </h1>
+
 
                             <p>
                                 Important information Zarvis remembers
@@ -141,15 +204,23 @@ function Memory() {
 
                         </div>
 
+
                         <button
                             type="button"
                             className="memory-add-final"
                             onClick={() =>
-                                setShowForm(!showForm)
+                                setShowForm(
+                                    !showForm
+                                )
                             }
                         >
+
                             <Plus size={18} />
-                            <span>Add Memory</span>
+
+                            <span>
+                                Add Memory
+                            </span>
+
                         </button>
 
                     </div>
@@ -159,9 +230,12 @@ function Memory() {
 
                     <div className="memory-stats-final">
 
+
                         <div className="memory-stat-final">
 
-                            <span>TOTAL MEMORIES</span>
+                            <span>
+                                TOTAL MEMORIES
+                            </span>
 
                             <strong>
                                 {memories.length}
@@ -169,9 +243,12 @@ function Memory() {
 
                         </div>
 
+
                         <div className="memory-stat-final">
 
-                            <span>PROJECT</span>
+                            <span>
+                                PROJECT
+                            </span>
 
                             <strong>
                                 {projectCount}
@@ -179,9 +256,12 @@ function Memory() {
 
                         </div>
 
+
                         <div className="memory-stat-final">
 
-                            <span>PREFERENCES</span>
+                            <span>
+                                PREFERENCES
+                            </span>
 
                             <strong>
                                 {preferenceCount}
@@ -189,9 +269,12 @@ function Memory() {
 
                         </div>
 
+
                         <div className="memory-stat-final">
 
-                            <span>MEMORY STATUS</span>
+                            <span>
+                                MEMORY STATUS
+                            </span>
 
                             <strong className="memory-status-final">
                                 ACTIVE
@@ -208,8 +291,11 @@ function Memory() {
 
                         <form
                             className="memory-create-final"
-                            onSubmit={handleAddMemory}
+                            onSubmit={
+                                handleAddMemory
+                            }
                         >
+
 
                             <div className="memory-create-top-final">
 
@@ -225,12 +311,14 @@ function Memory() {
 
                                 </div>
 
+
                                 <button
                                     type="button"
                                     className="memory-close-final"
                                     onClick={() =>
                                         setShowForm(false)
                                     }
+                                    aria-label="Close memory form"
                                 >
                                     ×
                                 </button>
@@ -239,6 +327,7 @@ function Memory() {
 
 
                             <div className="memory-form-final">
+
 
                                 <div className="memory-input-final">
 
@@ -249,11 +338,14 @@ function Memory() {
                                     <input
                                         type="text"
                                         placeholder="e.g. Favorite study style"
-                                        value={newMemory.title}
+                                        value={
+                                            newMemory.title
+                                        }
                                         onChange={(e) =>
                                             setNewMemory({
                                                 ...newMemory,
-                                                title: e.target.value,
+                                                title:
+                                                    e.target.value,
                                             })
                                         }
                                     />
@@ -268,14 +360,18 @@ function Memory() {
                                     </label>
 
                                     <select
-                                        value={newMemory.category}
+                                        value={
+                                            newMemory.category
+                                        }
                                         onChange={(e) =>
                                             setNewMemory({
                                                 ...newMemory,
-                                                category: e.target.value,
+                                                category:
+                                                    e.target.value,
                                             })
                                         }
                                     >
+
                                         <option value="PERSONAL">
                                             PERSONAL
                                         </option>
@@ -291,6 +387,7 @@ function Memory() {
                                         <option value="PRODUCTIVITY">
                                             PRODUCTIVITY
                                         </option>
+
                                     </select>
 
                                 </div>
@@ -325,8 +422,11 @@ function Memory() {
                                 type="submit"
                                 className="memory-save-final"
                             >
+
                                 <Plus size={16} />
+
                                 SAVE MEMORY
+
                             </button>
 
                         </form>
@@ -338,6 +438,7 @@ function Memory() {
 
                     <div className="memory-search-row-final">
 
+
                         <div className="memory-search-final">
 
                             <Search size={18} />
@@ -347,11 +448,14 @@ function Memory() {
                                 placeholder="Search memories..."
                                 value={search}
                                 onChange={(e) =>
-                                    setSearch(e.target.value)
+                                    setSearch(
+                                        e.target.value
+                                    )
                                 }
                             />
 
                         </div>
+
 
                         <div className="memory-found-final">
 
@@ -370,7 +474,9 @@ function Memory() {
 
                     <section className="memory-list-final">
 
+
                         <div className="memory-list-header-final">
+
 
                             <div>
 
@@ -383,6 +489,7 @@ function Memory() {
                                 </h2>
 
                             </div>
+
 
                             <div className="memory-core-final">
 
@@ -398,6 +505,7 @@ function Memory() {
 
 
                         <div className="memory-items-final">
+
 
                             {filteredMemories.length === 0 ? (
 
@@ -426,6 +534,7 @@ function Memory() {
                                             key={memory.id}
                                         >
 
+
                                             <div className="memory-item-icon-final">
 
                                                 <Brain size={19} />
@@ -434,6 +543,7 @@ function Memory() {
 
 
                                             <div className="memory-item-content-final">
+
 
                                                 <div className="memory-item-title-final">
 
@@ -456,13 +566,20 @@ function Memory() {
                                                 <div className="memory-item-meta-final">
 
                                                     <span>
+
                                                         <Clock3 size={12} />
+
                                                         Today
+
                                                     </span>
 
+
                                                     <span>
+
                                                         <Brain size={12} />
+
                                                         Zarvis Memory
+
                                                     </span>
 
                                                 </div>
@@ -474,11 +591,16 @@ function Memory() {
                                                 type="button"
                                                 className="memory-delete-final"
                                                 onClick={() =>
-                                                    deleteMemory(memory.id)
+                                                    deleteMemory(
+                                                        memory.id
+                                                    )
                                                 }
                                                 title="Delete memory"
+                                                aria-label="Delete memory"
                                             >
+
                                                 <Trash2 size={16} />
+
                                             </button>
 
                                         </div>
@@ -492,12 +614,16 @@ function Memory() {
 
                     </section>
 
+
                 </div>
 
             </main>
 
         </div>
+
     );
+
 }
+
 
 export default Memory;

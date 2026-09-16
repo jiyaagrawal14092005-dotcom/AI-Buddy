@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sparkles, Mic, Send } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useBuddy } from "../context/BuddyContext";
@@ -23,34 +23,568 @@ function Dashboard() {
     const {
         buddyStatus,
         isThinking,
-        lastCommand,
-        lastResponse,
     } = useBuddy();
 
-    const [activeAction, setActiveAction] = useState("");
+
+    const [activeAction, setActiveAction] =
+        useState("");
+
+    const [command, setCommand] =
+        useState("");
+
+    const [isListening, setIsListening] =
+        useState(false);
+
+    const [voiceMessage, setVoiceMessage] =
+        useState("");
 
 
-    const handleQuickAction = (action) => {
+    const recognitionRef =
+        useRef(null);
+
+
+    /* =================================================
+       VOICE RECOGNITION SETUP
+    ================================================= */
+
+    useEffect(() => {
+
+        const SpeechRecognition =
+            window.SpeechRecognition ||
+            window.webkitSpeechRecognition;
+
+
+        if (!SpeechRecognition) {
+            return;
+        }
+
+
+        const recognition =
+            new SpeechRecognition();
+
+
+        recognition.continuous = false;
+
+        recognition.interimResults = false;
+
+        recognition.lang = "en-IN";
+
+
+        recognition.onstart = () => {
+
+            setIsListening(true);
+
+            setVoiceMessage(
+                "Listening..."
+            );
+
+        };
+
+
+        recognition.onresult = (event) => {
+
+            const spokenText =
+                event.results[0][0].transcript;
+
+
+            setCommand(spokenText);
+
+            setVoiceMessage(
+                `Heard: "${spokenText}"`
+            );
+
+
+            /*
+             * Give React a moment to update
+             * the command state before executing.
+             */
+
+            setTimeout(() => {
+
+                executeCommand(
+                    spokenText
+                );
+
+            }, 150);
+
+        };
+
+
+        recognition.onerror = (event) => {
+
+            console.error(
+                "Voice recognition error:",
+                event.error
+            );
+
+
+            setIsListening(false);
+
+
+            if (
+                event.error ===
+                "not-allowed"
+            ) {
+
+                setVoiceMessage(
+                    "Microphone permission denied."
+                );
+
+            } else if (
+                event.error ===
+                "no-speech"
+            ) {
+
+                setVoiceMessage(
+                    "I couldn't hear anything."
+                );
+
+            } else {
+
+                setVoiceMessage(
+                    "Voice recognition failed. Try again."
+                );
+
+            }
+
+        };
+
+
+        recognition.onend = () => {
+
+            setIsListening(false);
+
+        };
+
+
+        recognitionRef.current =
+            recognition;
+
+
+        return () => {
+
+            recognition.stop();
+
+            recognitionRef.current =
+                null;
+
+        };
+
+    }, []);
+
+
+    /* =================================================
+       QUICK ACTION
+    ================================================= */
+
+    const handleQuickAction = (
+        action
+    ) => {
+
         setActiveAction(action);
+
     };
 
 
+    /* =================================================
+       COMMAND EXECUTION
+    ================================================= */
+
+    const executeCommand = (
+        inputCommand
+    ) => {
+
+        const userCommand =
+            inputCommand
+                .trim()
+                .toLowerCase();
+
+
+        if (!userCommand) {
+            return;
+        }
+
+
+        /* ===============================
+           CREATE TASK
+        =============================== */
+
+        if (
+            userCommand.includes(
+                "create task"
+            ) ||
+            userCommand.includes(
+                "add task"
+            ) ||
+            userCommand.includes(
+                "new task"
+            ) ||
+            userCommand === "task"
+        ) {
+
+            setCommand("");
+
+            setActiveAction("task");
+
+
+            navigate("/tasks", {
+                state: {
+                    openForm: true,
+                },
+            });
+
+            return;
+        }
+
+
+        /* ===============================
+           TRAVEL
+        =============================== */
+
+        if (
+            userCommand.includes(
+                "travel"
+            ) ||
+            userCommand.includes(
+                "trip"
+            ) ||
+            userCommand.includes(
+                "travel plan"
+            )
+        ) {
+
+            setCommand("");
+
+            setActiveAction(
+                "travel"
+            );
+
+
+            navigate("/schedule", {
+                state: {
+                    eventType: "travel",
+                },
+            });
+
+            return;
+        }
+
+
+        /* ===============================
+           WORKFLOW
+        =============================== */
+
+        if (
+            userCommand.includes(
+                "workflow"
+            ) ||
+            userCommand.includes(
+                "automation"
+            ) ||
+            userCommand.includes(
+                "automate"
+            )
+        ) {
+
+            setCommand("");
+
+            setActiveAction(
+                "workflow"
+            );
+
+
+            navigate("/workflows", {
+                state: {
+                    openForm: true,
+                },
+            });
+
+            return;
+        }
+
+
+        /* ===============================
+           MEMORY
+        =============================== */
+
+        if (
+            userCommand.includes(
+                "save memory"
+            ) ||
+            userCommand.includes(
+                "add memory"
+            ) ||
+            userCommand.includes(
+                "remember this"
+            ) ||
+            userCommand.includes(
+                "remember"
+            )
+        ) {
+
+            setCommand("");
+
+            setActiveAction(
+                "memory"
+            );
+
+
+            navigate("/memory", {
+                state: {
+                    openForm: true,
+                },
+            });
+
+            return;
+        }
+
+
+        /* ===============================
+           STUDY / ASSISTANT
+        =============================== */
+
+        if (
+            userCommand.includes(
+                "study"
+            ) ||
+            userCommand.includes(
+                "study help"
+            ) ||
+            userCommand.includes(
+                "explain"
+            ) ||
+            userCommand.includes(
+                "learn"
+            )
+        ) {
+
+            setCommand("");
+
+            navigate("/assistant");
+
+            return;
+        }
+
+
+        /* ===============================
+           SCHEDULE
+        =============================== */
+
+        if (
+            userCommand.includes(
+                "schedule"
+            ) ||
+            userCommand.includes(
+                "plan my day"
+            ) ||
+            userCommand.includes(
+                "add event"
+            ) ||
+            userCommand.includes(
+                "calendar"
+            )
+        ) {
+
+            setCommand("");
+
+            setActiveAction(
+                "schedule"
+            );
+
+
+            navigate("/schedule");
+
+            return;
+        }
+
+
+        /* ===============================
+           FOCUS MODE
+        =============================== */
+
+        if (
+            userCommand.includes(
+                "focus"
+            ) ||
+            userCommand.includes(
+                "start focus"
+            ) ||
+            userCommand.includes(
+                "pomodoro"
+            ) ||
+            userCommand.includes(
+                "timer"
+            )
+        ) {
+
+            setCommand("");
+
+            setActiveAction(
+                "focus"
+            );
+
+
+            setTimeout(() => {
+
+                document
+                    .getElementById(
+                        "zarvis-timer"
+                    )
+                    ?.scrollIntoView({
+                        behavior:
+                            "smooth",
+                        block:
+                            "center",
+                    });
+
+            }, 100);
+
+
+            return;
+        }
+
+
+        /* ===============================
+           OPEN ASSISTANT
+        =============================== */
+
+        if (
+            userCommand.includes(
+                "assistant"
+            ) ||
+            userCommand.includes(
+                "chat with zarvis"
+            ) ||
+            userCommand.includes(
+                "help me"
+            )
+        ) {
+
+            setCommand("");
+
+            navigate(
+                "/assistant"
+            );
+
+            return;
+        }
+
+
+        /* ===============================
+           UNKNOWN COMMAND
+        =============================== */
+
+        setActiveAction(
+            `command:${inputCommand.trim()}`
+        );
+
+        setCommand("");
+
+    };
+
+
+    /* =================================================
+       TEXT COMMAND
+    ================================================= */
+
+    const handleCommand = () => {
+
+        executeCommand(
+            command
+        );
+
+    };
+
+
+    /* =================================================
+       VOICE BUTTON
+    ================================================= */
+
+    const handleVoiceCommand = () => {
+
+        const SpeechRecognition =
+            window.SpeechRecognition ||
+            window.webkitSpeechRecognition;
+
+
+        if (!SpeechRecognition) {
+
+            setVoiceMessage(
+                "Voice recognition is not supported in this browser."
+            );
+
+            return;
+
+        }
+
+
+        if (isListening) {
+
+            recognitionRef.current?.stop();
+
+            setIsListening(false);
+
+            setVoiceMessage(
+                "Voice input stopped."
+            );
+
+            return;
+
+        }
+
+
+        setVoiceMessage(
+            "Starting voice input..."
+        );
+
+
+        try {
+
+            recognitionRef.current?.start();
+
+        } catch (error) {
+
+            console.error(
+                "Could not start voice recognition:",
+                error
+            );
+
+            setIsListening(false);
+
+        }
+
+    };
+
+
+    /* =================================================
+       TIMER
+    ================================================= */
+
     const handleStartTimer = () => {
 
-        setActiveAction("");
+        setActiveAction(
+            "focus"
+        );
+
 
         document
-            .getElementById("zarvis-timer")
+            .getElementById(
+                "zarvis-timer"
+            )
             ?.scrollIntoView({
-                behavior: "smooth",
-                block: "center",
+                behavior:
+                    "smooth",
+                block:
+                    "center",
             });
+
     };
 
 
     return (
 
         <div className="app">
+
 
             {/* =================================================
                 SIDEBAR
@@ -61,9 +595,6 @@ function Dashboard() {
 
             <main className="main-content">
 
-                {/* =================================================
-                    NAVBAR
-                ================================================= */}
 
                 <Navbar />
 
@@ -72,17 +603,14 @@ function Dashboard() {
 
 
                     {/* =================================================
-                        HERO SECTION
+                        HERO
                     ================================================= */}
 
                     <section className="dashboard-hero">
 
 
-                        {/* =================================================
-                            LEFT SIDE — WELCOME
-                        ================================================= */}
-
                         <div className="dashboard-welcome">
+
 
                             <div className="welcome-label">
 
@@ -109,15 +637,15 @@ function Dashboard() {
                             <p>
 
                                 Your AI buddy is here to make your day
+
                                 <br />
+
                                 smarter, simpler and more productive.
 
                             </p>
 
 
-                            {/* =================================================
-                                HERO QUICK ACTIONS
-                            ================================================= */}
+                            {/* HERO QUICK ACTIONS */}
 
                             <div className="hero-quick-actions">
 
@@ -125,7 +653,9 @@ function Dashboard() {
                                 <button
                                     type="button"
                                     onClick={() =>
-                                        navigate("/schedule")
+                                        navigate(
+                                            "/schedule"
+                                        )
                                     }
                                 >
 
@@ -141,7 +671,9 @@ function Dashboard() {
                                 <button
                                     type="button"
                                     onClick={() =>
-                                        navigate("/assistant")
+                                        navigate(
+                                            "/assistant"
+                                        )
                                     }
                                 >
 
@@ -157,7 +689,15 @@ function Dashboard() {
                                 <button
                                     type="button"
                                     onClick={() =>
-                                        navigate("/schedule")
+                                        navigate(
+                                            "/schedule",
+                                            {
+                                                state: {
+                                                    eventType:
+                                                        "travel",
+                                                },
+                                            }
+                                        )
                                     }
                                 >
 
@@ -173,7 +713,15 @@ function Dashboard() {
                                 <button
                                     type="button"
                                     onClick={() =>
-                                        navigate("/tasks")
+                                        navigate(
+                                            "/tasks",
+                                            {
+                                                state: {
+                                                    openForm:
+                                                        true,
+                                                },
+                                            }
+                                        )
                                     }
                                 >
 
@@ -189,16 +737,13 @@ function Dashboard() {
                             </div>
 
 
-                            {/* =================================================
-                                STATUS CARDS
-                            ================================================= */}
+                            {/* HERO STATUS */}
 
                             <div className="hero-status-cards">
 
 
-                                {/* THINKING */}
-
                                 <div className="hero-status-card thinking-card">
+
 
                                     <div className="hero-status-icon zarvis-thinking-logo">
 
@@ -245,9 +790,8 @@ function Dashboard() {
                                 </div>
 
 
-                                {/* READY TO HELP */}
-
                                 <div className="hero-status-card ready-card">
+
 
                                     <div className="hero-status-icon ready-help-icon">
                                         💬
@@ -259,7 +803,6 @@ function Dashboard() {
                                         <strong>
                                             Ready to Help
                                         </strong>
-
 
                                         <span>
                                             Just tell me what you need!
@@ -279,6 +822,7 @@ function Dashboard() {
 
                             </div>
 
+
                         </div>
 
 
@@ -290,14 +834,11 @@ function Dashboard() {
 
 
                         {/* =================================================
-                            ZARVIS MAIN SEARCH
-                            BOTTOM CENTER OF HERO
+                            COMMAND SEARCH
                         ================================================= */}
 
                         <div className="hero-search-bar">
 
-
-                            {/* ZARVIS LOGO — SAME AS SIDEBAR */}
 
                             <div className="hero-search-logo">
 
@@ -309,15 +850,29 @@ function Dashboard() {
                             </div>
 
 
-                            {/* COMMAND INPUT */}
-
                             <input
                                 type="text"
+                                value={command}
+                                onChange={(e) =>
+                                    setCommand(
+                                        e.target.value
+                                    )
+                                }
+                                onKeyDown={(e) => {
+
+                                    if (
+                                        e.key ===
+                                        "Enter"
+                                    ) {
+
+                                        handleCommand();
+
+                                    }
+
+                                }}
                                 placeholder="Type your command or ask me anything..."
                             />
 
-
-                            {/* VOICE + SEND */}
 
                             <div className="hero-search-actions">
 
@@ -326,8 +881,19 @@ function Dashboard() {
 
                                 <button
                                     type="button"
-                                    className="hero-search-voice"
-                                    aria-label="Voice command"
+                                    className={`hero-search-voice ${
+                                        isListening
+                                            ? "listening"
+                                            : ""
+                                    }`}
+                                    aria-label={
+                                        isListening
+                                            ? "Stop voice command"
+                                            : "Start voice command"
+                                    }
+                                    onClick={
+                                        handleVoiceCommand
+                                    }
                                 >
 
                                     <Mic
@@ -344,6 +910,9 @@ function Dashboard() {
                                     type="button"
                                     className="hero-search-send"
                                     aria-label="Send command"
+                                    onClick={
+                                        handleCommand
+                                    }
                                 >
 
                                     <Send
@@ -356,8 +925,28 @@ function Dashboard() {
 
                             </div>
 
-
                         </div>
+
+
+                        {/* VOICE STATUS */}
+
+                        {voiceMessage && (
+
+                            <div className="voice-command-status">
+
+                                <span
+                                    className={
+                                        isListening
+                                            ? "voice-status-active"
+                                            : ""
+                                    }
+                                ></span>
+
+                                {voiceMessage}
+
+                            </div>
+
+                        )}
 
 
                     </section>
@@ -384,18 +973,15 @@ function Dashboard() {
 
                             </div>
 
-
                             <strong className="stat-value">
                                 08
                             </strong>
-
 
                             <span className="stat-description">
                                 5 completed
                             </span>
 
                         </div>
-
 
 
                         <div className="stat-card">
@@ -412,18 +998,15 @@ function Dashboard() {
 
                             </div>
 
-
                             <strong className="stat-value">
                                 03
                             </strong>
-
 
                             <span className="stat-description">
                                 2 running now
                             </span>
 
                         </div>
-
 
 
                         <div className="stat-card">
@@ -440,18 +1023,15 @@ function Dashboard() {
 
                             </div>
 
-
                             <strong className="stat-value">
                                 06
                             </strong>
-
 
                             <span className="stat-description">
                                 Next at 10:00 AM
                             </span>
 
                         </div>
-
 
 
                         <div className="stat-card">
@@ -468,11 +1048,9 @@ function Dashboard() {
 
                             </div>
 
-
                             <strong className="stat-value">
                                 {buddyStatus}
                             </strong>
-
 
                             <span className="stat-description">
                                 Core operating normally
@@ -493,6 +1071,7 @@ function Dashboard() {
 
                         <div className="section-title-row">
 
+
                             <div>
 
                                 <span className="section-eyebrow">
@@ -510,13 +1089,14 @@ function Dashboard() {
                                 type="button"
                                 className="section-link"
                                 onClick={() =>
-                                    navigate("/assistant")
+                                    navigate(
+                                        "/assistant"
+                                    )
                                 }
                             >
-
                                 Open Assistant →
-
                             </button>
+
 
                         </div>
 
@@ -529,12 +1109,21 @@ function Dashboard() {
                             <button
                                 type="button"
                                 className={`quick-action-card ${
-                                    activeAction === "task"
+                                    activeAction ===
+                                    "task"
                                         ? "active"
                                         : ""
                                 }`}
                                 onClick={() =>
-                                    handleQuickAction("task")
+                                    navigate(
+                                        "/tasks",
+                                        {
+                                            state: {
+                                                openForm:
+                                                    true,
+                                            },
+                                        }
+                                    )
                                 }
                             >
 
@@ -558,12 +1147,15 @@ function Dashboard() {
                             <button
                                 type="button"
                                 className={`quick-action-card ${
-                                    activeAction === "schedule"
+                                    activeAction ===
+                                    "schedule"
                                         ? "active"
                                         : ""
                                 }`}
                                 onClick={() =>
-                                    handleQuickAction("schedule")
+                                    navigate(
+                                        "/schedule"
+                                    )
                                 }
                             >
 
@@ -587,12 +1179,21 @@ function Dashboard() {
                             <button
                                 type="button"
                                 className={`quick-action-card ${
-                                    activeAction === "workflow"
+                                    activeAction ===
+                                    "workflow"
                                         ? "active"
                                         : ""
                                 }`}
                                 onClick={() =>
-                                    handleQuickAction("workflow")
+                                    navigate(
+                                        "/workflows",
+                                        {
+                                            state: {
+                                                openForm:
+                                                    true,
+                                            },
+                                        }
+                                    )
                                 }
                             >
 
@@ -616,12 +1217,21 @@ function Dashboard() {
                             <button
                                 type="button"
                                 className={`quick-action-card ${
-                                    activeAction === "memory"
+                                    activeAction ===
+                                    "memory"
                                         ? "active"
                                         : ""
                                 }`}
                                 onClick={() =>
-                                    handleQuickAction("memory")
+                                    navigate(
+                                        "/memory",
+                                        {
+                                            state: {
+                                                openForm:
+                                                    true,
+                                            },
+                                        }
+                                    )
                                 }
                             >
 
@@ -644,8 +1254,15 @@ function Dashboard() {
 
                             <button
                                 type="button"
-                                className="quick-action-card"
-                                onClick={handleStartTimer}
+                                className={`quick-action-card ${
+                                    activeAction ===
+                                    "focus"
+                                        ? "active"
+                                        : ""
+                                }`}
+                                onClick={
+                                    handleStartTimer
+                                }
                             >
 
                                 <span className="quick-action-icon">
@@ -669,12 +1286,13 @@ function Dashboard() {
 
 
                     {/* =================================================
-                        ACTION MESSAGE
+                        COMMAND RESULT
                     ================================================= */}
 
                     {activeAction && (
 
                         <div className="dashboard-action-message">
+
 
                             <span>
                                 COMMAND READY
@@ -683,17 +1301,46 @@ function Dashboard() {
 
                             <strong>
 
-                                {activeAction === "task" &&
-                                    "Create Task selected"}
+                                {activeAction.startsWith(
+                                    "command:"
+                                )
 
-                                {activeAction === "schedule" &&
-                                    "Schedule selected"}
+                                    ? activeAction.replace(
+                                        "command:",
+                                        ""
+                                    )
 
-                                {activeAction === "workflow" &&
-                                    "New Workflow selected"}
+                                    : activeAction ===
+                                      "task"
 
-                                {activeAction === "memory" &&
-                                    "Save Memory selected"}
+                                    ? "Create Task selected"
+
+                                    : activeAction ===
+                                      "schedule"
+
+                                    ? "Schedule selected"
+
+                                    : activeAction ===
+                                      "travel"
+
+                                    ? "Travel Plan selected"
+
+                                    : activeAction ===
+                                      "workflow"
+
+                                    ? "New Workflow selected"
+
+                                    : activeAction ===
+                                      "memory"
+
+                                    ? "Save Memory selected"
+
+                                    : activeAction ===
+                                      "focus"
+
+                                    ? "Focus Mode selected"
+
+                                    : ""}
 
                             </strong>
 
@@ -706,6 +1353,7 @@ function Dashboard() {
                             >
                                 ×
                             </button>
+
 
                         </div>
 
@@ -762,11 +1410,9 @@ function Dashboard() {
                                 </span>
 
                                 <strong>
-
                                     {isThinking
                                         ? "THINKING"
                                         : "READY"}
-
                                 </strong>
 
                             </div>
@@ -817,7 +1463,7 @@ function Dashboard() {
 
 
                     {/* =================================================
-                        MAIN MODULES
+                        MAIN DASHBOARD
                     ================================================= */}
 
                     <div className="dashboard-main-grid">
@@ -832,10 +1478,11 @@ function Dashboard() {
 
 
                     {/* =================================================
-                        SECONDARY MODULES
+                        SECONDARY DASHBOARD
                     ================================================= */}
 
                     <div className="dashboard-secondary-grid">
+
 
                         <MemoryCard />
 
@@ -848,6 +1495,7 @@ function Dashboard() {
 
 
                         <UpcomingTasks />
+
 
                     </div>
 

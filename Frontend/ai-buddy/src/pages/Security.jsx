@@ -11,162 +11,76 @@ import {
     RefreshCw,
 } from "lucide-react";
 
+import Sidebar from "../components/Sidebar";
+
 const securityItems = [
     {
-        icon: Lock,
         title: "Data Encryption",
-        description: "Your Zarvis data is protected with secure encryption.",
+        description: "Your stored data is protected with secure encryption.",
         status: "SECURE",
+        icon: Lock,
     },
     {
-        icon: KeyRound,
         title: "API Security",
-        description: "Connected services use protected authentication.",
+        description: "API requests are monitored and protected.",
         status: "SECURE",
+        icon: KeyRound,
     },
     {
-        icon: Smartphone,
         title: "Device Access",
-        description: "Only authorized devices can access your workspace.",
+        description: "Only verified devices can access your Zarvis workspace.",
         status: "VERIFIED",
+        icon: Smartphone,
     },
     {
-        icon: Eye,
         title: "Privacy Controls",
-        description: "You control what Zarvis can remember and access.",
+        description: "Your personal data and preferences remain under your control.",
         status: "ACTIVE",
+        icon: Eye,
+    },
+];
+
+const securityEvents = [
+    {
+        title: "Workspace security check completed",
+        description: "All security systems are operating normally.",
+        time: "09:42 AM",
+        icon: ShieldCheck,
+    },
+    {
+        title: "Device verification successful",
+        description: "Your current device has been verified.",
+        time: "08:15 AM",
+        icon: Smartphone,
+    },
+    {
+        title: "Privacy settings reviewed",
+        description: "Security and privacy controls are active.",
+        time: "07:30 AM",
+        icon: Eye,
     },
 ];
 
 function Security() {
     return (
         <div className="app">
-
-            {/* SIDEBAR */}
-
-            <aside className="sidebar">
-
-                <div className="sidebar-brand">
-                    <div className="sidebar-logo-mark">✦</div>
-
-                    <div className="sidebar-brand-text">
-                        <h2>ZARVIS</h2>
-                        <span>AI COMPANION</span>
-                    </div>
-                </div>
-
-                <div className="sidebar-system">
-                    <div className="system-indicator">
-                        <span className="system-dot"></span>
-
-                        <div>
-                            <strong>SYSTEM ONLINE</strong>
-                            <small>Zarvis Core Active</small>
-                        </div>
-                    </div>
-
-                    <div className="system-line">
-                        <span></span>
-                    </div>
-                </div>
-
-                <nav className="sidebar-nav">
-
-                    <a href="/" className="sidebar-nav-item">
-                        <span className="sidebar-nav-icon">◈</span>
-                        <span className="sidebar-nav-label">Dashboard</span>
-                    </a>
-
-                    <a href="/tasks" className="sidebar-nav-item">
-                        <span className="sidebar-nav-icon">✓</span>
-                        <span className="sidebar-nav-label">Tasks</span>
-                    </a>
-
-                    <a href="/schedule" className="sidebar-nav-item">
-                        <span className="sidebar-nav-icon">▣</span>
-                        <span className="sidebar-nav-label">Schedule</span>
-                    </a>
-
-                    <a href="/workflows" className="sidebar-nav-item">
-                        <span className="sidebar-nav-icon">◇</span>
-                        <span className="sidebar-nav-label">Workflows</span>
-                    </a>
-
-                    <a href="/memory" className="sidebar-nav-item">
-                        <span className="sidebar-nav-icon">♧</span>
-                        <span className="sidebar-nav-label">Memory</span>
-                    </a>
-
-                    <div className="sidebar-section-label sidebar-section-security">
-                        <span>SYSTEM</span>
-                        <span className="sidebar-section-line"></span>
-                    </div>
-
-                    <a
-                        href="/security"
-                        className="sidebar-nav-item active"
-                    >
-                        <span className="sidebar-nav-icon">◉</span>
-                        <span className="sidebar-nav-label">Security</span>
-                    </a>
-
-                    <a href="/settings" className="sidebar-nav-item">
-                        <span className="sidebar-nav-icon">⚙</span>
-                        <span className="sidebar-nav-label">Settings</span>
-                    </a>
-
-                </nav>
-
-                <div className="sidebar-bottom">
-
-                    <div className="sidebar-core-card">
-                        <div className="core-status-icon">
-                            <span></span>
-                        </div>
-
-                        <div className="core-status-text">
-                            <strong>ZARVIS CORE</strong>
-                            <span>Ready to assist</span>
-                        </div>
-
-                        <div className="core-status-bars">
-                            <i></i>
-                            <i></i>
-                            <i></i>
-                        </div>
-                    </div>
-
-                    <div className="sidebar-version">
-                        <span>V1.0</span>
-                        <span>AI BUDDY SYSTEM</span>
-                    </div>
-
-                </div>
-
-            </aside>
-
-
-            {/* MAIN */}
+            <Sidebar />
 
             <main className="main-content">
-
                 <div className="security-page">
 
                     {/* HEADER */}
-
-                    <div className="security-page-header">
-
+                    <header className="security-page-header">
                         <div>
                             <span className="security-page-label">
                                 SECURITY CENTER // 06
                             </span>
 
-                            <h1>
-                                Security & Privacy
-                            </h1>
+                            <h1>Security & Privacy</h1>
 
                             <p>
-                                Manage your Zarvis security, access and privacy controls.
+                                Monitor your Zarvis workspace security,
+                                privacy and access controls.
                             </p>
                         </div>
 
@@ -174,59 +88,40 @@ function Security() {
                             <span></span>
                             ALL SYSTEMS SECURE
                         </div>
+                    </header>
 
-                    </div>
-
-
-                    {/* SECURITY OVERVIEW */}
-
+                    {/* SECURITY CORE */}
                     <section className="security-overview">
 
                         <div className="security-shield">
-
                             <div className="security-shield-ring">
-                                <ShieldCheck size={32} />
+                                <ShieldCheck size={38} />
                             </div>
-
                         </div>
 
                         <div className="security-overview-info">
+                            <span>ZARVIS SECURITY CORE</span>
 
-                            <span>
-                                ZARVIS SECURITY CORE
-                            </span>
-
-                            <h2>
-                                Your workspace is protected
-                            </h2>
+                            <h2>Your workspace is protected</h2>
 
                             <p>
-                                Security systems are active and monitoring your workspace.
+                                Security monitoring is active and your
+                                workspace is currently protected.
                             </p>
-
                         </div>
 
                         <div className="security-score">
-
-                            <strong>
-                                100%
-                            </strong>
-
-                            <span>
-                                SECURITY STATUS
-                            </span>
-
+                            <strong>100%</strong>
+                            <span>SECURITY STATUS</span>
                         </div>
 
                     </section>
 
-
                     {/* SECURITY STATS */}
-
-                    <div className="security-stats">
+                    <section className="security-stats">
 
                         <div className="security-stat-card">
-                            <ShieldCheck size={18} />
+                            <ShieldCheck size={22} />
 
                             <div>
                                 <span>SECURITY LEVEL</span>
@@ -235,7 +130,7 @@ function Security() {
                         </div>
 
                         <div className="security-stat-card">
-                            <Lock size={18} />
+                            <Lock size={22} />
 
                             <div>
                                 <span>ENCRYPTION</span>
@@ -244,7 +139,7 @@ function Security() {
                         </div>
 
                         <div className="security-stat-card">
-                            <Database size={18} />
+                            <Database size={22} />
 
                             <div>
                                 <span>PROTECTED DATA</span>
@@ -253,7 +148,7 @@ function Security() {
                         </div>
 
                         <div className="security-stat-card">
-                            <Activity size={18} />
+                            <Activity size={22} />
 
                             <div>
                                 <span>MONITORING</span>
@@ -261,187 +156,107 @@ function Security() {
                             </div>
                         </div>
 
-                    </div>
+                    </section>
 
-
-                    {/* CONTROLS */}
-
+                    {/* PROTECTION SYSTEMS */}
                     <div className="security-section-title">
-
                         <div>
-                            <span>
-                                PROTECTION SYSTEMS
-                            </span>
-
-                            <h2>
-                                Security Controls
-                            </h2>
+                            <span>PROTECTION SYSTEMS</span>
+                            <h2>Security Controls</h2>
                         </div>
 
-                        <span className="security-live">
+                        <div className="security-live">
                             <i></i>
-                            MONITORING
-                        </span>
-
+                            MONITORING LIVE
+                        </div>
                     </div>
 
-
+                    {/* SECURITY CONTROL CARDS */}
                     <section className="security-controls">
 
-                        {securityItems.map((item, index) => {
-
+                        {securityItems.map((item) => {
                             const Icon = item.icon;
 
                             return (
-                                <article
+                                <div
                                     className="security-control-card"
-                                    key={index}
+                                    key={item.title}
                                 >
-
                                     <div className="security-control-icon">
-                                        <Icon size={18} />
+                                        <Icon size={21} />
                                     </div>
 
                                     <div className="security-control-content">
 
                                         <div className="security-control-top">
-
-                                            <span>
-                                                CONTROL-{String(index + 1).padStart(2, "0")}
-                                            </span>
+                                            <span>CONTROL ACTIVE</span>
 
                                             <strong>
                                                 <CheckCircle2 size={12} />
                                                 {item.status}
                                             </strong>
-
                                         </div>
 
-                                        <h3>
-                                            {item.title}
-                                        </h3>
+                                        <h3>{item.title}</h3>
 
-                                        <p>
-                                            {item.description}
-                                        </p>
+                                        <p>{item.description}</p>
 
                                     </div>
-
-                                </article>
+                                </div>
                             );
                         })}
 
                     </section>
 
-
-                    {/* ACTIVITY */}
-
+                    {/* SECURITY ACTIVITY */}
                     <section className="security-activity">
 
                         <div className="security-activity-header">
-
                             <div>
-                                <span>
-                                    SECURITY ACTIVITY
-                                </span>
-
-                                <h2>
-                                    Recent Security Events
-                                </h2>
+                                <span>SECURITY LOG</span>
+                                <h2>Recent Security Events</h2>
                             </div>
 
-                            <RefreshCw size={15} />
-
+                            <RefreshCw size={18} />
                         </div>
 
+                        {securityEvents.map((event) => {
+                            const Icon = event.icon;
 
-                        <div className="security-event">
+                            return (
+                                <div
+                                    className="security-event"
+                                    key={event.title}
+                                >
+                                    <div className="security-event-icon">
+                                        <Icon size={16} />
+                                    </div>
 
-                            <div className="security-event-icon">
-                                <CheckCircle2 size={14} />
-                            </div>
+                                    <div>
+                                        <strong>{event.title}</strong>
+                                        <span>{event.description}</span>
+                                    </div>
 
-                            <div>
-                                <strong>
-                                    Security check completed
-                                </strong>
-
-                                <span>
-                                    Zarvis security systems verified successfully.
-                                </span>
-                            </div>
-
-                            <time>
-                                8 min ago
-                            </time>
-
-                        </div>
-
-
-                        <div className="security-event">
-
-                            <div className="security-event-icon">
-                                <Lock size={14} />
-                            </div>
-
-                            <div>
-                                <strong>
-                                    Protected session started
-                                </strong>
-
-                                <span>
-                                    New secure workspace session initialized.
-                                </span>
-                            </div>
-
-                            <time>
-                                1 hr ago
-                            </time>
-
-                        </div>
-
-
-                        <div className="security-event">
-
-                            <div className="security-event-icon">
-                                <ShieldCheck size={14} />
-                            </div>
-
-                            <div>
-                                <strong>
-                                    Privacy controls verified
-                                </strong>
-
-                                <span>
-                                    Memory and access permissions are operating normally.
-                                </span>
-                            </div>
-
-                            <time>
-                                3 hrs ago
-                            </time>
-
-                        </div>
+                                    <time>{event.time}</time>
+                                </div>
+                            );
+                        })}
 
                     </section>
 
-
-                    {/* WARNING / INFO */}
-
+                    {/* SECURITY INFO */}
                     <div className="security-info">
-
-                        <AlertTriangle size={14} />
+                        <AlertTriangle size={16} />
 
                         <span>
-                            Security settings should be reviewed whenever a new integration or device is connected.
+                            Zarvis security monitoring is active.
+                            Review your security controls regularly
+                            to keep your workspace protected.
                         </span>
-
                     </div>
 
                 </div>
-
             </main>
-
         </div>
     );
 }

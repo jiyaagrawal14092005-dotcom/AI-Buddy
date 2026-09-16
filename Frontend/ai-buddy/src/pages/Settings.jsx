@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 
 import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
 
 function Settings() {
     const [notifications, setNotifications] = useState(true);
@@ -41,27 +40,15 @@ function Settings() {
     return (
         <div className="app">
 
-            {/* ==============================
-                SIDEBAR
-            ============================== */}
-
+            {/* SIDEBAR */}
             <Sidebar />
 
-            {/* ==============================
-                MAIN CONTENT
-            ============================== */}
-
+            {/* MAIN CONTENT */}
             <main className="main-content">
-
-                {/* NAVBAR */}
-                <Navbar />
 
                 <div className="settings-page">
 
-                    {/* ==============================
-                        HEADER
-                    ============================== */}
-
+                    {/* HEADER */}
                     <div className="settings-header">
 
                         <div>
@@ -69,9 +56,7 @@ function Settings() {
                                 SYSTEM CONFIGURATION // 08
                             </span>
 
-                            <h1>
-                                Settings
-                            </h1>
+                            <h1>Settings</h1>
 
                             <p>
                                 Customize how Zarvis works for you.
@@ -85,10 +70,7 @@ function Settings() {
 
                     </div>
 
-                    {/* ==============================
-                        PROFILE
-                    ============================== */}
-
+                    {/* PROFILE */}
                     <section className="settings-section">
 
                         <div className="settings-section-header">
@@ -98,13 +80,8 @@ function Settings() {
                             </div>
 
                             <div>
-                                <span>
-                                    PROFILE
-                                </span>
-
-                                <h2>
-                                    Personal Information
-                                </h2>
+                                <span>PROFILE</span>
+                                <h2>Personal Information</h2>
                             </div>
 
                         </div>
@@ -114,54 +91,39 @@ function Settings() {
                         <div className="settings-form-grid">
 
                             <div className="settings-field">
-
-                                <label>
-                                    NAME
-                                </label>
+                                <label>NAME</label>
 
                                 <input
                                     type="text"
                                     defaultValue="Shanu"
                                     placeholder="Enter your name"
                                 />
-
                             </div>
 
                             <div className="settings-field">
-
-                                <label>
-                                    WORKSPACE
-                                </label>
+                                <label>WORKSPACE</label>
 
                                 <input
                                     type="text"
                                     defaultValue="Personal Workspace"
                                     placeholder="Workspace name"
                                 />
-
                             </div>
 
                             <div className="settings-field full-field">
-
-                                <label>
-                                    ABOUT YOU
-                                </label>
+                                <label>ABOUT YOU</label>
 
                                 <textarea
                                     defaultValue="BCA student working on AI and Machine Learning projects."
                                     rows="3"
                                 />
-
                             </div>
 
                         </div>
 
                     </section>
 
-                    {/* ==============================
-                        ASSISTANT SETTINGS
-                    ============================== */}
-
+                    {/* ASSISTANT SETTINGS */}
                     <section className="settings-section">
 
                         <div className="settings-section-header">
@@ -171,13 +133,8 @@ function Settings() {
                             </div>
 
                             <div>
-                                <span>
-                                    ASSISTANT
-                                </span>
-
-                                <h2>
-                                    Zarvis Behavior
-                                </h2>
+                                <span>ASSISTANT</span>
+                                <h2>Zarvis Behavior</h2>
                             </div>
 
                         </div>
@@ -186,8 +143,7 @@ function Settings() {
 
                         <div className="settings-option-list">
 
-                            {/* Voice Assistant */}
-
+                            {/* VOICE ASSISTANT */}
                             <div className="settings-option">
 
                                 <div className="settings-option-icon">
@@ -195,26 +151,21 @@ function Settings() {
                                 </div>
 
                                 <div className="settings-option-content">
-
-                                    <strong>
-                                        Voice Assistant
-                                    </strong>
+                                    <strong>Voice Assistant</strong>
 
                                     <span>
                                         Allow Zarvis to listen and respond
                                         using voice.
                                     </span>
-
                                 </div>
 
                                 <button
                                     type="button"
-                                    className={`settings-toggle ${voiceAssistant ? "active" : ""
-                                        }`}
+                                    className={`settings-toggle ${
+                                        voiceAssistant ? "active" : ""
+                                    }`}
                                     onClick={() =>
-                                        setVoiceAssistant(
-                                            !voiceAssistant
-                                        )
+                                        setVoiceAssistant(!voiceAssistant)
                                     }
                                     aria-label="Toggle Voice Assistant"
                                 >
@@ -223,8 +174,7 @@ function Settings() {
 
                             </div>
 
-                            {/* Sound Effects */}
-
+                            {/* SOUND EFFECTS */}
                             <div className="settings-option">
 
                                 <div className="settings-option-icon">
@@ -232,26 +182,21 @@ function Settings() {
                                 </div>
 
                                 <div className="settings-option-content">
-
-                                    <strong>
-                                        Sound Effects
-                                    </strong>
+                                    <strong>Sound Effects</strong>
 
                                     <span>
                                         Play subtle sounds for important
                                         Zarvis actions.
                                     </span>
-
                                 </div>
 
                                 <button
                                     type="button"
-                                    className={`settings-toggle ${soundEffects ? "active" : ""
-                                        }`}
+                                    className={`settings-toggle ${
+                                        soundEffects ? "active" : ""
+                                    }`}
                                     onClick={() =>
-                                        setSoundEffects(
-                                            !soundEffects
-                                        )
+                                        setSoundEffects(!soundEffects)
                                     }
                                     aria-label="Toggle Sound Effects"
                                 >
@@ -264,10 +209,7 @@ function Settings() {
 
                     </section>
 
-                    {/* ==============================
-                        NOTIFICATIONS
-                    ============================== */}
-
+                    {/* NOTIFICATIONS */}
                     <section className="settings-section">
 
                         <div className="settings-section-header">
@@ -277,13 +219,8 @@ function Settings() {
                             </div>
 
                             <div>
-                                <span>
-                                    NOTIFICATIONS
-                                </span>
-
-                                <h2>
-                                    Alerts & Reminders
-                                </h2>
+                                <span>NOTIFICATIONS</span>
+                                <h2>Alerts & Reminders</h2>
                             </div>
 
                         </div>
@@ -299,26 +236,21 @@ function Settings() {
                                 </div>
 
                                 <div className="settings-option-content">
-
-                                    <strong>
-                                        Notifications
-                                    </strong>
+                                    <strong>Notifications</strong>
 
                                     <span>
                                         Receive reminders, task updates
                                         and alerts.
                                     </span>
-
                                 </div>
 
                                 <button
                                     type="button"
-                                    className={`settings-toggle ${notifications ? "active" : ""
-                                        }`}
+                                    className={`settings-toggle ${
+                                        notifications ? "active" : ""
+                                    }`}
                                     onClick={() =>
-                                        setNotifications(
-                                            !notifications
-                                        )
+                                        setNotifications(!notifications)
                                     }
                                     aria-label="Toggle Notifications"
                                 >
@@ -331,10 +263,7 @@ function Settings() {
 
                     </section>
 
-                    {/* ==============================
-                        APPEARANCE
-                    ============================== */}
-
+                    {/* APPEARANCE */}
                     <section className="settings-section">
 
                         <div className="settings-section-header">
@@ -344,13 +273,8 @@ function Settings() {
                             </div>
 
                             <div>
-                                <span>
-                                    APPEARANCE
-                                </span>
-
-                                <h2>
-                                    Interface Preferences
-                                </h2>
+                                <span>APPEARANCE</span>
+                                <h2>Interface Preferences</h2>
                             </div>
 
                         </div>
@@ -366,22 +290,19 @@ function Settings() {
                                 </div>
 
                                 <div className="settings-option-content">
-
-                                    <strong>
-                                        Dark Interface
-                                    </strong>
+                                    <strong>Dark Interface</strong>
 
                                     <span>
                                         Keep the futuristic dark Zarvis
                                         interface enabled.
                                     </span>
-
                                 </div>
 
                                 <button
                                     type="button"
-                                    className={`settings-toggle ${darkMode ? "active" : ""
-                                        }`}
+                                    className={`settings-toggle ${
+                                        darkMode ? "active" : ""
+                                    }`}
                                     onClick={() =>
                                         setDarkMode(!darkMode)
                                     }
@@ -396,10 +317,7 @@ function Settings() {
 
                     </section>
 
-                    {/* ==============================
-                        SECURITY
-                    ============================== */}
-
+                    {/* SECURITY */}
                     <section className="settings-section">
 
                         <div className="settings-section-header">
@@ -409,13 +327,8 @@ function Settings() {
                             </div>
 
                             <div>
-                                <span>
-                                    SECURITY
-                                </span>
-
-                                <h2>
-                                    Privacy & Protection
-                                </h2>
+                                <span>SECURITY</span>
+                                <h2>Privacy & Protection</h2>
                             </div>
 
                         </div>
@@ -439,20 +352,15 @@ function Settings() {
                             </div>
 
                             <div className="security-active">
-
                                 <span></span>
                                 ACTIVE
-
                             </div>
 
                         </div>
 
                     </section>
 
-                    {/* ==============================
-                        BOTTOM ACTIONS
-                    ============================== */}
-
+                    {/* BOTTOM ACTIONS */}
                     <div className="settings-actions">
 
                         <button
@@ -471,9 +379,7 @@ function Settings() {
                         >
                             <Save size={15} />
 
-                            {saved
-                                ? "SAVED"
-                                : "SAVE CHANGES"}
+                            {saved ? "SAVED" : "SAVE CHANGES"}
                         </button>
 
                     </div>

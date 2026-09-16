@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import {
     Plus,
@@ -13,6 +14,9 @@ import Navbar from "../components/Navbar";
 
 
 function Schedule() {
+
+    const location = useLocation();
+
 
     const [events, setEvents] = useState([
         {
@@ -39,58 +43,88 @@ function Schedule() {
     ]);
 
 
-    const [newEvent, setNewEvent] = useState("");
+    const [newEvent, setNewEvent] = useState(
+        location.state?.eventType === "travel"
+            ? "Travel Plan"
+            : ""
+    );
+
 
     const inputRef = useRef(null);
 
 
-    /* ==============================
+    /* =================================================
        OPEN ADD EVENT
-    ============================== */
+    ================================================= */
 
     const openAddEvent = () => {
+
         inputRef.current?.focus();
+
     };
 
 
-    /* ==============================
+    /* =================================================
        ADD EVENT
-    ============================== */
+    ================================================= */
 
     const addEvent = () => {
 
         const title = newEvent.trim();
 
+
         if (!title) {
+
             inputRef.current?.focus();
+
             return;
+
         }
 
+
         const event = {
+
             id: Date.now(),
+
             title: title,
+
             date: "Today",
+
             time: "Not scheduled",
-            location: "Not specified",
+
+            location:
+                location.state?.eventType === "travel"
+                    ? "Travel Plan"
+                    : "Not specified",
+
         };
 
+
         setEvents((currentEvents) => [
+
             ...currentEvents,
+
             event,
+
         ]);
+
 
         setNewEvent("");
 
+
         // Keep cursor ready for another event
         setTimeout(() => {
+
             inputRef.current?.focus();
+
         }, 0);
+
     };
 
 
-    /* ==============================
+    /* =================================================
        DELETE EVENT
-    ============================== */
+    ================================================= */
 
     const deleteEvent = (id) => {
 
@@ -99,51 +133,71 @@ function Schedule() {
                 (event) => event.id !== id
             )
         );
+
     };
+
+
+    /* =================================================
+       SUMMARY DATA
+    ================================================= */
+
+    const upcomingCount =
+        events.length > 1
+            ? events.length - 1
+            : 0;
+
+
+    const onlineEvents = events.filter(
+        (event) =>
+            event.location === "Online" ||
+            event.location === "Travel Plan"
+    ).length;
 
 
     return (
 
         <div className="app">
 
-            {/* ==============================
+
+            {/* =================================================
                 SIDEBAR
-            ============================== */}
+            ================================================= */}
 
             <Sidebar />
 
 
-            {/* ==============================
-                MAIN CONTENT
-            ============================== */}
-
             <main className="main-content">
+
+
+                {/* =================================================
+                    NAVBAR
+                ================================================= */}
 
                 <Navbar />
 
 
-                {/* ==============================
-                    SCHEDULE PAGE
-                ============================== */}
-
                 <div className="schedule-page">
 
 
-                    {/* ==============================
+                    {/* =================================================
                         PAGE HEADER
-                    ============================== */}
+                    ================================================= */}
 
                     <div className="page-header">
 
                         <div>
 
                             <span className="page-label">
+
                                 ZARVIS PLANNER
+
                             </span>
+
 
                             <h1>
                                 Schedule
                             </h1>
+
 
                             <p>
                                 Organize your day and keep track
@@ -168,31 +222,39 @@ function Schedule() {
                     </div>
 
 
-                    {/* ==============================
+                    {/* =================================================
                         ADD EVENT INPUT
-                    ============================== */}
+                    ================================================= */}
 
                     <div className="schedule-input-card">
 
+
                         <CalendarDays size={19} />
+
 
                         <input
                             ref={inputRef}
                             type="text"
                             value={newEvent}
                             onChange={(event) =>
-                                setNewEvent(event.target.value)
+                                setNewEvent(
+                                    event.target.value
+                                )
                             }
                             onKeyDown={(event) => {
 
                                 if (event.key === "Enter") {
+
                                     event.preventDefault();
+
                                     addEvent();
+
                                 }
 
                             }}
                             placeholder="What would you like to schedule?"
                         />
+
 
                         <button
                             type="button"
@@ -207,9 +269,9 @@ function Schedule() {
                     </div>
 
 
-                    {/* ==============================
+                    {/* =================================================
                         SCHEDULE SUMMARY
-                    ============================== */}
+                    ================================================= */}
 
                     <div className="schedule-summary">
 
@@ -244,7 +306,7 @@ function Schedule() {
                             <div>
 
                                 <strong>
-                                    {events.length > 1 ? 2 : 0}
+                                    {upcomingCount}
                                 </strong>
 
                                 <span>
@@ -256,7 +318,7 @@ function Schedule() {
                         </div>
 
 
-                        {/* ONLINE */}
+                        {/* ONLINE / TRAVEL */}
 
                         <div className="schedule-stat">
 
@@ -265,11 +327,11 @@ function Schedule() {
                             <div>
 
                                 <strong>
-                                    1
+                                    {onlineEvents}
                                 </strong>
 
                                 <span>
-                                    Online Event
+                                    Online / Travel
                                 </span>
 
                             </div>
@@ -280,9 +342,9 @@ function Schedule() {
                     </div>
 
 
-                    {/* ==============================
+                    {/* =================================================
                         TODAY'S SCHEDULE
-                    ============================== */}
+                    ================================================= */}
 
                     <section className="schedule-section">
 
@@ -311,14 +373,15 @@ function Schedule() {
                         </div>
 
 
-                        {/* ==============================
+                        {/* =================================================
                             EVENT LIST
-                        ============================== */}
+                        ================================================= */}
 
                         <div className="schedule-list">
 
 
                             {events.length === 0 ? (
+
 
                                 /* EMPTY STATE */
 
@@ -337,7 +400,9 @@ function Schedule() {
 
                                 </div>
 
+
                             ) : (
+
 
                                 /* EVENTS */
 
@@ -349,7 +414,9 @@ function Schedule() {
                                     >
 
 
-                                        {/* TIME */}
+                                        {/* =================================================
+                                            TIME
+                                        ================================================= */}
 
                                         <div className="schedule-time">
 
@@ -362,7 +429,9 @@ function Schedule() {
                                         </div>
 
 
-                                        {/* EVENT ICON */}
+                                        {/* =================================================
+                                            EVENT ICON
+                                        ================================================= */}
 
                                         <div className="schedule-event-icon">
 
@@ -371,9 +440,12 @@ function Schedule() {
                                         </div>
 
 
-                                        {/* EVENT DETAILS */}
+                                        {/* =================================================
+                                            EVENT DETAILS
+                                        ================================================= */}
 
                                         <div className="schedule-event-info">
+
 
                                             <h3>
                                                 {event.title}
@@ -382,9 +454,12 @@ function Schedule() {
 
                                             <div className="schedule-event-meta">
 
+
                                                 <span>
 
-                                                    <CalendarDays size={12} />
+                                                    <CalendarDays
+                                                        size={12}
+                                                    />
 
                                                     {event.date}
 
@@ -393,18 +468,23 @@ function Schedule() {
 
                                                 <span>
 
-                                                    <MapPin size={12} />
+                                                    <MapPin
+                                                        size={12}
+                                                    />
 
                                                     {event.location}
 
                                                 </span>
+
 
                                             </div>
 
                                         </div>
 
 
-                                        {/* DELETE */}
+                                        {/* =================================================
+                                            DELETE
+                                        ================================================= */}
 
                                         <button
                                             type="button"
@@ -437,7 +517,9 @@ function Schedule() {
             </main>
 
         </div>
+
     );
+
 }
 
 

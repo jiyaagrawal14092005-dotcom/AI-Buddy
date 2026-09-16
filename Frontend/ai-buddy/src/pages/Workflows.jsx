@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
+
 import {
   Plus,
   Workflow as WorkflowIcon,
@@ -54,11 +56,14 @@ const initialWorkflows = [
 ];
 
 function Workflows() {
+  const location = useLocation();
+
   const [workflows, setWorkflows] =
     useState(initialWorkflows);
 
+  // Opens automatically when coming from Dashboard → New Workflow
   const [showForm, setShowForm] =
-    useState(false);
+    useState(location.state?.openForm === true);
 
   const [newWorkflow, setNewWorkflow] =
     useState({
@@ -72,12 +77,12 @@ function Workflows() {
       prev.map((workflow) =>
         workflow.id === id
           ? {
-            ...workflow,
-            status:
-              workflow.status === "ACTIVE"
-                ? "READY"
-                : "ACTIVE",
-          }
+              ...workflow,
+              status:
+                workflow.status === "ACTIVE"
+                  ? "READY"
+                  : "ACTIVE",
+            }
           : workflow
       )
     );
@@ -96,10 +101,10 @@ function Workflows() {
       prev.map((workflow) =>
         workflow.id === id
           ? {
-            ...workflow,
-            status: "ACTIVE",
-            lastRun: "Just now",
-          }
+              ...workflow,
+              status: "ACTIVE",
+              lastRun: "Just now",
+            }
           : workflow
       )
     );
@@ -119,9 +124,9 @@ function Workflows() {
 
     const workflow = {
       id: Date.now(),
-      name: newWorkflow.name,
+      name: newWorkflow.name.trim(),
       description:
-        newWorkflow.description ||
+        newWorkflow.description.trim() ||
         "Custom workflow created with Zarvis.",
       status: "READY",
       steps:
@@ -284,6 +289,7 @@ function Workflows() {
                   onClick={() =>
                     setShowForm(false)
                   }
+                  aria-label="Close workflow form"
                 >
                   ×
                 </button>
@@ -458,11 +464,11 @@ function Workflows() {
 
 
                       <div
-                        className={`workflow-status ${workflow.status ===
-                            "ACTIVE"
+                        className={`workflow-status ${
+                          workflow.status === "ACTIVE"
                             ? "workflow-active"
                             : "workflow-ready"
-                          }`}
+                        }`}
                       >
 
                         <span></span>
@@ -502,8 +508,7 @@ function Workflows() {
                               </span>
 
                               {index <
-                                workflow.steps.length -
-                                1 && (
+                                workflow.steps.length - 1 && (
                                   <ArrowRight
                                     size={13}
                                   />
@@ -562,6 +567,7 @@ function Workflows() {
                             )
                           }
                         >
+
                           {workflow.status ===
                             "ACTIVE" ? (
                             <>
@@ -578,6 +584,7 @@ function Workflows() {
                               ENABLE
                             </>
                           )}
+
                         </button>
 
 
@@ -590,6 +597,7 @@ function Workflows() {
                             )
                           }
                           title="Delete workflow"
+                          aria-label="Delete workflow"
                         >
                           <Trash2 size={15} />
                         </button>

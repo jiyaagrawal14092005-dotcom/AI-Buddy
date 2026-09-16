@@ -11634,39 +11634,373 @@ button:focus-visible {
     }
 }
 /* =========================================================
-   HERO FINAL ALIGNMENT
+   REMOVE TOP EMPTY SPACE ONLY
+   ========================================================= */
+
+.main-content {
+    padding-top: 0 !important;
+}
+
+.dashboard {
+    margin-top: 0 !important;
+}
+
+ .dashboard-hero {
+    margin-top: 0 !important;
+}
+/* =========================================================
+   EVEN GALAXY BLEND
    ========================================================= */
 
 .dashboard-hero {
-    margin-top: -12px !important;
-    padding-top: 0 !important;
-    transform: none !important;
-    align-items: center !important;
+    background:
+        radial-gradient(
+            ellipse 70% 100% at 78% 50%,
+            rgba(70, 45, 190, 0.22),
+            transparent 65%
+        ),
+        radial-gradient(
+            ellipse 55% 80% at 90% 50%,
+            rgba(125, 55, 220, 0.18),
+            transparent 68%
+        ),
+        radial-gradient(
+            ellipse 60% 55% at 55% 45%,
+            rgba(75, 45, 175, 0.10),
+            transparent 72%
+        ),
+        #01030f !important;
+}
+/* =========================================================
+   HERO FINAL BALANCE
+   ========================================================= */
+
+.dashboard-hero {
+    position: relative !important;
 }
 
 .dashboard-welcome {
-    transform: translateY(-22px) !important;
+    padding-top: 0 !important;
 }
 
-.dashboard-hero > .zarvis-robot-area {
-    transform: translateY(-22px) !important;
+.welcome-label {
+    margin-bottom: 12px !important;
 }
 
-.hero-search-bar {
-    bottom: 16px !important;
+.dashboard-welcome h1 {
+    margin-bottom: 8px !important;
 }
+
+.dashboard-welcome p {
+    margin-bottom: 14px !important;
+}
+
+.hero-quick-actions {
+    margin-top: 0 !important;
+}
+
+.hero-status-cards {
+    margin-top: 20px !important;
+}
+/* =========================================================
+   STATS SECTION ALIGNMENT
+   ========================================================= */
 
 .stats-grid {
     margin-top: 0 !important;
+    gap: 14px !important;
+}
+
+.stats-grid > * {
+    min-height: 105px !important;
+}
+
+.stats-grid h3,
+.stats-grid strong {
+    margin-bottom: 4px !important;
+}
+/* =========================================================
+   TASK + SCHEDULE ALIGNMENT
+   ========================================================= */
+
+.dashboard-main-grid,
+.dashboard-secondary-grid {
+    gap: 14px !important;
+    margin-top: 14px !important;
+}
+
+.task-card,
+.schedule-card {
+    min-height: 250px !important;
+}
+
+.task-card > *,
+.schedule-card > * {
+    min-width: 0;
+}
+/* =========================================================
+   TIMER + UPCOMING TASKS ALIGNMENT
+   ========================================================= */
+
+.dashboard-secondary-grid {
+    gap: 14px !important;
+    margin-top: 14px !important;
+}
+
+.timer-card,
+.upcoming-tasks-card {
+    min-height: 245px !important;
+    height: 100% !important;
+}
+
+.timer-card h3,
+.upcoming-tasks-card h3 {
+    margin-bottom: 12px !important;
+}
+
+.timer-card li,
+.upcoming-tasks-card li {
+    margin-bottom: 7px !important;
+}
+/* =========================================================
+   ZARVIS CORE ALIGNMENT
+   ========================================================= */
+
+.zarvis-core-card {
+    margin-top: 14px !important;
+    min-height: 150px !important;
+    width: calc(100% - 36px) !important;
+    margin-left: 18px !important;
+    margin-right: 18px !important;
+}
+
+.zarvis-core-card h3 {
+    margin-bottom: 8px !important;
+}
+
+.zarvis-core-card p {
+    line-height: 1.5 !important;
+}
+/* =========================================================
+   AGENT NETWORK ALIGNMENT
+   ========================================================= */
+
+.agent-network {
+    margin-top: 14px !important;
+    width: calc(100% - 36px) !important;
+    margin-left: 18px !important;
+    margin-right: 18px !important;
+}
+
+.agent-network h3 {
+    margin-bottom: 10px !important;
+}
+
+.agent-network .agent-item,
+.agent-network li {
+    min-height: 52px;
+}
+
+@media (max-width: 768px) {
+    .agent-network {
+        width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+}
+/* =========================================================
+   MEMORY + ACTIVITY ALIGNMENT
+   ========================================================= */
+
+.memory-card,
+.activity-card,
+.memory-snapshot,
+.activity-timeline {
+    min-height: 220px !important;
+}
+
+.memory-card h3,
+.activity-card h3,
+.memory-snapshot h3,
+.activity-timeline h3 {
+    margin-bottom: 10px !important;
+}
+
+.memory-card li,
+.activity-card li,
+.memory-snapshot li,
+.activity-timeline li {
+    margin-bottom: 7px !important;
+}
+
+@media (max-width: 768px) {
+    .memory-card,
+    .activity-card,
+    .memory-snapshot,
+    .activity-timeline {
+        min-height: 200px !important;
+    }
+}
+/* =========================================================
+   QUICK COMMANDS ALIGNMENT
+   ========================================================= */
+
+.quick-commands,
+.command-center {
+    min-height: 180px !important;
+}
+
+.quick-commands h3,
+.command-center h3 {
+    margin-bottom: 12px !important;
+}
+
+.quick-commands button,
+.command-center button {
+    min-height: 42px !important;
+}
+
+.quick-commands,
+.command-center {
+    margin-top: 14px !important;
+}
+/* =========================================================
+   FINAL DASHBOARD SPACING
+   ========================================================= */
+
+.stats-grid,
+.quick-section,
+.dashboard-main-grid,
+.dashboard-secondary-grid,
+.zarvis-core-card,
+.agent-network,
+.quick-commands,
+.command-center {
+    box-sizing: border-box !important;
+}
+
+.quick-section {
+    margin-bottom: 14px !important;
+}
+
+.dashboard-main-grid {
+    margin-bottom: 14px !important;
+}
+
+.dashboard-secondary-grid {
+    margin-bottom: 14px !important;
+}
+
+.zarvis-core-card,
+.agent-network {
+    margin-bottom: 14px !important;
+}
+/* =========================================================
+   FINAL CARD CONTENT ALIGNMENT
+   ========================================================= */
+
+.stats-grid > *,
+.task-card,
+.schedule-card,
+.timer-card,
+.upcoming-tasks-card,
+.zarvis-core-card,
+.agent-network,
+.memory-card,
+.activity-card,
+.memory-snapshot,
+.activity-timeline,
+.quick-commands,
+.command-center {
+    overflow: hidden !important;
+}
+
+.stats-grid h3,
+.task-card h3,
+.schedule-card h3,
+.timer-card h3,
+.upcoming-tasks-card h3,
+.zarvis-core-card h3,
+.agent-network h3,
+.memory-card h3,
+.activity-card h3,
+.memory-snapshot h3,
+.activity-timeline h3,
+.quick-commands h3,
+.command-center h3 {
+    line-height: 1.3 !important;
+}
+/* =========================================================
+   RESPONSIVE FINAL ALIGNMENT
+   ========================================================= */
+
+@media (max-width: 1200px) {
+    .dashboard-hero {
+        grid-template-columns: 46% 54% !important;
+    }
+
+    .dashboard-welcome {
+        padding-left: 28px !important;
+    }
 }
 
 @media (max-width: 900px) {
     .dashboard-hero {
-        margin-top: -8px !important;
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+        min-height: 650px !important;
     }
 
-    .dashboard-welcome,
-    .dashboard-hero > .zarvis-robot-area {
-        transform: translateY(-15px) !important;
+    .dashboard-welcome {
+        padding: 28px 20px 0 !important;
+        text-align: center !important;
     }
+
+    .hero-quick-actions {
+        justify-content: center !important;
+    }
+
+    .hero-status-cards {
+        width: 100% !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .dashboard-hero {
+        min-height: 680px !important;
+    }
+
+    .hero-status-cards {
+        grid-template-columns: 1fr !important;
+    }
+
+    .dashboard-welcome {
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+    }
+}
+/* Voice listening status fix */
+.voice-command-status {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 9999;
+
+    max-width: 260px;
+    padding: 10px 16px;
+
+    border-radius: 12px;
+    background: rgba(20, 14, 45, 0.95);
+    border: 1px solid rgba(139, 92, 246, 0.35);
+
+    color: #cdb8ff;
+    font-size: 12px;
+    font-weight: 600;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+    backdrop-filter: blur(12px);
 }

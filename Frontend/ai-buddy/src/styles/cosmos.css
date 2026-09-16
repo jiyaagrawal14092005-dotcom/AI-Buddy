@@ -1,0 +1,128 @@
+.robot-cosmos {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: inherit;
+    background:
+        radial-gradient(circle at 72% 30%, rgba(120, 55, 220, 0.30), transparent 28%),
+        radial-gradient(circle at 48% 72%, rgba(82, 35, 170, 0.20), transparent 32%),
+        linear-gradient(135deg, #070522 0%, #0b0630 45%, #12053b 100%);
+}
+
+.cosmic-nebula {
+    position: absolute;
+    pointer-events: none;
+}
+
+.nebula-purple {
+    width: 75%;
+    height: 55%;
+    top: 8%;
+    right: -8%;
+    background:
+        radial-gradient(
+            ellipse at center,
+            rgba(139, 92, 246, 0.30),
+            rgba(93, 45, 190, 0.12) 42%,
+            transparent 72%
+        );
+    filter: blur(18px);
+    opacity: 0.8;
+}
+
+.nebula-blue {
+    width: 55%;
+    height: 40%;
+    bottom: 5%;
+    left: 20%;
+    background:
+        radial-gradient(
+            ellipse at center,
+            rgba(70, 75, 210, 0.16),
+            transparent 70%
+        );
+    filter: blur(20px);
+}
+
+.nebula-center {
+    width: 65%;
+    height: 25%;
+    top: 40%;
+    left: 22%;
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(139, 92, 246, 0.14),
+            rgba(181, 140, 255, 0.18),
+            rgba(139, 92, 246, 0.10),
+            transparent
+        );
+    transform: rotate(-18deg);
+    filter: blur(10px);
+}
+
+.cosmic-star {
+    position: absolute;
+    z-index: 3;
+    color: #e9ddff;
+    font-size: 12px;
+    line-height: 1;
+    text-shadow:
+        0 0 4px #ffffff,
+        0 0 10px rgba(181, 140, 255, 0.9),
+        0 0 18px rgba(139, 92, 246, 0.7);
+}
+
+.star-1 { top: 10%; left: 70%; }
+.star-2 { top: 18%; left: 82%; font-size: 9px; }
+.star-3 { top: 30%; left: 62%; font-size: 8px; }
+.star-4 { top: 42%; left: 90%; font-size: 11px; }
+.star-5 { top: 58%; left: 73%; font-size: 8px; }
+.star-6 { top: 70%; left: 84%; font-size: 10px; }
+.star-7 { top: 80%; left: 58%; font-size: 8px; }
+.star-8 { top: 24%; left: 45%; font-size: 7px; }
+
+.tiny-star {
+    position: absolute;
+    z-index: 3;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow:
+        0 0 4px #ffffff,
+        0 0 8px rgba(181, 140, 255, 0.9);
+}
+
+.tiny-1 { top: 8%; left: 56%; }
+.tiny-2 { top: 14%; left: 76%; }
+.tiny-3 { top: 22%; left: 91%; }
+.tiny-4 { top: 36%; left: 52%; }
+.tiny-5 { top: 48%; left: 78%; }
+.tiny-6 { top: 62%; left: 94%; }
+.tiny-7 { top: 73%; left: 68%; }
+.tiny-8 { top: 84%; left: 48%; }
+.tiny-9 { top: 52%; left: 42%; }
+.tiny-10 { top: 28%; left: 86%; }
+
+.galaxy-streak {
+    position: absolute;
+    z-index: 1;
+    width: 85%;
+    height: 20%;
+    top: 38%;
+    right: -10%;
+    transform: rotate(-17deg);
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(116, 72, 220, 0.10),
+            rgba(181, 140, 255, 0.20),
+            rgba(116, 72, 220, 0.10),
+            transparent
+        );
+    filter: blur(7px);
+    opacity: 0.75;
+}

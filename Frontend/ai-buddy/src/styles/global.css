@@ -148,34 +148,6 @@ body::after {
   background: rgba(57, 217, 255, 0.055);
 }
 
-/* =========================================================
-   TOP NEON LINE
-   ========================================================= */
-
-.main-content::before {
-  content: "";
-
-  position: fixed;
-
-  top: 0;
-  left: var(--sidebar-width);
-  right: 0;
-
-  height: 1px;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(139, 92, 246, 0.35),
-      rgba(57, 217, 255, 0.25),
-      transparent
-    );
-
-  pointer-events: none;
-
-  z-index: 100;
-}
 
 /* =========================================================
    BASIC ELEMENTS

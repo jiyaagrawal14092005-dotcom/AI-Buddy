@@ -688,3 +688,147 @@
 .navbar {
     display: none !important;
 }
+/* =========================================================
+   REMOVE OUTER TOP EMPTY SPACE
+   ========================================================= */
+
+.main-content {
+    padding-top: 0 !important;
+}
+
+.dashboard {
+    margin-top: -20px !important;
+}
+/* FORCE DASHBOARD POSITION */
+
+.main-content {
+    padding-top: 0 !important;
+}
+
+.dashboard {
+    position: relative !important;
+    top: -50px !important;
+    margin-top: 0 !important;
+}
+/* =========================================================
+   FINAL SIDEBAR + DASHBOARD ALIGNMENT
+   ========================================================= */
+
+.main-content {
+    margin-left: 228px !important;
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+}
+
+.dashboard {
+    width: 100% !important;
+    max-width: 1500px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0 !important;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+}
+.zarvis-navbar {
+    top: 8px !important;
+}
+
+.dashboard-hero {
+    position: relative !important;
+    padding-top: 80px !important;
+}
+
+.zarvis-robot-area {
+    top: 70px !important;
+}
+.robot-visual {
+    top: 40% !important;
+}
+.dashboard-hero {
+    background:
+        radial-gradient(
+            circle at 78% 42%,
+            rgba(139, 92, 246, 0.24),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 92% 70%,
+            rgba(105, 60, 210, 0.18),
+            transparent 28%
+        ),
+        radial-gradient(
+            circle at 58% 20%,
+            rgba(139, 92, 246, 0.10),
+            transparent 30%
+        ),
+        transparent !important;
+}
+
+.robot-cosmos {
+    background:
+        radial-gradient(
+            ellipse at 72% 45%,
+            rgba(112, 55, 220, 0.24),
+            transparent 38%
+        ),
+        radial-gradient(
+            ellipse at 88% 68%,
+            rgba(139, 92, 246, 0.18),
+            transparent 35%
+        ),
+        transparent !important;
+}
+
+.cosmic-nebula.nebula-purple {
+    opacity: 0.95 !important;
+}
+
+.cosmic-nebula.nebula-blue {
+    opacity: 0.28 !important;
+}
+
+.cosmic-nebula.nebula-center {
+    opacity: 0.65 !important;
+}
+
+.galaxy-streak {
+    opacity: 0.75 !important;
+}
+.dashboard-hero {
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.zarvis-robot-area {
+    overflow: visible !important;
+}
+
+.robot-cosmos {
+    transform: translateX(5%) scale(1.08) !important;
+    transform-origin: center right !important;
+}
+
+.nebula-purple {
+    transform: scale(1.18) !important;
+}
+
+.nebula-center {
+    transform: scale(1.12) !important;
+}
+
+.galaxy-streak {
+    transform: translateX(4%) scale(1.08) !important;
+}
+
+.cosmic-star {
+    opacity: 0.85 !important;
+}
+
+.tiny-star {
+    opacity: 0.7 !important;
+}
