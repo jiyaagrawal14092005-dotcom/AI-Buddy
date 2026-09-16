@@ -2,73 +2,69 @@ import os
 import uuid
 from datetime import datetime, timezone
 
+from app.database.connection import SessionLocal
+from app.database.models import OAuthToken
 from app.security.encryption import EncryptionManager
 
 
 class TokenManager:
+    """
+    Secure OAuth token manager.
 
-    def __init__(
-        self,
-        encryption_secret: str | None = None
-    ):
-        self.tokens = {}
+    OAuth tokens are encrypted before being stored in the
+    database and decrypted only when they are explicitly needed.
+    """
 
-        environment = os.getenv(
-            "AI_BUDDY_ENV",
-            "development"
-        ).strip().lower()
+    def __init__(self):
 
-        provided_secret = (
-            encryption_secret
-            or os.getenv(
-                "AI_BUDDY_ENCRYPTION_SECRET"
-            )
-        )
-
-        if environment == "production":
-            if not provided_secret:
-                raise ValueError(
-                    "AI_BUDDY_ENCRYPTION_SECRET is required in production."
-                )
-
-        if not provided_secret:
-            provided_secret = "ai-buddy-development-key"
-
-        self.encryption = EncryptionManager(
-            provided_secret
-        )
-
-        self.environment = environment
         self.name = "token_manager"
         self.enabled = True
+
+        self.environment = os.getenv(
+            "AI_BUDDY_ENV",
+            "development"
+        )
+
+        encryption_secret = os.getenv(
+            "AI_BUDDY_ENCRYPTION_SECRET"
+        )
+
+        if not encryption_secret:
+
+            if self.environment == "production":
+                raise RuntimeError(
+                    "AI_BUDDY_ENCRYPTION_SECRET is required "
+                    "in production."
+                )
+
+            encryption_secret = (
+                "ai-buddy-development-key"
+            )
+
+        self.encryption = EncryptionManager(
+            encryption_secret
+        )
 
     # ---------------------------------------------------------
     # VALIDATION
     # ---------------------------------------------------------
 
-    def _validate_user_id(
-        self,
-        user_id: str
-    ) -> dict:
+    def _validate_user_id(self, user_id):
 
-        if user_id is None:
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+
             return {
                 "success": False,
-                "message": "User ID is required."
+                "message": "user_id must be a valid integer."
             }
 
-        if not isinstance(user_id, str):
+        if user_id <= 0:
+
             return {
                 "success": False,
-                "message": "User ID must be text."
-            }
-
-        user_id = user_id.strip()
-
-        if not user_id:
-            return {
-                "success": False,
-                "message": "User ID cannot be empty."
+                "message": "user_id must be greater than zero."
             }
 
         return {
@@ -76,21 +72,12 @@ class TokenManager:
             "user_id": user_id
         }
 
-    def _validate_provider(
-        self,
-        provider: str
-    ) -> dict:
-
-        if provider is None:
-            return {
-                "success": False,
-                "message": "Provider is required."
-            }
+    def _validate_provider(self, provider):
 
         if not isinstance(provider, str):
             return {
                 "success": False,
-                "message": "Provider must be text."
+                "message": "provider must be text."
             }
 
         provider = provider.strip().lower()
@@ -98,7 +85,7 @@ class TokenManager:
         if not provider:
             return {
                 "success": False,
-                "message": "Provider cannot be empty."
+                "message": "provider cannot be empty."
             }
 
         return {
@@ -106,41 +93,42 @@ class TokenManager:
             "provider": provider
         }
 
-    def _parse_expiry(
-        self,
-        expires_at: str | None
-    ) -> datetime | None:
+    # ---------------------------------------------------------
+    # EXPIRY
+    # ---------------------------------------------------------
 
-        if expires_at is None:
+    def _parse_expiry(self, expires_at):
+
+        if not expires_at:
             return None
 
-        if not isinstance(expires_at, str):
-            return None
+        if isinstance(expires_at, datetime):
+            expiry = expires_at
 
-        value = expires_at.strip()
+        elif isinstance(expires_at, str):
 
-        if not value:
-            return None
-
-        try:
-            parsed = datetime.fromisoformat(
-                value.replace("Z", "+00:00")
-            )
-
-            if parsed.tzinfo is None:
-                parsed = parsed.replace(
-                    tzinfo=timezone.utc
+            try:
+                expiry = datetime.fromisoformat(
+                    expires_at.replace(
+                        "Z",
+                        "+00:00"
+                    )
                 )
 
-            return parsed
+            except ValueError:
+                return None
 
-        except (ValueError, TypeError):
+        else:
             return None
 
-    def _is_expired(
-        self,
-        expires_at: str | None
-    ) -> bool:
+        if expiry.tzinfo is None:
+            expiry = expiry.replace(
+                tzinfo=timezone.utc
+            )
+
+        return expiry
+
+    def _is_expired(self, expires_at):
 
         expiry = self._parse_expiry(
             expires_at
@@ -149,9 +137,9 @@ class TokenManager:
         if expiry is None:
             return False
 
-        return datetime.now(
+        return expiry <= datetime.now(
             timezone.utc
-        ) >= expiry
+        )
 
     # ---------------------------------------------------------
     # STORE TOKEN
@@ -159,12 +147,12 @@ class TokenManager:
 
     def store_token(
         self,
-        user_id: str,
-        provider: str,
-        access_token: str,
-        refresh_token: str | None = None,
-        expires_at: str | None = None
-    ) -> dict:
+        user_id,
+        provider,
+        access_token,
+        refresh_token=None,
+        expires_at=None
+    ):
 
         user_result = self._validate_user_id(
             user_id
@@ -180,77 +168,26 @@ class TokenManager:
         if not provider_result["success"]:
             return provider_result
 
-        if access_token is None:
-            return {
-                "success": False,
-                "message": "Access token is required."
-            }
-
-        if not isinstance(access_token, str):
-            return {
-                "success": False,
-                "message": "Access token must be text."
-            }
-
-        if refresh_token is not None and not isinstance(
-            refresh_token,
+        if not access_token or not isinstance(
+            access_token,
             str
         ):
             return {
                 "success": False,
-                "message": "Refresh token must be text."
+                "message": "access_token is required."
             }
 
         user_id = user_result["user_id"]
         provider = provider_result["provider"]
-        access_token = access_token.strip()
 
-        if not access_token:
-            return {
-                "success": False,
-                "message": "Access token cannot be empty."
-            }
-
-        if refresh_token is not None:
-            refresh_token = refresh_token.strip()
-
-            if not refresh_token:
-                refresh_token = None
-
-        if expires_at is not None:
-
-            if not isinstance(expires_at, str):
-                return {
-                    "success": False,
-                    "message": "Expiry time must be text."
-                }
-
-            expires_at = expires_at.strip()
-
-            if expires_at:
-
-                parsed_expiry = self._parse_expiry(
-                    expires_at
-                )
-
-                if parsed_expiry is None:
-                    return {
-                        "success": False,
-                        "message": "Invalid expiry time format."
-                    }
-
-                if datetime.now(
-                    timezone.utc
-                ) >= parsed_expiry:
-                    return {
-                        "success": False,
-                        "message": "Token is already expired."
-                    }
-
-            else:
-                expires_at = None
+        db = SessionLocal()
 
         try:
+
+            # -------------------------------------------------
+            # ENCRYPT TOKENS
+            # -------------------------------------------------
+
             encrypted_access_token = (
                 self.encryption.encrypt_value(
                     access_token
@@ -266,46 +203,92 @@ class TokenManager:
                     )
                 )
 
-        except Exception:
+            # -------------------------------------------------
+            # CHECK EXISTING TOKEN
+            # -------------------------------------------------
+
+            existing_token = (
+                db.query(OAuthToken)
+                .filter(
+                    OAuthToken.user_id == user_id,
+                    OAuthToken.provider == provider
+                )
+                .first()
+            )
+
+            if existing_token:
+
+                existing_token.encrypted_access_token = (
+                    encrypted_access_token
+                )
+
+                if refresh_token:
+                    existing_token.encrypted_refresh_token = (
+                        encrypted_refresh_token
+                    )
+
+                existing_token.expires_at = (
+                    expires_at
+                )
+
+                existing_token.active = True
+
+                existing_token.updated_at = (
+                    datetime.utcnow()
+                )
+
+                token_id = existing_token.token_id
+
+            else:
+
+                token_id = str(
+                    uuid.uuid4()
+                )
+
+                token_record = OAuthToken(
+                    user_id=user_id,
+                    provider=provider,
+                    token_id=token_id,
+                    encrypted_access_token=(
+                        encrypted_access_token
+                    ),
+                    encrypted_refresh_token=(
+                        encrypted_refresh_token
+                    ),
+                    expires_at=expires_at,
+                    active=True
+                )
+
+                db.add(token_record)
+
+            db.commit()
+
             return {
-                "success": False,
-                "message": "Unable to encrypt token."
+                "success": True,
+                "token_id": token_id,
+                "user_id": user_id,
+                "provider": provider,
+                "active": True,
+                "message": (
+                    "OAuth token stored securely."
+                )
             }
 
-        token_id = str(
-            uuid.uuid4()
-        )
+        except Exception as exc:
 
-        now = datetime.now(
-            timezone.utc
-        ).isoformat()
+            db.rollback()
 
-        token_record = {
-            "token_id": token_id,
-            "user_id": user_id,
-            "provider": provider,
-            "access_token": encrypted_access_token,
-            "refresh_token": encrypted_refresh_token,
-            "expires_at": expires_at,
-            "created_at": now,
-            "updated_at": now,
-            "active": True
-        }
+            return {
+                "success": False,
+                "message": (
+                    "OAuth token storage failed."
+                ),
+                "error": str(exc)
+            }
 
-        if user_id not in self.tokens:
-            self.tokens[user_id] = {}
+        finally:
 
-        # Replace existing token for the same provider.
-        self.tokens[user_id][provider] = token_record
-
-        return {
-            "success": True,
-            "token_id": token_id,
-            "user_id": user_id,
-            "provider": provider,
-            "expires_at": expires_at,
-            "message": "Token stored securely."
-        }
+            db.close()
 
     # ---------------------------------------------------------
     # GET TOKEN
@@ -313,9 +296,9 @@ class TokenManager:
 
     def get_token(
         self,
-        user_id: str,
-        provider: str
-    ) -> dict:
+        user_id,
+        provider
+    ):
 
         user_result = self._validate_user_id(
             user_id
@@ -334,77 +317,95 @@ class TokenManager:
         user_id = user_result["user_id"]
         provider = provider_result["provider"]
 
-        user_tokens = self.tokens.get(
-            user_id
-        )
-
-        if not user_tokens:
-            return {
-                "success": False,
-                "message": "No tokens found for this user."
-            }
-
-        token = user_tokens.get(
-            provider
-        )
-
-        if not token:
-            return {
-                "success": False,
-                "message": "Token not found for this provider."
-            }
-
-        if not token["active"]:
-            return {
-                "success": False,
-                "message": "Token is inactive."
-            }
-
-        # Automatically invalidate expired tokens.
-        if self._is_expired(
-            token.get("expires_at")
-        ):
-            token["active"] = False
-            token["updated_at"] = datetime.now(
-                timezone.utc
-            ).isoformat()
-
-            return {
-                "success": False,
-                "message": "Token has expired."
-            }
+        db = SessionLocal()
 
         try:
+
+            token_record = (
+                db.query(OAuthToken)
+                .filter(
+                    OAuthToken.user_id == user_id,
+                    OAuthToken.provider == provider
+                )
+                .first()
+            )
+
+            if token_record is None:
+
+                return {
+                    "success": False,
+                    "message": (
+                        "OAuth token was not found."
+                    )
+                }
+
+            if not token_record.active:
+
+                return {
+                    "success": False,
+                    "message": (
+                        "OAuth token is inactive."
+                    )
+                }
+
+            if self._is_expired(
+                token_record.expires_at
+            ):
+
+                token_record.active = False
+                token_record.updated_at = (
+                    datetime.utcnow()
+                )
+
+                db.commit()
+
+                return {
+                    "success": False,
+                    "message": (
+                        "OAuth token has expired."
+                    )
+                }
+
             access_token = (
                 self.encryption.decrypt_value(
-                    token["access_token"]
+                    token_record.encrypted_access_token
                 )
             )
 
             refresh_token = None
 
-            if token["refresh_token"]:
+            if token_record.encrypted_refresh_token:
+
                 refresh_token = (
                     self.encryption.decrypt_value(
-                        token["refresh_token"]
+                        token_record.encrypted_refresh_token
                     )
                 )
 
             return {
                 "success": True,
-                "token_id": token["token_id"],
-                "user_id": token["user_id"],
-                "provider": token["provider"],
+                "token_id": token_record.token_id,
+                "user_id": token_record.user_id,
+                "provider": token_record.provider,
                 "access_token": access_token,
                 "refresh_token": refresh_token,
-                "expires_at": token["expires_at"]
+                "expires_at": token_record.expires_at,
+                "active": token_record.active
             }
 
-        except Exception:
+        except Exception as exc:
+
             return {
                 "success": False,
-                "message": "Unable to decrypt token."
+                "message": (
+                    "OAuth token retrieval failed."
+                ),
+                "error": str(exc)
             }
+
+        finally:
+
+            db.close()
 
     # ---------------------------------------------------------
     # REVOKE TOKEN
@@ -412,9 +413,9 @@ class TokenManager:
 
     def revoke_token(
         self,
-        user_id: str,
-        provider: str
-    ) -> dict:
+        user_id,
+        provider
+    ):
 
         user_result = self._validate_user_id(
             user_id
@@ -433,49 +434,71 @@ class TokenManager:
         user_id = user_result["user_id"]
         provider = provider_result["provider"]
 
-        user_tokens = self.tokens.get(
-            user_id
-        )
+        db = SessionLocal()
 
-        if not user_tokens:
+        try:
+
+            token_record = (
+                db.query(OAuthToken)
+                .filter(
+                    OAuthToken.user_id == user_id,
+                    OAuthToken.provider == provider
+                )
+                .first()
+            )
+
+            if token_record is None:
+
+                return {
+                    "success": False,
+                    "message": (
+                        "OAuth token was not found."
+                    )
+                }
+
+            token_record.active = False
+            token_record.updated_at = (
+                datetime.utcnow()
+            )
+
+            db.commit()
+
             return {
-                "success": False,
-                "message": "User tokens not found."
+                "success": True,
+                "token_id": token_record.token_id,
+                "user_id": user_id,
+                "provider": provider,
+                "active": False,
+                "message": (
+                    "OAuth token revoked successfully."
+                )
             }
 
-        token = user_tokens.get(
-            provider
-        )
+        except Exception as exc:
 
-        if not token:
+            db.rollback()
+
             return {
                 "success": False,
-                "message": "Token not found."
+                "message": (
+                    "OAuth token revocation failed."
+                ),
+                "error": str(exc)
             }
 
-        token["active"] = False
-        token["updated_at"] = datetime.now(
-            timezone.utc
-        ).isoformat()
+        finally:
 
-        return {
-            "success": True,
-            "user_id": user_id,
-            "provider": provider,
-            "token_id": token["token_id"],
-            "message": "Token revoked successfully."
-        }
+            db.close()
 
     # ---------------------------------------------------------
-    # OWNERSHIP CHECK
+    # TOKEN OWNERSHIP
     # ---------------------------------------------------------
 
     def token_belongs_to_user(
         self,
-        user_id: str,
-        provider: str,
-        token_id: str
-    ) -> bool:
+        token_id,
+        user_id
+    ):
 
         user_result = self._validate_user_id(
             user_id
@@ -484,41 +507,31 @@ class TokenManager:
         if not user_result["success"]:
             return False
 
-        provider_result = self._validate_provider(
-            provider
-        )
-
-        if not provider_result["success"]:
-            return False
-
-        if not token_id or not isinstance(
-            token_id,
-            str
-        ):
+        if not token_id:
             return False
 
         user_id = user_result["user_id"]
-        provider = provider_result["provider"]
-        token_id = token_id.strip()
 
-        user_tokens = self.tokens.get(
-            user_id
-        )
+        db = SessionLocal()
 
-        if not user_tokens:
-            return False
+        try:
 
-        token = user_tokens.get(
-            provider
-        )
+            token_record = (
+                db.query(OAuthToken)
+                .filter(
+                    OAuthToken.token_id == str(
+                        token_id
+                    ),
+                    OAuthToken.user_id == user_id
+                )
+                .first()
+            )
 
-        if not token:
-            return False
+            return token_record is not None
 
-        return (
-            token["token_id"] == token_id
-            and token["user_id"] == user_id
-        )
+        finally:
+
+            db.close()
 
     # ---------------------------------------------------------
     # USER PROVIDERS
@@ -526,55 +539,8 @@ class TokenManager:
 
     def get_user_providers(
         self,
-        user_id: str
-    ) -> list:
-
-        user_result = self._validate_user_id(
-            user_id
-        )
-
-        if not user_result["success"]:
-            return []
-
-        user_id = user_result["user_id"]
-
-        user_tokens = self.tokens.get(
-            user_id,
-            {}
-        )
-
-        active_providers = []
-
-        for provider, token in user_tokens.items():
-
-            if not token["active"]:
-                continue
-
-            if self._is_expired(
-                token.get("expires_at")
-            ):
-                token["active"] = False
-                token["updated_at"] = (
-                    datetime.now(
-                        timezone.utc
-                    ).isoformat()
-                )
-                continue
-
-            active_providers.append(
-                provider
-            )
-
-        return active_providers
-
-    # ---------------------------------------------------------
-    # REMOVE ALL USER TOKENS
-    # ---------------------------------------------------------
-
-    def remove_user_tokens(
-        self,
-        user_id: str
-    ) -> dict:
+        user_id
+    ):
 
         user_result = self._validate_user_id(
             user_id
@@ -585,19 +551,95 @@ class TokenManager:
 
         user_id = user_result["user_id"]
 
-        if user_id not in self.tokens:
+        db = SessionLocal()
+
+        try:
+
+            records = (
+                db.query(OAuthToken)
+                .filter(
+                    OAuthToken.user_id == user_id,
+                    OAuthToken.active.is_(True)
+                )
+                .all()
+            )
+
+            providers = [
+                record.provider
+                for record in records
+            ]
+
             return {
-                "success": False,
-                "message": "User tokens not found."
+                "success": True,
+                "user_id": user_id,
+                "providers": providers
             }
 
-        del self.tokens[user_id]
+        finally:
 
-        return {
-            "success": True,
-            "user_id": user_id,
-            "message": "All user tokens removed successfully."
-        }
+            db.close()
+
+    # ---------------------------------------------------------
+    # REMOVE USER TOKENS
+    # ---------------------------------------------------------
+
+    def remove_user_tokens(
+        self,
+        user_id
+    ):
+
+        user_result = self._validate_user_id(
+            user_id
+        )
+
+        if not user_result["success"]:
+            return user_result
+
+        user_id = user_result["user_id"]
+
+        db = SessionLocal()
+
+        try:
+
+            records = (
+                db.query(OAuthToken)
+                .filter(
+                    OAuthToken.user_id == user_id
+                )
+                .all()
+            )
+
+            count = len(records)
+
+            for record in records:
+                db.delete(record)
+
+            db.commit()
+
+            return {
+                "success": True,
+                "user_id": user_id,
+                "removed": count,
+                "message": (
+                    "User OAuth tokens removed."
+                )
+            }
+
+        except Exception as exc:
+
+            db.rollback()
+
+            return {
+                "success": False,
+                "message": (
+                    "Unable to remove user OAuth tokens."
+                ),
+                "error": str(exc)
+            }
+
+        finally:
+
+            db.close()
 
     # ---------------------------------------------------------
     # TOKEN EXISTS
@@ -605,126 +647,117 @@ class TokenManager:
 
     def token_exists(
         self,
-        user_id: str,
-        provider: str
-    ) -> bool:
+        user_id,
+        provider
+    ):
 
-        user_result = self._validate_user_id(
-            user_id
+        result = self.get_token(
+            user_id=user_id,
+            provider=provider
         )
 
-        if not user_result["success"]:
-            return False
-
-        provider_result = self._validate_provider(
-            provider
-        )
-
-        if not provider_result["success"]:
-            return False
-
-        user_id = user_result["user_id"]
-        provider = provider_result["provider"]
-
-        user_tokens = self.tokens.get(
-            user_id,
-            {}
-        )
-
-        token = user_tokens.get(
-            provider
-        )
-
-        if not token:
-            return False
-
-        if not token["active"]:
-            return False
-
-        if self._is_expired(
-            token.get("expires_at")
-        ):
-            token["active"] = False
-            token["updated_at"] = datetime.now(
-                timezone.utc
-            ).isoformat()
-            return False
-
-        return True
+        return result["success"]
 
     # ---------------------------------------------------------
-    # TOKEN COUNT
+    # TOKEN COUNTS
     # ---------------------------------------------------------
 
-    def get_user_token_count(
-        self,
-        user_id: str
-    ) -> int:
+    def get_total_tokens(self):
 
-        return len(
-            self.get_user_providers(
-                user_id
+        db = SessionLocal()
+
+        try:
+            return db.query(OAuthToken).count()
+        finally:
+            db.close()
+
+    def get_active_token_count(self):
+
+        db = SessionLocal()
+
+        try:
+            return (
+                db.query(OAuthToken)
+                .filter(
+                    OAuthToken.active.is_(True)
+                )
+                .count()
             )
-        )
-
-    def get_total_token_count(self) -> int:
-
-        total = 0
-
-        for user_id in list(
-            self.tokens.keys()
-        ):
-            total += self.get_user_token_count(
-                user_id
-            )
-
-        return total
+        finally:
+            db.close()
 
     # ---------------------------------------------------------
     # STATUS
     # ---------------------------------------------------------
 
-    def get_status(self) -> dict:
+    def get_status(self):
 
-        total_users = len(
-            self.tokens
-        )
+        db = SessionLocal()
 
-        total_tokens = 0
+        try:
 
-        active_tokens = 0
-        inactive_tokens = 0
-        expired_tokens = 0
-
-        for user_tokens in self.tokens.values():
-
-            total_tokens += len(
-                user_tokens
+            total_tokens = (
+                db.query(OAuthToken).count()
             )
 
-            for token in user_tokens.values():
+            active_tokens = (
+                db.query(OAuthToken)
+                .filter(
+                    OAuthToken.active.is_(True)
+                )
+                .count()
+            )
+
+            inactive_tokens = (
+                db.query(OAuthToken)
+                .filter(
+                    OAuthToken.active.is_(False)
+                )
+                .count()
+            )
+
+            expired_tokens = 0
+
+            active_records = (
+                db.query(OAuthToken)
+                .filter(
+                    OAuthToken.active.is_(True)
+                )
+                .all()
+            )
+
+            for record in active_records:
 
                 if self._is_expired(
-                    token.get("expires_at")
+                    record.expires_at
                 ):
-                    token["active"] = False
                     expired_tokens += 1
 
-                if token["active"]:
-                    active_tokens += 1
-                else:
-                    inactive_tokens += 1
+            total_users = (
+                db.query(
+                    OAuthToken.user_id
+                )
+                .distinct()
+                .count()
+            )
 
-        return {
-            "name": self.name,
-            "available": True,
-            "enabled": self.enabled,
-            "environment": self.environment,
-            "total_users": total_users,
-            "total_tokens": total_tokens,
-            "active_tokens": active_tokens,
-            "inactive_tokens": inactive_tokens,
-            "expired_tokens": expired_tokens,
-            "encrypted_storage": True,
-            "message": "Token manager is operational."
-        }
+            return {
+                "name": self.name,
+                "available": True,
+                "enabled": self.enabled,
+                "environment": self.environment,
+                "total_users": total_users,
+                "total_tokens": total_tokens,
+                "active_tokens": active_tokens,
+                "inactive_tokens": inactive_tokens,
+                "expired_tokens": expired_tokens,
+                "encrypted_storage": True,
+                "storage": "database",
+                "message": (
+                    "Token manager is operational."
+                )
+            }
+
+        finally:
+
+            db.close()

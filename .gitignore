@@ -45,3 +45,7 @@ coverage/
 *.bak
 .DS_Store
 Thumbs.db
+
+# Google OAuth credentials
+credentials/
+.env

@@ -2,25 +2,32 @@ from dotenv import load_dotenv
 from google import genai
 import os
 
+
 load_dotenv()
+
 
 api_key = os.getenv("GEMINI_API_KEY")
 
+
 if not api_key:
-    print("❌ API key nahi mili.")
-    exit()
+    print("❌ GEMINI_API_KEY is missing from .env")
+    raise SystemExit(1)
+
 
 try:
-    client = genai.Client(api_key=api_key)
-
-    response = client.models.generate_content(
-        model="gemini-3.7-flash",
-        contents="Reply with only: Gemini API is working."
+    client = genai.Client(
+        api_key=api_key
     )
 
-    print("✅ API KEY VALID!")
-    print("Gemini response:", response.text)
+    response = client.models.generate_content(
+        model="gemini-3.6-flash",
+        contents="Reply with exactly: AI Buddy Gemini test successful."
+    )
 
-except Exception as e:
-    print("❌ API KEY / API REQUEST ERROR")
-    print(e)
+    print("✅ GEMINI API KEY IS WORKING")
+    print("Model response:")
+    print(response.text)
+
+except Exception as error:
+    print("❌ GEMINI API / REQUEST ERROR")
+    print(error)

@@ -277,6 +277,87 @@ class OAuthManager:
         }
 
     # ---------------------------------------------------------
+    # AUTHORIZE WITH ACTUAL GRANTED SCOPES
+    # ---------------------------------------------------------
+
+    def authorize_connection_with_scopes(
+        self,
+        user_id: str,
+        provider: str,
+        scopes: list
+    ) -> dict:
+
+        user_result = self._validate_user_id(
+            user_id
+        )
+
+        if not user_result["success"]:
+            return user_result
+
+        provider_result = self._validate_provider(
+            provider
+        )
+
+        if not provider_result["success"]:
+            return provider_result
+
+        scope_result = self._validate_scopes(
+            scopes
+        )
+
+        if not scope_result["success"]:
+            return scope_result
+
+        user_id = user_result["user_id"]
+        provider = provider_result["provider"]
+        scopes = scope_result["scopes"]
+
+        user_connections = self.connections.get(
+            user_id
+        )
+
+        if not user_connections:
+            return {
+                "success": False,
+                "message": "No OAuth connections found for this user."
+            }
+
+        connection = user_connections.get(
+            provider
+        )
+
+        if not connection:
+            return {
+                "success": False,
+                "message": "OAuth connection not found."
+            }
+
+        if connection["status"] == "REVOKED":
+            return {
+                "success": False,
+                "message": "Revoked OAuth connection cannot be authorized."
+            }
+
+        connection["scopes"] = deepcopy(
+            scopes
+        )
+
+        connection["status"] = "AUTHORIZED"
+        connection["updated_at"] = self._timestamp()
+
+        return {
+            "success": True,
+            "user_id": user_id,
+            "provider": provider,
+            "connection_id": connection["connection_id"],
+            "status": "AUTHORIZED",
+            "scopes": deepcopy(scopes),
+            "message": (
+                "OAuth connection authorized with granted scopes."
+            )
+        }
+
+    # ---------------------------------------------------------
     # GET CONNECTION
     # ---------------------------------------------------------
 

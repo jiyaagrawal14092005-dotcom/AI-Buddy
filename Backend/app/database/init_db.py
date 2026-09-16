@@ -8,7 +8,8 @@ from app.database.models import (
     Conversation,
     Workflow,
     ScheduledJob,
-    Memory
+    Memory,
+    OAuthToken
 )
 
 
