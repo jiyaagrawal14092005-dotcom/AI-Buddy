@@ -7598,3 +7598,4075 @@ button:focus-visible {
     
     font-size: 22px !important;
 }
+/* =========================================================
+   ZARVIS — LOWER DASHBOARD CARDS
+========================================================= */
+
+.dashboard-main-grid,
+.dashboard-secondary-grid {
+    gap: 16px !important;
+}
+
+/* Glass card base */
+
+.dashboard-main-grid > *,
+.dashboard-secondary-grid > * {
+    border: 1px solid rgba(139, 92, 246, 0.20) !important;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(18, 13, 48, 0.82),
+            rgba(7, 8, 29, 0.78)
+        ) !important;
+
+    backdrop-filter: blur(18px);
+
+    box-shadow:
+        0 10px 35px rgba(0, 0, 0, 0.20),
+        inset 0 1px 0 rgba(190, 150, 255, 0.035);
+
+    transition:
+        border-color 0.25s ease,
+        box-shadow 0.25s ease,
+        transform 0.25s ease;
+}
+
+/* Purple hover glow */
+
+.dashboard-main-grid > *:hover,
+.dashboard-secondary-grid > *:hover {
+    border-color:
+        rgba(155, 105, 255, 0.38) !important;
+
+    box-shadow:
+        0 12px 38px rgba(0, 0, 0, 0.28),
+        0 0 24px rgba(125, 70, 255, 0.08),
+        inset 0 1px 0 rgba(205, 170, 255, 0.05);
+
+    transform: translateY(-2px);
+}
+
+/* Headings */
+
+.dashboard-main-grid h3,
+.dashboard-secondary-grid h3 {
+    color: #eeeaff !important;
+}
+
+/* Secondary text */
+
+.dashboard-main-grid p,
+.dashboard-secondary-grid p {
+    color: #918db8;
+}
+
+/* Small labels */
+
+.dashboard-main-grid span,
+.dashboard-secondary-grid span {
+    color: #8f89b5;
+}
+
+/* Purple section accents */
+
+.dashboard-main-grid svg,
+.dashboard-secondary-grid svg {
+    color: #a77cff;
+}
+
+/* Mobile */
+
+@media (max-width: 768px) {
+
+    .dashboard-main-grid,
+    .dashboard-secondary-grid {
+        gap: 12px !important;
+    }
+
+    .dashboard-main-grid > *,
+    .dashboard-secondary-grid > * {
+        transform: none !important;
+    }
+}
+/* =========================================================
+   ZARVIS — QUICK COMMANDS PURPLE UI
+========================================================= */
+
+.quick-section {
+    position: relative;
+}
+
+.quick-section .section-title,
+.quick-section h3 {
+    color: #eeeaff !important;
+}
+
+/* Quick action cards/buttons */
+
+.quick-section button,
+.quick-section .quick-action-card,
+.quick-section .quick-command-card {
+    border: 1px solid rgba(139, 92, 246, 0.20) !important;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(24, 17, 58, 0.82),
+            rgba(8, 8, 30, 0.78)
+        ) !important;
+
+    backdrop-filter: blur(16px);
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(190, 150, 255, 0.035);
+
+    color: #dcd8f5 !important;
+
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+/* Hover */
+
+.quick-section button:hover,
+.quick-section .quick-action-card:hover,
+.quick-section .quick-command-card:hover {
+    transform: translateY(-2px);
+
+    border-color:
+        rgba(168, 105, 255, 0.48) !important;
+
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.25),
+        0 0 22px rgba(135, 70, 255, 0.10);
+}
+
+/* Icons */
+
+.quick-section svg {
+    color: #a875ff !important;
+
+    filter:
+        drop-shadow(
+            0 0 5px
+            rgba(155, 90, 255, 0.45)
+        );
+}
+
+/* Text */
+
+.quick-section strong {
+    color: #eeeaff !important;
+}
+
+.quick-section span {
+    color: #8f89b5;
+}
+
+/* Purple active glow */
+
+.quick-section button:active {
+    transform: translateY(0);
+    border-color:
+        rgba(185, 115, 255, 0.58) !important;
+}
+
+/* Mobile */
+
+@media (max-width: 768px) {
+
+    .quick-section button,
+    .quick-section .quick-action-card,
+    .quick-section .quick-command-card {
+        transform: none !important;
+    }
+}
+/* =========================================================
+   ZARVIS — CORE CONTROL PANEL
+========================================================= */
+
+.zarvis-core-card {
+    position: relative;
+
+    border: 1px solid rgba(150, 95, 255, 0.28) !important;
+
+    background:
+        radial-gradient(
+            circle at 50% 0%,
+            rgba(125, 65, 230, 0.12),
+            transparent 48%
+        ),
+        linear-gradient(
+            145deg,
+            rgba(20, 14, 52, 0.88),
+            rgba(6, 7, 27, 0.84)
+        ) !important;
+
+    backdrop-filter: blur(20px);
+
+    box-shadow:
+        0 14px 45px rgba(0, 0, 0, 0.28),
+        0 0 30px rgba(115, 60, 230, 0.06),
+        inset 0 1px 0 rgba(205, 165, 255, 0.05);
+
+    overflow: hidden;
+}
+
+/* Subtle purple atmospheric glow */
+
+.zarvis-core-card::before {
+    content: "";
+
+    position: absolute;
+
+    width: 420px;
+    height: 180px;
+
+    left: 50%;
+    top: -100px;
+
+    transform: translateX(-50%);
+
+    background:
+        radial-gradient(
+            ellipse,
+            rgba(150, 75, 255, 0.18),
+            transparent 70%
+        );
+
+    filter: blur(28px);
+
+    pointer-events: none;
+}
+
+/* Core heading */
+
+.zarvis-core-card h2,
+.zarvis-core-card h3 {
+    color: #f0ecff !important;
+}
+
+/* Core secondary text */
+
+.zarvis-core-card p {
+    color: #9690bc;
+}
+
+/* Status / labels */
+
+.zarvis-core-card span {
+    color: #8e88b4;
+}
+
+/* Core icons */
+
+.zarvis-core-card svg {
+    color: #ae7cff;
+
+    filter:
+        drop-shadow(
+            0 0 6px
+            rgba(160, 90, 255, 0.42)
+        );
+}
+
+/* Purple active elements */
+
+.zarvis-core-card button:hover {
+    border-color:
+        rgba(175, 105, 255, 0.48) !important;
+
+    box-shadow:
+        0 0 20px
+        rgba(140, 70, 255, 0.10);
+}
+
+/* Keep content above glow */
+
+.zarvis-core-card > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Mobile */
+
+@media (max-width: 768px) {
+    .zarvis-core-card {
+        border-radius: 16px !important;
+    }
+}
+/* =========================================================
+   ZARVIS — AGENT NETWORK
+========================================================= */
+
+.agent-network {
+    position: relative;
+
+    border: 1px solid rgba(139, 92, 246, 0.22) !important;
+
+    background:
+        radial-gradient(
+            ellipse at 70% 20%,
+            rgba(135, 65, 245, 0.10),
+            transparent 48%
+        ),
+        linear-gradient(
+            145deg,
+            rgba(19, 13, 50, 0.84),
+            rgba(6, 7, 27, 0.82)
+        ) !important;
+
+    backdrop-filter: blur(20px);
+
+    box-shadow:
+        0 14px 40px rgba(0, 0, 0, 0.24),
+        0 0 28px rgba(120, 60, 240, 0.06),
+        inset 0 1px 0 rgba(205, 165, 255, 0.04);
+
+    overflow: hidden;
+}
+
+/* Atmospheric purple glow */
+
+.agent-network::before {
+    content: "";
+
+    position: absolute;
+
+    width: 480px;
+    height: 180px;
+
+    right: -100px;
+    top: -80px;
+
+    background:
+        radial-gradient(
+            ellipse,
+            rgba(155, 75, 255, 0.15),
+            transparent 70%
+        );
+
+    filter: blur(30px);
+
+    pointer-events: none;
+}
+
+/* Heading */
+
+.agent-network h2,
+.agent-network h3 {
+    color: #eeeaff !important;
+}
+
+/* Secondary information */
+
+.agent-network p {
+    color: #918bb7;
+}
+
+/* Agent names */
+
+.agent-network strong {
+    color: #ddd8f5 !important;
+}
+
+/* Agent status */
+
+.agent-network span {
+    color: #8f89b5;
+}
+
+/* Agent icons */
+
+.agent-network svg {
+    color: #a978ff !important;
+
+    filter:
+        drop-shadow(
+            0 0 5px
+            rgba(155, 90, 255, 0.40)
+        );
+}
+
+/* Active/online indicators */
+
+.agent-network .active,
+.agent-network .online {
+    color: #b78cff !important;
+}
+
+/* Keep content above glow */
+
+.agent-network > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Hover */
+
+.agent-network > div:hover {
+    border-color:
+        rgba(165, 100, 255, 0.35);
+}
+
+/* Mobile */
+
+@media (max-width: 768px) {
+    .agent-network {
+        border-radius: 16px !important;
+    }
+}
+/* =========================================================
+   ZARVIS — TIMER WIDGET
+========================================================= */
+
+#zarvis-timer {
+    min-width: 0;
+}
+
+/* Timer card */
+
+#zarvis-timer .timer-card {
+    position: relative;
+
+    border: 1px solid rgba(145, 85, 255, 0.24) !important;
+
+    background:
+        radial-gradient(
+            circle at 50% 35%,
+            rgba(130, 65, 245, 0.12),
+            transparent 58%
+        ),
+        linear-gradient(
+            145deg,
+            rgba(20, 14, 52, 0.86),
+            rgba(6, 7, 27, 0.84)
+        ) !important;
+
+    backdrop-filter: blur(18px);
+
+    box-shadow:
+        0 12px 38px rgba(0, 0, 0, 0.24),
+        0 0 25px rgba(125, 65, 245, 0.06),
+        inset 0 1px 0 rgba(205, 165, 255, 0.04);
+
+    overflow: hidden;
+}
+
+/* Purple timer atmosphere */
+
+#zarvis-timer .timer-card::before {
+    content: "";
+
+    position: absolute;
+
+    width: 260px;
+    height: 180px;
+
+    left: 50%;
+    top: 25px;
+
+    transform: translateX(-50%);
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(155, 80, 255, 0.14),
+            transparent 70%
+        );
+
+    filter: blur(28px);
+
+    pointer-events: none;
+}
+
+/* Timer heading */
+
+#zarvis-timer h2,
+#zarvis-timer h3 {
+    color: #eeeaff !important;
+}
+
+/* Timer numbers */
+
+#zarvis-timer .timer-value,
+#zarvis-timer .time,
+#zarvis-timer .timer-display {
+    color: #f2edff !important;
+
+    text-shadow:
+        0 0 14px rgba(160, 90, 255, 0.22);
+}
+
+/* Timer labels */
+
+#zarvis-timer span,
+#zarvis-timer p {
+    color: #918bb8;
+}
+
+/* Timer buttons */
+
+#zarvis-timer button {
+    border: 1px solid rgba(145, 85, 255, 0.22);
+
+    background:
+        rgba(25, 17, 60, 0.70);
+
+    color: #c7b5ff;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+#zarvis-timer button:hover {
+    border-color:
+        rgba(175, 105, 255, 0.48);
+
+    box-shadow:
+        0 0 18px rgba(140, 70, 255, 0.12);
+
+    transform: translateY(-1px);
+}
+
+/* Timer icons */
+
+#zarvis-timer svg {
+    color: #ad7cff !important;
+
+    filter:
+        drop-shadow(
+            0 0 5px
+            rgba(160, 90, 255, 0.42)
+        );
+}
+
+/* Keep content above glow */
+
+#zarvis-timer .timer-card > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Mobile */
+
+@media (max-width: 768px) {
+    #zarvis-timer .timer-card {
+        border-radius: 16px !important;
+    }
+}
+/* =========================================================
+   ZARVIS — UPCOMING TASKS
+========================================================= */
+
+.upcoming-tasks-card {
+    position: relative;
+
+    border: 1px solid rgba(145, 85, 255, 0.22) !important;
+
+    background:
+        radial-gradient(
+            ellipse at 80% 20%,
+            rgba(140, 65, 245, 0.10),
+            transparent 50%
+        ),
+        linear-gradient(
+            145deg,
+            rgba(20, 14, 52, 0.86),
+            rgba(6, 7, 27, 0.84)
+        ) !important;
+
+    backdrop-filter: blur(18px);
+
+    box-shadow:
+        0 12px 38px rgba(0, 0, 0, 0.24),
+        0 0 25px rgba(125, 65, 245, 0.06),
+        inset 0 1px 0 rgba(205, 165, 255, 0.04);
+
+    overflow: hidden;
+}
+
+/* Soft purple atmosphere */
+
+.upcoming-tasks-card::before {
+    content: "";
+
+    position: absolute;
+
+    width: 300px;
+    height: 160px;
+
+    right: -80px;
+    top: -70px;
+
+    background:
+        radial-gradient(
+            ellipse,
+            rgba(165, 80, 255, 0.14),
+            transparent 70%
+        );
+
+    filter: blur(28px);
+
+    pointer-events: none;
+}
+
+/* Heading */
+
+.upcoming-tasks-card h2,
+.upcoming-tasks-card h3 {
+    color: #eeeaff !important;
+}
+
+/* Task text */
+
+.upcoming-tasks-card strong {
+    color: #ddd8f5 !important;
+}
+
+.upcoming-tasks-card p,
+.upcoming-tasks-card span {
+    color: #918bb8;
+}
+
+/* Icons */
+
+.upcoming-tasks-card svg {
+    color: #ad7cff !important;
+
+    filter:
+        drop-shadow(
+            0 0 5px
+            rgba(160, 90, 255, 0.40)
+        );
+}
+
+/* Task rows */
+
+.upcoming-tasks-card li,
+.upcoming-tasks-card .task-item {
+    border-color:
+        rgba(139, 92, 246, 0.12) !important;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.upcoming-tasks-card li:hover,
+.upcoming-tasks-card .task-item:hover {
+    background:
+        rgba(120, 65, 220, 0.06) !important;
+
+    border-color:
+        rgba(160, 95, 255, 0.28) !important;
+}
+
+/* Keep content above glow */
+
+.upcoming-tasks-card > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Mobile */
+
+@media (max-width: 768px) {
+    .upcoming-tasks-card {
+        border-radius: 16px !important;
+    }
+}
+/* =========================================================
+   ZARVIS — MEMORY + ACTIVITY
+========================================================= */
+
+/* -------------------------
+   MEMORY
+------------------------- */
+
+.memory-card {
+    position: relative;
+
+    border: 1px solid rgba(145, 85, 255, 0.22) !important;
+
+    background:
+        radial-gradient(
+            ellipse at 20% 15%,
+            rgba(145, 70, 245, 0.10),
+            transparent 48%
+        ),
+        linear-gradient(
+            145deg,
+            rgba(20, 14, 52, 0.86),
+            rgba(6, 7, 27, 0.84)
+        ) !important;
+
+    backdrop-filter: blur(18px);
+
+    box-shadow:
+        0 12px 38px rgba(0, 0, 0, 0.24),
+        0 0 25px rgba(125, 65, 245, 0.06),
+        inset 0 1px 0 rgba(205, 165, 255, 0.04);
+
+    overflow: hidden;
+}
+
+.memory-card::before {
+    content: "";
+
+    position: absolute;
+
+    width: 260px;
+    height: 160px;
+
+    left: -90px;
+    top: -70px;
+
+    background:
+        radial-gradient(
+            ellipse,
+            rgba(165, 80, 255, 0.14),
+            transparent 70%
+        );
+
+    filter: blur(28px);
+
+    pointer-events: none;
+}
+
+.memory-card h2,
+.memory-card h3 {
+    color: #eeeaff !important;
+}
+
+.memory-card strong {
+    color: #ddd8f5 !important;
+}
+
+.memory-card p,
+.memory-card span {
+    color: #918bb8;
+}
+
+.memory-card svg {
+    color: #ad7cff !important;
+
+    filter:
+        drop-shadow(
+            0 0 5px
+            rgba(160, 90, 255, 0.40)
+        );
+}
+
+
+/* -------------------------
+   ACTIVITY
+------------------------- */
+
+.activity-card {
+    position: relative;
+
+    border: 1px solid rgba(145, 85, 255, 0.22) !important;
+
+    background:
+        radial-gradient(
+            ellipse at 80% 15%,
+            rgba(145, 70, 245, 0.09),
+            transparent 48%
+        ),
+        linear-gradient(
+            145deg,
+            rgba(20, 14, 52, 0.86),
+            rgba(6, 7, 27, 0.84)
+        ) !important;
+
+    backdrop-filter: blur(18px);
+
+    box-shadow:
+        0 12px 38px rgba(0, 0, 0, 0.24),
+        0 0 25px rgba(125, 65, 245, 0.06),
+        inset 0 1px 0 rgba(205, 165, 255, 0.04);
+
+    overflow: hidden;
+}
+
+.activity-card::before {
+    content: "";
+
+    position: absolute;
+
+    width: 300px;
+    height: 160px;
+
+    right: -100px;
+    top: -70px;
+
+    background:
+        radial-gradient(
+            ellipse,
+            rgba(160, 75, 255, 0.14),
+            transparent 70%
+        );
+
+    filter: blur(30px);
+
+    pointer-events: none;
+}
+
+.activity-card h2,
+.activity-card h3 {
+    color: #eeeaff !important;
+}
+
+.activity-card strong {
+    color: #ddd8f5 !important;
+}
+
+.activity-card p,
+.activity-card span {
+    color: #918bb8;
+}
+
+.activity-card svg {
+    color: #ad7cff !important;
+
+    filter:
+        drop-shadow(
+            0 0 5px
+            rgba(160, 90, 255, 0.40)
+        );
+}
+
+
+/* -------------------------
+   HOVER
+------------------------- */
+
+.memory-card:hover,
+.activity-card:hover {
+    border-color:
+        rgba(165, 100, 255, 0.38) !important;
+
+    box-shadow:
+        0 14px 40px rgba(0, 0, 0, 0.28),
+        0 0 25px rgba(135, 70, 255, 0.08);
+}
+
+
+/* -------------------------
+   MOBILE
+------------------------- */
+
+@media (max-width: 768px) {
+    .memory-card,
+    .activity-card {
+        border-radius: 16px !important;
+    }
+}
+/* =========================================================
+   ZARVIS — FINAL DASHBOARD SPACING & RESPONSIVE POLISH
+========================================================= */
+
+/* Main vertical rhythm */
+
+.dashboard {
+    width: 100%;
+}
+
+.dashboard-hero {
+    margin-bottom: 18px !important;
+}
+
+.stats-grid {
+    margin-bottom: 22px !important;
+}
+
+.quick-section {
+    margin-bottom: 22px !important;
+}
+
+.zarvis-core-card {
+    margin-bottom: 18px !important;
+}
+
+.dashboard-main-grid {
+    margin-bottom: 18px !important;
+}
+
+
+/* Prevent cards from overflowing */
+
+.dashboard-main-grid > *,
+.dashboard-secondary-grid > *,
+.stats-grid > * {
+    min-width: 0 !important;
+    max-width: 100%;
+}
+
+
+/* Consistent glass-card radius */
+
+.dashboard-main-grid > *,
+.dashboard-secondary-grid > *,
+.zarvis-core-card,
+.agent-network {
+    border-radius: 18px !important;
+}
+
+
+/* -------------------------
+   LARGE LAPTOP
+------------------------- */
+
+@media (max-width: 1280px) {
+
+    .dashboard {
+        max-width: 100% !important;
+    }
+
+    .dashboard-hero {
+        grid-template-columns: 47% 53% !important;
+    }
+
+    .dashboard-welcome {
+        padding-left: 28px !important;
+    }
+
+    .dashboard-welcome h1 {
+        font-size: 50px !important;
+    }
+}
+
+
+/* -------------------------
+   TABLET
+------------------------- */
+
+@media (max-width: 900px) {
+
+    .main-content {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+
+    .dashboard-hero {
+        grid-template-columns: 1fr !important;
+    }
+
+    .dashboard-welcome {
+        padding-left: 24px !important;
+        padding-right: 24px !important;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .dashboard-main-grid,
+    .dashboard-secondary-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+
+/* -------------------------
+   MOBILE
+------------------------- */
+
+@media (max-width: 600px) {
+
+    .main-content {
+        padding:
+            10px
+            10px
+            22px !important;
+    }
+
+    .dashboard-hero {
+        margin-bottom: 12px !important;
+    }
+
+    .dashboard-welcome {
+        padding:
+            30px
+            16px
+            10px !important;
+    }
+
+    .dashboard-welcome h1 {
+        font-size: 38px !important;
+        letter-spacing: -1.5px !important;
+    }
+
+    .dashboard-welcome > p {
+        font-size: 13px !important;
+    }
+
+    .hero-quick-actions {
+        gap: 8px !important;
+    }
+
+    .hero-quick-actions button {
+        height: 38px !important;
+        padding: 0 14px !important;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+
+    .dashboard-main-grid,
+    .dashboard-secondary-grid {
+        gap: 10px !important;
+    }
+
+    .zarvis-core-card,
+    .agent-network,
+    .dashboard-main-grid > *,
+    .dashboard-secondary-grid > * {
+        border-radius: 15px !important;
+    }
+}
+
+
+/* -------------------------
+   VERY SMALL MOBILE
+------------------------- */
+
+@media (max-width: 400px) {
+
+    .dashboard-welcome h1 {
+        font-size: 34px !important;
+    }
+
+    .hero-quick-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .hero-quick-actions button {
+        width: 100%;
+    }
+
+    .hero-status-cards {
+        max-width: 100% !important;
+    }
+}
+/* =========================================================
+   ZARVIS — CARD CONTENT POLISH
+========================================================= */
+
+/* Card headers */
+
+.dashboard-main-grid > *,
+.dashboard-secondary-grid > * {
+    position: relative;
+}
+
+.dashboard-main-grid > * h3,
+.dashboard-secondary-grid > * h3 {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.2px;
+}
+
+
+/* Small section labels */
+
+.dashboard-main-grid > * small,
+.dashboard-secondary-grid > * small {
+    color: #716b98 !important;
+    font-size: 9px !important;
+    letter-spacing: 0.7px;
+}
+
+
+/* Status badges */
+
+.dashboard-main-grid .status,
+.dashboard-secondary-grid .status {
+    border: 1px solid rgba(150, 95, 255, 0.20);
+
+    background:
+        rgba(105, 55, 190, 0.10);
+
+    color: #b996ff !important;
+
+    border-radius: 20px;
+
+    padding: 4px 9px;
+}
+
+
+/* Divider lines */
+
+.dashboard-main-grid hr,
+.dashboard-secondary-grid hr {
+    border: 0 !important;
+    height: 1px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(145, 85, 255, 0.20),
+            transparent
+        );
+
+    margin: 12px 0;
+}
+
+
+/* List items */
+
+.dashboard-main-grid li,
+.dashboard-secondary-grid li {
+    list-style: none;
+}
+
+
+/* Small metadata */
+
+.dashboard-main-grid .meta,
+.dashboard-secondary-grid .meta {
+    color: #77719c !important;
+    font-size: 9px !important;
+}
+
+
+/* Progress / activity lines */
+
+.dashboard-main-grid .progress,
+.dashboard-secondary-grid .progress {
+    background: rgba(80, 55, 135, 0.20);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.dashboard-main-grid .progress-bar,
+.dashboard-secondary-grid .progress-bar {
+    background:
+        linear-gradient(
+            90deg,
+            #7545d8,
+            #a875ff
+        );
+
+    box-shadow:
+        0 0 10px rgba(155, 90, 255, 0.30);
+}
+
+
+/* Smooth card content */
+
+.dashboard-main-grid > * *,
+.dashboard-secondary-grid > * * {
+    transition:
+        color 0.2s ease,
+        border-color 0.2s ease,
+        background 0.2s ease;
+}
+
+
+/* Don't affect buttons/layout */
+
+.dashboard-main-grid button,
+.dashboard-secondary-grid button {
+    cursor: pointer;
+}
+
+
+/* Mobile text adjustment */
+
+@media (max-width: 600px) {
+
+    .dashboard-main-grid > * h3,
+    .dashboard-secondary-grid > * h3 {
+        font-size: 13px !important;
+    }
+
+    .dashboard-main-grid > * small,
+    .dashboard-secondary-grid > * small {
+        font-size: 8px !important;
+    }
+}
+/* =========================================================
+   ZARVIS — HERO FINAL POLISH
+========================================================= */
+
+/* Hero stays clean and spacious */
+
+.dashboard-hero {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Welcome text */
+
+.dashboard-welcome {
+    position: relative;
+    z-index: 20;
+}
+
+.dashboard-welcome h1 span {
+    background:
+        linear-gradient(
+            90deg,
+            #b66cff 0%,
+            #9368ff 45%,
+            #7f9cff 100%
+        );
+
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Description */
+
+.dashboard-welcome > p {
+    color: #aaa5c8 !important;
+    letter-spacing: 0.05px;
+}
+
+
+/* -------------------------
+   HERO STATUS CARDS
+------------------------- */
+
+.hero-status-cards {
+    position: relative;
+    z-index: 25;
+
+    margin-top: 24px !important;
+}
+
+.hero-status-card {
+    position: relative;
+
+    border:
+        1px solid
+        rgba(145, 85, 255, 0.20) !important;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(24, 17, 58, 0.72),
+            rgba(8, 8, 30, 0.68)
+        ) !important;
+
+    backdrop-filter: blur(16px);
+
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.20),
+        inset 0 1px 0
+        rgba(210, 175, 255, 0.04);
+
+    transition:
+        border-color 0.25s ease,
+        box-shadow 0.25s ease,
+        transform 0.25s ease;
+}
+
+
+/* Purple hover */
+
+.hero-status-card:hover {
+    transform: translateY(-2px);
+
+    border-color:
+        rgba(170, 105, 255, 0.38) !important;
+
+    box-shadow:
+        0 14px 35px rgba(0, 0, 0, 0.25),
+        0 0 24px rgba(135, 70, 255, 0.08);
+}
+
+
+/* Status icons */
+
+.hero-status-icon {
+    border-radius: 15px !important;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(135, 70, 245, 0.16),
+            rgba(20, 14, 55, 0.55)
+        ) !important;
+
+    box-shadow:
+        0 0 18px
+        rgba(140, 70, 255, 0.10);
+}
+
+
+/* Thinking icon */
+
+.zarvis-thinking-logo {
+    color: #c39aff !important;
+
+    border-color:
+        rgba(155, 95, 255, 0.55) !important;
+}
+
+.zarvis-thinking-logo svg {
+    color: #c39aff !important;
+
+    filter:
+        drop-shadow(
+            0 0 7px
+            rgba(175, 105, 255, 0.75)
+        );
+}
+
+
+/* Ready icon */
+
+.ready-help-icon {
+    color: #b99aff !important;
+
+    border-color:
+        rgba(145, 90, 255, 0.48) !important;
+}
+
+
+/* Status headings */
+
+.hero-status-content strong {
+    color: #eeeaff !important;
+    letter-spacing: 0.1px;
+}
+
+
+/* Status descriptions */
+
+.hero-status-content > span {
+    color: #8f89b5 !important;
+}
+
+
+/* Thinking wave */
+
+.thinking-wave i {
+    background:
+        linear-gradient(
+            180deg,
+            #c18aff,
+            #7545d8
+        ) !important;
+
+    box-shadow:
+        0 0 6px
+        rgba(160, 90, 255, 0.30);
+}
+
+
+/* Ready indicator */
+
+.ready-indicator span {
+    background: #a978ff !important;
+
+    box-shadow:
+        0 0 8px
+        rgba(165, 95, 255, 0.75);
+}
+
+
+/* -------------------------
+   QUICK BUTTONS
+------------------------- */
+
+.hero-quick-actions button {
+    border:
+        1px solid
+        rgba(145, 85, 255, 0.20) !important;
+
+    background:
+        rgba(18, 13, 48, 0.70) !important;
+
+    color: #d5cff0 !important;
+
+    box-shadow:
+        inset 0 1px 0
+        rgba(210, 175, 255, 0.035);
+
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease,
+        transform 0.2s ease;
+}
+
+.hero-quick-actions button:hover {
+    background:
+        rgba(100, 55, 190, 0.14) !important;
+
+    border-color:
+        rgba(170, 105, 255, 0.42) !important;
+
+    color: #eee8ff !important;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 0 18px
+        rgba(135, 70, 255, 0.08);
+}
+
+
+/* Mobile */
+
+@media (max-width: 800px) {
+
+    .hero-status-cards {
+        margin-top: 20px !important;
+    }
+
+    .hero-status-card:hover {
+        transform: none;
+    }
+}
+/* =========================================================
+   ZARVIS — FINAL PURPLE CONTRAST TUNING
+========================================================= */
+
+/* Keep dashboard deep and cinematic */
+
+.dashboard {
+    position: relative;
+}
+
+/* Very subtle purple atmosphere behind content */
+
+.dashboard::before {
+    content: "";
+
+    position: absolute;
+
+    width: 620px;
+    height: 420px;
+
+    right: 2%;
+    top: 180px;
+
+    background:
+        radial-gradient(
+            ellipse,
+            rgba(105, 50, 210, 0.055),
+            transparent 72%
+        );
+
+    filter: blur(45px);
+
+    pointer-events: none;
+
+    z-index: -1;
+}
+
+
+/* Cards should remain darker than the galaxy */
+
+.glass-card,
+.dashboard-main-grid > *,
+.dashboard-secondary-grid > *,
+.zarvis-core-card,
+.agent-network {
+    background-color: rgba(6, 7, 28, 0.72) !important;
+}
+
+
+/* Purple border hierarchy */
+
+.zarvis-core-card {
+    border-color:
+        rgba(160, 95, 255, 0.28) !important;
+}
+
+.agent-network {
+    border-color:
+        rgba(145, 85, 255, 0.22) !important;
+}
+
+
+/* Main headings */
+
+.dashboard h1,
+.dashboard h2,
+.dashboard h3 {
+    text-shadow:
+        0 0 18px rgba(140, 80, 255, 0.05);
+}
+
+
+/* Purple accent text */
+
+.dashboard .accent,
+.dashboard .highlight {
+    color: #b78cff !important;
+}
+
+
+/* Don't let purple become too bright */
+
+.dashboard button:hover {
+    text-shadow: none;
+}
+
+
+/* Keep galaxy visible behind hero */
+
+.dashboard-hero {
+    background-color: transparent !important;
+}
+
+
+/* Mobile — remove large atmosphere */
+
+@media (max-width: 768px) {
+
+    .dashboard::before {
+        width: 350px;
+        height: 300px;
+
+        right: -120px;
+        top: 250px;
+
+        opacity: 0.7;
+    }
+}
+/* =========================================================
+   ZARVIS — STATS CARDS FINAL POLISH
+========================================================= */
+
+.stats-grid {
+    position: relative;
+    z-index: 5;
+}
+
+/* Card base */
+
+.stats-grid > * {
+    position: relative;
+
+    border: 1px solid rgba(145, 85, 255, 0.20) !important;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(20, 14, 52, 0.82),
+            rgba(7, 8, 29, 0.78)
+        ) !important;
+
+    backdrop-filter: blur(16px);
+
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.20),
+        inset 0 1px 0 rgba(205, 165, 255, 0.035);
+
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+/* Purple hover */
+
+.stats-grid > *:hover {
+    transform: translateY(-2px);
+
+    border-color:
+        rgba(170, 105, 255, 0.38) !important;
+
+    box-shadow:
+        0 14px 35px rgba(0, 0, 0, 0.25),
+        0 0 22px rgba(135, 70, 255, 0.08);
+}
+
+/* Numbers */
+
+.stats-grid h2,
+.stats-grid h3,
+.stats-grid .stat-value {
+    color: #f0ecff !important;
+
+    text-shadow:
+        0 0 14px rgba(150, 85, 255, 0.10);
+}
+
+/* Labels */
+
+.stats-grid p,
+.stats-grid span {
+    color: #918bb8;
+}
+
+/* Icons */
+
+.stats-grid svg {
+    color: #ad7cff !important;
+
+    filter:
+        drop-shadow(
+            0 0 6px
+            rgba(160, 90, 255, 0.42)
+        );
+}
+
+/* Accent values */
+
+.stats-grid .positive,
+.stats-grid .success {
+    color: #b899ff !important;
+}
+
+/* Mobile */
+
+@media (max-width: 768px) {
+
+    .stats-grid > * {
+        transform: none !important;
+    }
+}
+/* =========================================================
+   ZARVIS — TASK & SCHEDULE CARDS
+========================================================= */
+
+/* -------------------------
+   TASK CARD
+------------------------- */
+
+.task-card {
+    position: relative;
+
+    border: 1px solid rgba(145, 85, 255, 0.22) !important;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(21, 14, 53, 0.84),
+            rgba(6, 7, 28, 0.82)
+        ) !important;
+
+    backdrop-filter: blur(18px);
+
+    box-shadow:
+        0 12px 36px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(205, 165, 255, 0.04);
+
+    overflow: hidden;
+}
+
+.task-card::before {
+    content: "";
+
+    position: absolute;
+
+    width: 260px;
+    height: 150px;
+
+    left: -80px;
+    top: -70px;
+
+    background:
+        radial-gradient(
+            ellipse,
+            rgba(150, 75, 255, 0.13),
+            transparent 70%
+        );
+
+    filter: blur(28px);
+
+    pointer-events: none;
+}
+
+
+/* -------------------------
+   SCHEDULE CARD
+------------------------- */
+
+.schedule-card {
+    position: relative;
+
+    border: 1px solid rgba(145, 85, 255, 0.22) !important;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(21, 14, 53, 0.84),
+            rgba(6, 7, 28, 0.82)
+        ) !important;
+
+    backdrop-filter: blur(18px);
+
+    box-shadow:
+        0 12px 36px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(205, 165, 255, 0.04);
+
+    overflow: hidden;
+}
+
+.schedule-card::before {
+    content: "";
+
+    position: absolute;
+
+    width: 280px;
+    height: 160px;
+
+    right: -90px;
+    top: -70px;
+
+    background:
+        radial-gradient(
+            ellipse,
+            rgba(155, 75, 255, 0.13),
+            transparent 70%
+        );
+
+    filter: blur(30px);
+
+    pointer-events: none;
+}
+
+
+/* -------------------------
+   CONTENT
+------------------------- */
+
+.task-card h2,
+.task-card h3,
+.schedule-card h2,
+.schedule-card h3 {
+    color: #eeeaff !important;
+}
+
+.task-card strong,
+.schedule-card strong {
+    color: #ddd8f5 !important;
+}
+
+.task-card p,
+.task-card span,
+.schedule-card p,
+.schedule-card span {
+    color: #918bb8;
+}
+
+
+/* Icons */
+
+.task-card svg,
+.schedule-card svg {
+    color: #ad7cff !important;
+
+    filter:
+        drop-shadow(
+            0 0 5px
+            rgba(160, 90, 255, 0.40)
+        );
+}
+
+
+/* Dividers */
+
+.task-card hr,
+.schedule-card hr {
+    border: 0 !important;
+
+    height: 1px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(145, 85, 255, 0.20),
+            transparent
+        );
+}
+
+
+/* Hover */
+
+.task-card:hover,
+.schedule-card:hover {
+    border-color:
+        rgba(170, 105, 255, 0.38) !important;
+
+    box-shadow:
+        0 14px 40px rgba(0, 0, 0, 0.28),
+        0 0 24px rgba(135, 70, 255, 0.08);
+}
+
+
+/* Mobile */
+
+@media (max-width: 768px) {
+
+    .task-card,
+    .schedule-card {
+        border-radius: 15px !important;
+    }
+}
+/* =========================================================
+   ZARVIS — TASK & SCHEDULE ITEM POLISH
+========================================================= */
+
+/* Individual task / schedule rows */
+
+.task-card li,
+.schedule-card li,
+.task-card .task-item,
+.schedule-card .schedule-item {
+    border: 1px solid rgba(145, 85, 255, 0.10) !important;
+
+    background:
+        rgba(18, 12, 45, 0.42) !important;
+
+    border-radius: 11px !important;
+
+    padding: 10px 12px !important;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+
+/* Hover */
+
+.task-card li:hover,
+.schedule-card li:hover,
+.task-card .task-item:hover,
+.schedule-card .schedule-item:hover {
+    background:
+        rgba(105, 55, 195, 0.08) !important;
+
+    border-color:
+        rgba(165, 100, 255, 0.28) !important;
+
+    transform: translateX(2px);
+}
+
+
+/* Task titles */
+
+.task-card li strong,
+.task-card .task-item strong,
+.schedule-card li strong,
+.schedule-card .schedule-item strong {
+    color: #e4def8 !important;
+}
+
+
+/* Time / metadata */
+
+.task-card li small,
+.task-card .task-item small,
+.schedule-card li small,
+.schedule-card .schedule-item small {
+    color: #77719d !important;
+}
+
+
+/* Completion / status indicators */
+
+.task-card input[type="checkbox"] {
+    accent-color: #a875ff;
+}
+
+
+/* Purple status dots */
+
+.task-card .status-dot,
+.schedule-card .status-dot {
+    background: #a875ff !important;
+
+    box-shadow:
+        0 0 8px
+        rgba(165, 95, 255, 0.65);
+}
+
+
+/* Action buttons inside cards */
+
+.task-card button,
+.schedule-card button {
+    border-radius: 8px !important;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease;
+}
+
+.task-card button:hover,
+.schedule-card button:hover {
+    background:
+        rgba(135, 70, 225, 0.12) !important;
+
+    color: #c7a8ff !important;
+}
+
+
+/* Keep mobile comfortable */
+
+@media (max-width: 768px) {
+
+    .task-card li,
+    .schedule-card li,
+    .task-card .task-item,
+    .schedule-card .schedule-item {
+        transform: none !important;
+    }
+}
+/* =========================================================
+   ZARVIS — FINAL VISUAL CLEANUP
+========================================================= */
+
+/* Keep all major sections visually separated */
+
+.dashboard-hero,
+.stats-grid,
+.quick-section,
+.zarvis-core-card,
+.dashboard-main-grid,
+.dashboard-secondary-grid,
+.agent-network {
+    position: relative;
+}
+
+
+/* Clean section spacing */
+
+.stats-grid {
+    margin-top: 4px !important;
+}
+
+.quick-section {
+    margin-top: 4px !important;
+}
+
+
+/* Prevent accidental horizontal overflow */
+
+.dashboard,
+.dashboard-hero,
+.stats-grid,
+.quick-section,
+.dashboard-main-grid,
+.dashboard-secondary-grid,
+.agent-network {
+    max-width: 100%;
+}
+
+
+/* Softer card borders */
+
+.stats-grid > *,
+.dashboard-main-grid > *,
+.dashboard-secondary-grid > *,
+.zarvis-core-card,
+.agent-network {
+    border-width: 1px !important;
+}
+
+
+/* Reduce excessive glow */
+
+.stats-grid > *,
+.dashboard-main-grid > *,
+.dashboard-secondary-grid > *,
+.zarvis-core-card,
+.agent-network {
+    box-shadow:
+        0 10px 32px rgba(0, 0, 0, 0.22),
+        0 0 20px rgba(120, 65, 235, 0.045),
+        inset 0 1px 0 rgba(205, 165, 255, 0.035) !important;
+}
+
+
+/* Cleaner text rendering */
+
+.dashboard h1,
+.dashboard h2,
+.dashboard h3,
+.dashboard p,
+.dashboard span,
+.dashboard strong {
+    text-rendering: optimizeLegibility;
+}
+
+
+/* Don't let decorative layers block interaction */
+
+.dashboard-hero::before,
+.dashboard-hero::after,
+.dashboard::before,
+.zarvis-core-card::before,
+.agent-network::before,
+.memory-card::before,
+.activity-card::after,
+.task-card::before,
+.schedule-card::before,
+.upcoming-tasks-card::before {
+    pointer-events: none !important;
+}
+
+
+/* Mobile cleanup */
+
+@media (max-width: 768px) {
+
+    .stats-grid > *,
+    .dashboard-main-grid > *,
+    .dashboard-secondary-grid > *,
+    .zarvis-core-card,
+    .agent-network {
+        box-shadow:
+            0 8px 25px rgba(0, 0, 0, 0.20),
+            0 0 14px rgba(120, 65, 235, 0.035) !important;
+    }
+}
+/* =========================================================
+   ZARVIS — HERO / NAVBAR ALIGNMENT
+========================================================= */
+
+.dashboard-hero {
+    margin-top: 0 !important;
+    padding-top: 4px !important;
+}
+
+/* Keep left content vertically balanced */
+
+.dashboard-welcome {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+
+/* Quick actions stay close to description */
+
+.hero-quick-actions {
+    margin-top: 2px !important;
+}
+
+
+/* Status cards have breathing room */
+
+.hero-status-cards {
+    margin-top: 24px !important;
+}
+
+
+/* Keep robot area visually centered */
+
+.dashboard-hero > .zarvis-robot-area {
+    align-self: stretch;
+}
+
+
+/* Prevent hero decorative layers from affecting layout */
+
+.dashboard-hero::before,
+.dashboard-hero::after {
+    pointer-events: none !important;
+}
+
+
+/* Desktop */
+
+@media (min-width: 1201px) {
+
+    .dashboard-hero {
+        min-height: 545px !important;
+    }
+
+    .dashboard-welcome {
+        padding-top: 4px;
+    }
+}
+
+
+/* Laptop */
+
+@media (max-width: 1200px) {
+
+    .dashboard-hero {
+        min-height: 520px !important;
+    }
+}
+
+
+/* Tablet */
+
+@media (max-width: 800px) {
+
+    .dashboard-hero {
+        min-height: auto !important;
+        padding-top: 0 !important;
+    }
+
+    .dashboard-welcome {
+        justify-content: flex-start;
+    }
+}
+/* =========================================================
+   ZARVIS — MAIN HERO SEARCH
+   Bottom Center Command Bar
+========================================================= */
+
+.hero-search-bar {
+    position: absolute !important;
+
+    left: 50% !important;
+    bottom: 22px !important;
+
+    transform: translateX(-50%) !important;
+
+    width: min(620px, 72%) !important;
+    height: 52px !important;
+
+    display: flex !important;
+    align-items: center !important;
+
+    padding: 0 16px !important;
+
+    border: 1px solid
+        rgba(155, 95, 255, 0.34) !important;
+
+    border-radius: 28px !important;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(24, 16, 58, 0.88),
+            rgba(6, 7, 29, 0.86)
+        ) !important;
+
+    backdrop-filter: blur(20px);
+
+    box-shadow:
+        0 12px 35px rgba(0, 0, 0, 0.28),
+        0 0 25px rgba(130, 65, 240, 0.08),
+        inset 0 1px 0
+        rgba(220, 190, 255, 0.05);
+
+    color: #a978ff !important;
+
+    z-index: 50 !important;
+
+    transition:
+        border-color 0.25s ease,
+        box-shadow 0.25s ease,
+        transform 0.25s ease;
+}
+
+
+/* Search icon */
+
+.hero-search-bar > svg {
+    flex-shrink: 0;
+
+    color: #b07cff !important;
+
+    filter:
+        drop-shadow(
+            0 0 7px
+            rgba(165, 90, 255, 0.55)
+        );
+}
+
+
+/* Input */
+
+.hero-search-bar input {
+    flex: 1 !important;
+
+    min-width: 0 !important;
+
+    margin-left: 12px !important;
+
+    border: none !important;
+    outline: none !important;
+
+    background: transparent !important;
+
+    color: #eeeaff !important;
+
+    font-size: 13px !important;
+}
+
+
+/* Placeholder */
+
+.hero-search-bar input::placeholder {
+    color: #77709c !important;
+}
+
+
+/* Keyboard shortcut */
+
+.hero-search-shortcut {
+    height: 26px !important;
+    min-width: 36px !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    gap: 4px !important;
+
+    border: 1px solid
+        rgba(150, 95, 255, 0.20) !important;
+
+    border-radius: 8px !important;
+
+    background:
+        rgba(40, 25, 78, 0.52) !important;
+
+    color: #827aa8 !important;
+
+    font-size: 9px !important;
+}
+
+
+/* Focus */
+
+.hero-search-bar:focus-within {
+    border-color:
+        rgba(175, 105, 255, 0.58) !important;
+
+    box-shadow:
+        0 14px 38px rgba(0, 0, 0, 0.30),
+        0 0 30px rgba(135, 70, 255, 0.14),
+        inset 0 1px 0
+        rgba(220, 190, 255, 0.07);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 900px) {
+
+    .hero-search-bar {
+        width: min(560px, 78%) !important;
+        bottom: 18px !important;
+    }
+}
+
+
+@media (max-width: 800px) {
+
+    .hero-search-bar {
+        width: calc(100% - 40px) !important;
+        height: 48px !important;
+        bottom: 18px !important;
+    }
+
+    .hero-search-bar input {
+        font-size: 12px !important;
+    }
+}
+
+
+@media (max-width: 480px) {
+
+    .hero-search-bar {
+        width: calc(100% - 28px) !important;
+        height: 46px !important;
+        bottom: 14px !important;
+    }
+
+    .hero-search-shortcut {
+        display: none !important;
+    }
+}
+/* =========================================================
+   ZARVIS ICON POLISH
+========================================================= */
+
+/* Zarvis Thinking icon */
+
+.zarvis-thinking-logo {
+    width: 54px !important;
+    height: 54px !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    flex-shrink: 0 !important;
+
+    border-radius: 16px !important;
+
+    background:
+        radial-gradient(
+            circle at 35% 30%,
+            rgba(190, 135, 255, 0.28),
+            rgba(91, 45, 180, 0.16) 45%,
+            rgba(18, 10, 45, 0.72)
+        ) !important;
+
+    border: 1px solid
+        rgba(175, 105, 255, 0.38) !important;
+
+    color: #c49aff !important;
+
+    box-shadow:
+        0 0 12px rgba(145, 75, 255, 0.22),
+        inset 0 0 14px rgba(160, 90, 255, 0.10) !important;
+
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+
+/* Soft glow behind Sparkles */
+
+.zarvis-thinking-logo::before {
+    content: "";
+
+    position: absolute;
+    width: 34px;
+    height: 34px;
+
+    border-radius: 50%;
+
+    background: rgba(155, 85, 255, 0.18);
+
+    filter: blur(12px);
+
+    pointer-events: none;
+}
+
+
+/* Sparkles icon */
+
+.zarvis-thinking-logo svg {
+    position: relative;
+    z-index: 2;
+
+    color: #caa7ff !important;
+
+    filter:
+        drop-shadow(0 0 5px rgba(175, 105, 255, 0.65))
+        drop-shadow(0 0 12px rgba(135, 65, 255, 0.30));
+}
+
+
+/* =========================================================
+   HERO SEARCH — VOICE + SEND
+========================================================= */
+
+.hero-search-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+
+    margin-left: 10px !important;
+}
+
+
+/* Common button */
+
+.hero-search-voice,
+.hero-search-send {
+    width: 36px !important;
+    height: 36px !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    border-radius: 11px !important;
+
+    cursor: pointer !important;
+
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease !important;
+}
+
+
+/* Voice */
+
+.hero-search-voice {
+    background:
+        rgba(35, 22, 70, 0.72) !important;
+
+    border: 1px solid
+        rgba(155, 95, 255, 0.25) !important;
+
+    color: #b990ff !important;
+
+    box-shadow:
+        inset 0 0 12px rgba(145, 75, 255, 0.07) !important;
+}
+
+
+.hero-search-voice svg {
+    filter:
+        drop-shadow(0 0 6px rgba(160, 90, 255, 0.55));
+}
+
+
+/* Send */
+
+.hero-search-send {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(145, 75, 255, 0.92),
+            rgba(92, 55, 190, 0.92)
+        ) !important;
+
+    border: 1px solid
+        rgba(200, 165, 255, 0.40) !important;
+
+    color: #ffffff !important;
+
+    box-shadow:
+        0 0 14px rgba(130, 65, 255, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+
+.hero-search-send svg {
+    filter:
+        drop-shadow(0 0 4px rgba(255, 255, 255, 0.45));
+}
+
+
+/* Hover */
+
+.hero-search-voice:hover {
+    transform: translateY(-1px);
+
+    border-color:
+        rgba(180, 125, 255, 0.55) !important;
+
+    background:
+        rgba(55, 32, 100, 0.85) !important;
+
+    box-shadow:
+        0 0 15px rgba(145, 75, 255, 0.20) !important;
+}
+
+
+.hero-search-send:hover {
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 0 20px rgba(145, 75, 255, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
+
+
+/* Click */
+
+.hero-search-voice:active,
+.hero-search-send:active {
+    transform: scale(0.94);
+}
+
+
+/* =========================================================
+   SEARCH LOGO
+========================================================= */
+
+.hero-search-logo {
+    width: 32px !important;
+    height: 32px !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    flex-shrink: 0 !important;
+
+    border-radius: 10px !important;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(145, 80, 255, 0.32),
+            rgba(65, 35, 135, 0.18)
+        ) !important;
+
+    border: 1px solid
+        rgba(175, 110, 255, 0.32) !important;
+
+    box-shadow:
+        0 0 12px rgba(140, 70, 255, 0.18),
+        inset 0 0 10px rgba(175, 105, 255, 0.08) !important;
+}
+
+
+.hero-search-logo span {
+    font-size: 14px !important;
+    font-weight: 800 !important;
+
+    color: #d0b0ff !important;
+
+    text-shadow:
+        0 0 7px rgba(170, 100, 255, 0.75),
+        0 0 14px rgba(125, 55, 240, 0.35);
+}
+
+
+/* Mobile */
+
+@media (max-width: 480px) {
+
+    .hero-search-actions {
+        gap: 5px !important;
+        margin-left: 5px !important;
+    }
+
+    .hero-search-voice,
+    .hero-search-send {
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 9px !important;
+    }
+
+    .hero-search-logo {
+        width: 29px !important;
+        height: 29px !important;
+    }
+}
+/* =========================================================
+   ZARVIS HERO — FINAL TEXT POLISH
+   ========================================================= */
+
+.dashboard-welcome {
+    position: relative;
+    z-index: 20;
+
+    padding-left: 40px !important;
+    padding-right: 20px !important;
+}
+
+.welcome-label {
+    color: #a77aff !important;
+    text-shadow: 0 0 12px rgba(155, 95, 255, 0.25);
+}
+
+.dashboard-welcome h1 {
+    color: #f7f3ff !important;
+    text-shadow:
+        0 0 18px rgba(160, 110, 255, 0.12);
+}
+
+.dashboard-welcome h1 span {
+    color: #a879ff !important;
+    text-shadow:
+        0 0 14px rgba(155, 95, 255, 0.28);
+}
+
+.dashboard-welcome p {
+    color: #9b96bd !important;
+    line-height: 1.7 !important;
+}
+
+/* Quick action buttons */
+.hero-quick-actions {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 9px !important;
+}
+
+.hero-quick-actions button {
+    border: 1px solid rgba(139, 92, 246, 0.18) !important;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(30, 20, 68, 0.72),
+            rgba(10, 8, 32, 0.72)
+        ) !important;
+
+    color: #b8a5db !important;
+
+    box-shadow:
+        inset 0 0 12px rgba(139, 92, 246, 0.04);
+
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        background 0.2s ease,
+        box-shadow 0.2s ease !important;
+}
+
+.hero-quick-actions button:hover {
+    transform: translateY(-2px);
+
+    border-color: rgba(166, 112, 255, 0.40) !important;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(55, 32, 105, 0.82),
+            rgba(18, 12, 48, 0.78)
+        ) !important;
+
+    color: #e4d8ff !important;
+
+    box-shadow:
+        0 0 16px rgba(139, 92, 246, 0.12);
+}
+
+/* Hero status cards */
+.hero-status-card {
+    overflow: hidden;
+}
+
+.hero-status-card::before {
+    content: "";
+
+    position: absolute;
+
+    width: 100px;
+    height: 100px;
+
+    top: -55px;
+    right: -35px;
+
+    border-radius: 50%;
+
+    background: rgba(139, 92, 246, 0.12);
+
+    filter: blur(25px);
+
+    pointer-events: none;
+}
+
+.hero-status-card:hover {
+    border-color: rgba(166, 112, 255, 0.32) !important;
+
+    box-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.18),
+        0 0 20px rgba(139, 92, 246, 0.08);
+}
+
+.hero-status-card h3,
+.hero-status-card strong {
+    color: #eee8ff !important;
+}
+
+.hero-status-card p,
+.hero-status-card span {
+    color: #8580a6 !important;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .dashboard-welcome {
+        padding-left: 20px !important;
+        padding-right: 20px !important;
+    }
+
+    .hero-quick-actions {
+        gap: 7px !important;
+    }
+}
+/* =========================================================
+   ZARVIS HERO STATUS CARDS — PREMIUM POLISH
+   ========================================================= */
+
+.hero-status-cards {
+    position: relative;
+    z-index: 25;
+
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+    width: 100% !important;
+    max-width: 625px !important;
+}
+
+.hero-status-card {
+    position: relative !important;
+    min-height: 132px !important;
+    height: 132px !important;
+
+    padding: 18px 20px !important;
+
+    display: flex !important;
+    align-items: center !important;
+
+    border-radius: 16px !important;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(27, 18, 63, 0.78),
+            rgba(8, 7, 29, 0.72)
+        ) !important;
+
+    border: 1px solid rgba(151, 94, 255, 0.20) !important;
+
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(220, 190, 255, 0.04) !important;
+
+    backdrop-filter: blur(16px);
+
+    overflow: hidden;
+
+    transition:
+        transform 0.22s ease,
+        border-color 0.22s ease,
+        box-shadow 0.22s ease !important;
+}
+
+.hero-status-card:hover {
+    transform: translateY(-3px);
+
+    border-color: rgba(171, 115, 255, 0.38) !important;
+
+    box-shadow:
+        0 14px 32px rgba(0, 0, 0, 0.24),
+        0 0 22px rgba(139, 92, 246, 0.10),
+        inset 0 1px 0 rgba(220, 190, 255, 0.06) !important;
+}
+
+/* Soft purple glow */
+.hero-status-card::before {
+    content: "";
+
+    position: absolute;
+
+    width: 120px;
+    height: 120px;
+
+    top: -65px;
+    right: -40px;
+
+    border-radius: 50%;
+
+    background: rgba(139, 92, 246, 0.13);
+
+    filter: blur(28px);
+
+    pointer-events: none;
+}
+
+/* Bottom subtle light */
+.hero-status-card::after {
+    content: "";
+
+    position: absolute;
+
+    left: 18px;
+    right: 18px;
+    bottom: 0;
+
+    height: 1px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(165, 105, 255, 0.28),
+            transparent
+        );
+
+    opacity: 0.7;
+}
+
+/* Card icon */
+.hero-status-card .status-icon {
+    flex-shrink: 0;
+
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 12px;
+
+    background:
+        radial-gradient(
+            circle at 35% 30%,
+            rgba(190, 135, 255, 0.25),
+            rgba(91, 45, 180, 0.12) 55%,
+            rgba(15, 9, 38, 0.65)
+        );
+
+    border: 1px solid rgba(175, 105, 255, 0.22);
+
+    color: #c7a6ff;
+
+    box-shadow:
+        0 0 14px rgba(139, 92, 246, 0.10),
+        inset 0 0 10px rgba(175, 105, 255, 0.06);
+}
+
+/* Text area */
+.hero-status-card .status-content {
+    min-width: 0;
+    margin-left: 12px;
+}
+
+.hero-status-card .status-content strong {
+    display: block;
+
+    color: #eee8ff !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+}
+
+.hero-status-card .status-content span {
+    display: block;
+
+    margin-top: 4px;
+
+    color: #817b9f !important;
+    font-size: 9px !important;
+    line-height: 1.5;
+}
+
+/* Value */
+.hero-status-card .status-value {
+    margin-left: auto;
+
+    color: #c4a0ff !important;
+
+    font-size: 15px !important;
+    font-weight: 700 !important;
+
+    text-shadow:
+        0 0 10px rgba(155, 95, 255, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 650px) {
+    .hero-status-cards {
+        grid-template-columns: 1fr !important;
+    }
+
+    .hero-status-card {
+        height: 110px !important;
+        min-height: 110px !important;
+    }
+}
+/* =========================================================
+   ZARVIS QUICK ACTIONS — PURPLE GLASS POLISH
+   ========================================================= */
+
+.hero-quick-actions {
+    position: relative;
+    z-index: 25;
+
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 9px !important;
+    margin-top: 2px !important;
+}
+
+.hero-quick-actions button {
+    min-height: 36px;
+
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+
+    padding: 8px 13px !important;
+
+    border-radius: 10px !important;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(34, 22, 75, 0.76),
+            rgba(11, 8, 35, 0.72)
+        ) !important;
+
+    border: 1px solid rgba(145, 85, 255, 0.18) !important;
+
+    color: #aaa0c9 !important;
+
+    box-shadow:
+        inset 0 0 12px rgba(139, 92, 246, 0.04),
+        0 5px 15px rgba(0, 0, 0, 0.12);
+
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        box-shadow 0.2s ease !important;
+}
+
+.hero-quick-actions button:hover {
+    transform: translateY(-2px);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(60, 35, 110, 0.82),
+            rgba(18, 11, 48, 0.78)
+        ) !important;
+
+    border-color: rgba(175, 115, 255, 0.38) !important;
+
+    color: #e0d3ff !important;
+
+    box-shadow:
+        0 8px 20px rgba(0, 0, 0, 0.18),
+        0 0 18px rgba(139, 92, 246, 0.12);
+}
+
+.hero-quick-actions button:active {
+    transform: scale(0.96);
+}
+
+/* Quick action icons */
+.hero-quick-actions button svg {
+    width: 14px;
+    height: 14px;
+
+    color: #b58cff;
+
+    filter:
+        drop-shadow(
+            0 0 5px rgba(155, 90, 255, 0.45)
+        );
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero-quick-actions {
+        gap: 7px !important;
+    }
+
+    .hero-quick-actions button {
+        padding: 7px 10px !important;
+        font-size: 10px;
+    }
+}
+/* =========================================================
+   ZARVIS HERO SEARCH — FINAL POLISH
+   ========================================================= */
+
+.hero-search-bar {
+    border-color: rgba(165, 105, 255, 0.38) !important;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(28, 18, 65, 0.90),
+            rgba(7, 7, 28, 0.88)
+        ) !important;
+
+    box-shadow:
+        0 14px 38px rgba(0, 0, 0, 0.30),
+        0 0 28px rgba(139, 92, 246, 0.10),
+        inset 0 1px 0 rgba(220, 190, 255, 0.06) !important;
+}
+
+.hero-search-bar:hover {
+    border-color: rgba(180, 125, 255, 0.50) !important;
+
+    box-shadow:
+        0 14px 38px rgba(0, 0, 0, 0.30),
+        0 0 32px rgba(139, 92, 246, 0.14),
+        inset 0 1px 0 rgba(220, 190, 255, 0.07) !important;
+}
+
+.hero-search-bar:focus-within {
+    border-color: rgba(185, 135, 255, 0.62) !important;
+
+    box-shadow:
+        0 14px 40px rgba(0, 0, 0, 0.32),
+        0 0 35px rgba(139, 92, 246, 0.18),
+        inset 0 1px 0 rgba(225, 200, 255, 0.08) !important;
+}
+
+/* Search icon */
+.hero-search-logo {
+    background:
+        radial-gradient(
+            circle at 35% 30%,
+            rgba(195, 145, 255, 0.30),
+            rgba(95, 45, 190, 0.15) 55%,
+            rgba(18, 10, 45, 0.70)
+        ) !important;
+
+    border-color: rgba(175, 110, 255, 0.38) !important;
+
+    color: #cba8ff !important;
+
+    box-shadow:
+        0 0 14px rgba(139, 92, 246, 0.16),
+        inset 0 0 12px rgba(175, 105, 255, 0.08) !important;
+}
+
+.hero-search-logo svg {
+    color: #d0b0ff !important;
+
+    filter:
+        drop-shadow(0 0 6px rgba(175, 105, 255, 0.70))
+        drop-shadow(0 0 12px rgba(139, 92, 246, 0.25));
+}
+
+/* Input */
+.hero-search-bar input {
+    color: #f0ebff !important;
+}
+
+.hero-search-bar input::placeholder {
+    color: #77709c !important;
+}
+
+/* Voice button */
+.hero-search-voice {
+    background:
+        rgba(38, 23, 76, 0.72) !important;
+
+    border-color:
+        rgba(160, 100, 255, 0.28) !important;
+
+    color: #c2a0ff !important;
+}
+
+.hero-search-voice:hover {
+    background:
+        rgba(58, 33, 105, 0.86) !important;
+
+    border-color:
+        rgba(190, 135, 255, 0.52) !important;
+
+    color: #e1d2ff !important;
+}
+
+/* Send button */
+.hero-search-send {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(155, 85, 255, 0.95),
+            rgba(91, 50, 185, 0.95)
+        ) !important;
+
+    border-color:
+        rgba(205, 175, 255, 0.42) !important;
+
+    box-shadow:
+        0 0 16px rgba(139, 92, 246, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.17) !important;
+}
+
+.hero-search-send:hover {
+    box-shadow:
+        0 0 23px rgba(139, 92, 246, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.20) !important;
+}
+/* =========================================================
+   ZARVIS DASHBOARD — SPACING & ALIGNMENT
+   ========================================================= */
+
+.dashboard {
+    width: 100% !important;
+    max-width: 1500px !important;
+    margin: 0 auto !important;
+}
+
+/* Hero */
+.dashboard-hero {
+    width: 100% !important;
+    margin-top: 0 !important;
+    margin-bottom: 18px !important;
+}
+
+/* Stats section */
+.stats-grid {
+    width: 100% !important;
+    margin-top: 4px !important;
+    margin-bottom: 24px !important;
+}
+
+/* Quick section */
+.quick-section {
+    width: 100% !important;
+    margin-top: 4px !important;
+    margin-bottom: 18px !important;
+}
+
+/* Main dashboard sections */
+.zarvis-core-card,
+.dashboard-main-grid,
+.dashboard-secondary-grid,
+.agent-network {
+    width: calc(100% - 36px) !important;
+    margin-left: 18px !important;
+    margin-right: 18px !important;
+}
+
+/* Cards should never overflow */
+.stats-grid > *,
+.dashboard-main-grid > *,
+.dashboard-secondary-grid > *,
+.agent-network > *,
+.zarvis-core-card > * {
+    min-width: 0;
+}
+
+/* Smooth section separation */
+.stats-grid,
+.quick-section,
+.zarvis-core-card,
+.dashboard-main-grid,
+.dashboard-secondary-grid,
+.agent-network {
+    position: relative;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 768px) {
+    .dashboard-hero {
+        margin-bottom: 14px !important;
+    }
+
+    .stats-grid,
+    .quick-section {
+        margin-bottom: 14px !important;
+    }
+
+    .zarvis-core-card,
+    .dashboard-main-grid,
+    .dashboard-secondary-grid,
+    .agent-network {
+        width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+}
+/* =========================================================
+   ZARVIS STATS CARDS — PURPLE GLASS
+   ========================================================= */
+
+.stats-grid {
+    gap: 14px !important;
+}
+
+.stats-grid > * {
+    position: relative;
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(25, 17, 58, 0.78),
+            rgba(8, 7, 29, 0.72)
+        ) !important;
+
+    border: 1px solid rgba(145, 85, 255, 0.18) !important;
+
+    border-radius: 15px !important;
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(220, 190, 255, 0.04) !important;
+
+    backdrop-filter: blur(16px);
+
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease !important;
+}
+
+.stats-grid > *::before {
+    content: "";
+
+    position: absolute;
+
+    width: 90px;
+    height: 90px;
+
+    top: -45px;
+    right: -30px;
+
+    border-radius: 50%;
+
+    background: rgba(139, 92, 246, 0.12);
+
+    filter: blur(22px);
+
+    pointer-events: none;
+}
+
+.stats-grid > *:hover {
+    transform: translateY(-2px);
+
+    border-color: rgba(170, 110, 255, 0.32) !important;
+
+    box-shadow:
+        0 12px 28px rgba(0, 0, 0, 0.20),
+        0 0 20px rgba(139, 92, 246, 0.08) !important;
+}
+
+/* Card headings */
+.stats-grid h3,
+.stats-grid strong {
+    color: #eee8ff !important;
+}
+
+/* Supporting text */
+.stats-grid p,
+.stats-grid span {
+    color: #8580a6 !important;
+}
+
+/* Numbers */
+.stats-grid .stat-value {
+    color: #c4a0ff !important;
+
+    text-shadow:
+        0 0 10px rgba(155, 95, 255, 0.24);
+}
+
+/* Icons */
+.stats-grid svg {
+    color: #b58cff !important;
+
+    filter:
+        drop-shadow(
+            0 0 5px rgba(155, 90, 255, 0.45)
+        );
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .stats-grid {
+        gap: 10px !important;
+    }
+
+    .stats-grid > * {
+        border-radius: 13px !important;
+    }
+}
+/* =========================================================
+   ZARVIS TASK + SCHEDULE CARDS
+   ========================================================= */
+
+.dashboard-main-grid,
+.dashboard-secondary-grid {
+    gap: 14px !important;
+}
+
+.task-card,
+.schedule-card {
+    background:
+        linear-gradient(
+            145deg,
+            rgba(24, 16, 55, 0.78),
+            rgba(8, 7, 28, 0.72)
+        ) !important;
+
+    border: 1px solid rgba(145, 85, 255, 0.17) !important;
+    border-radius: 17px !important;
+
+    box-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(220, 190, 255, 0.04) !important;
+
+    backdrop-filter: blur(16px);
+}
+
+/* Card headings */
+.task-card h3,
+.schedule-card h3 {
+    color: #eee8ff !important;
+}
+
+/* Task / schedule rows */
+.task-card li,
+.schedule-card li,
+.task-card .task-item,
+.schedule-card .schedule-item {
+    border: 1px solid rgba(145, 85, 255, 0.10) !important;
+
+    background:
+        rgba(18, 12, 45, 0.42) !important;
+
+    border-radius: 11px !important;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease !important;
+}
+
+.task-card li:hover,
+.schedule-card li:hover,
+.task-card .task-item:hover,
+.schedule-card .schedule-item:hover {
+    background:
+        rgba(40, 23, 78, 0.58) !important;
+
+    border-color:
+        rgba(160, 100, 255, 0.25) !important;
+
+    transform: translateX(2px);
+}
+
+/* Main text */
+.task-card strong,
+.schedule-card strong {
+    color: #e8e0fa !important;
+}
+
+/* Secondary text */
+.task-card span,
+.task-card small,
+.schedule-card span,
+.schedule-card small {
+    color: #8580a6 !important;
+}
+
+/* Icons */
+.task-card svg,
+.schedule-card svg {
+    color: #b58cff !important;
+
+    filter:
+        drop-shadow(
+            0 0 5px rgba(155, 90, 255, 0.40)
+        );
+}
+
+/* Status / completed indicators */
+.task-card .completed,
+.task-card .done {
+    color: #32e6a1 !important;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .dashboard-main-grid,
+    .dashboard-secondary-grid {
+        gap: 10px !important;
+    }
+
+    .task-card,
+    .schedule-card {
+        border-radius: 14px !important;
+    }
+}
+/* =========================================================
+   ZARVIS TIMER + UPCOMING TASKS
+   ========================================================= */
+
+.timer-card,
+.upcoming-tasks-card {
+    position: relative !important;
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(24, 16, 56, 0.80),
+            rgba(7, 7, 28, 0.74)
+        ) !important;
+
+    border: 1px solid rgba(145, 85, 255, 0.18) !important;
+    border-radius: 17px !important;
+
+    box-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.17),
+        inset 0 1px 0 rgba(220, 190, 255, 0.04) !important;
+
+    backdrop-filter: blur(16px);
+}
+
+.timer-card::before,
+.upcoming-tasks-card::before {
+    content: "";
+
+    position: absolute;
+
+    width: 110px;
+    height: 110px;
+
+    top: -55px;
+    right: -35px;
+
+    border-radius: 50%;
+
+    background: rgba(139, 92, 246, 0.12);
+
+    filter: blur(26px);
+
+    pointer-events: none;
+}
+
+/* Headings */
+.timer-card h3,
+.upcoming-tasks-card h3 {
+    color: #eee8ff !important;
+}
+
+/* Timer numbers */
+.timer-card .timer-value,
+.timer-card .time,
+.timer-card strong {
+    color: #c6a3ff !important;
+
+    text-shadow:
+        0 0 14px rgba(155, 95, 255, 0.28);
+}
+
+/* Timer icon */
+.timer-card svg {
+    color: #b58cff !important;
+
+    filter:
+        drop-shadow(
+            0 0 7px rgba(155, 90, 255, 0.48)
+        );
+}
+
+/* Upcoming task rows */
+.upcoming-tasks-card li,
+.upcoming-tasks-card .task-item {
+    background: rgba(18, 12, 45, 0.42) !important;
+
+    border: 1px solid rgba(145, 85, 255, 0.10) !important;
+
+    border-radius: 11px !important;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease !important;
+}
+
+.upcoming-tasks-card li:hover,
+.upcoming-tasks-card .task-item:hover {
+    background: rgba(40, 23, 78, 0.58) !important;
+
+    border-color: rgba(160, 100, 255, 0.25) !important;
+
+    transform: translateX(2px);
+}
+
+/* Task text */
+.upcoming-tasks-card strong {
+    color: #e8e0fa !important;
+}
+
+.upcoming-tasks-card span,
+.upcoming-tasks-card small {
+    color: #8580a6 !important;
+}
+
+/* Icons */
+.upcoming-tasks-card svg {
+    color: #b58cff !important;
+
+    filter:
+        drop-shadow(
+            0 0 5px rgba(155, 90, 255, 0.40)
+        );
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .timer-card,
+    .upcoming-tasks-card {
+        border-radius: 14px !important;
+    }
+}
+/* =========================================================
+   ZARVIS CORE — PREMIUM PURPLE GLASS
+   ========================================================= */
+
+.zarvis-core-card {
+    position: relative !important;
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(28, 18, 65, 0.82),
+            rgba(7, 6, 27, 0.76)
+        ) !important;
+
+    border: 1px solid rgba(150, 90, 255, 0.22) !important;
+    border-radius: 18px !important;
+
+    box-shadow:
+        0 12px 32px rgba(0, 0, 0, 0.20),
+        0 0 25px rgba(139, 92, 246, 0.07),
+        inset 0 1px 0 rgba(225, 205, 255, 0.05) !important;
+
+    backdrop-filter: blur(18px);
+}
+
+/* Soft cosmic glow */
+.zarvis-core-card::before {
+    content: "";
+
+    position: absolute;
+
+    width: 180px;
+    height: 180px;
+
+    top: -90px;
+    right: 8%;
+
+    border-radius: 50%;
+
+    background: rgba(139, 92, 246, 0.10);
+
+    filter: blur(45px);
+
+    pointer-events: none;
+}
+
+/* Bottom purple line */
+.zarvis-core-card::after {
+    content: "";
+
+    position: absolute;
+
+    left: 8%;
+    right: 8%;
+    bottom: 0;
+
+    height: 1px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(165, 105, 255, 0.35),
+            transparent
+        );
+}
+
+/* Core heading */
+.zarvis-core-card h3,
+.zarvis-core-card strong {
+    color: #eee8ff !important;
+}
+
+/* Supporting text */
+.zarvis-core-card p,
+.zarvis-core-card span {
+    color: #8580a6 !important;
+}
+
+/* Core status */
+.zarvis-core-card .status,
+.zarvis-core-card .core-status {
+    color: #b995ff !important;
+
+    text-shadow:
+        0 0 10px rgba(155, 95, 255, 0.25);
+}
+
+/* Icons */
+.zarvis-core-card svg {
+    color: #b58cff !important;
+
+    filter:
+        drop-shadow(
+            0 0 6px rgba(155, 90, 255, 0.48)
+        );
+}
+
+/* Hover */
+.zarvis-core-card:hover {
+    border-color: rgba(170, 110, 255, 0.32) !important;
+
+    box-shadow:
+        0 14px 35px rgba(0, 0, 0, 0.22),
+        0 0 28px rgba(139, 92, 246, 0.10),
+        inset 0 1px 0 rgba(225, 205, 255, 0.06) !important;
+}
+/* =========================================================
+   ZARVIS AGENT NETWORK — PURPLE GLASS
+   ========================================================= */
+
+.agent-network {
+    position: relative !important;
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(24, 16, 56, 0.80),
+            rgba(7, 6, 28, 0.74)
+        ) !important;
+
+    border: 1px solid rgba(145, 85, 255, 0.18) !important;
+    border-radius: 18px !important;
+
+    box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(225, 205, 255, 0.04) !important;
+
+    backdrop-filter: blur(18px);
+}
+
+/* Soft purple glow */
+.agent-network::before {
+    content: "";
+
+    position: absolute;
+
+    width: 160px;
+    height: 160px;
+
+    top: -80px;
+    left: 20%;
+
+    border-radius: 50%;
+
+    background: rgba(139, 92, 246, 0.10);
+
+    filter: blur(40px);
+
+    pointer-events: none;
+}
+
+/* Heading */
+.agent-network h3,
+.agent-network strong {
+    color: #eee8ff !important;
+}
+
+/* Supporting text */
+.agent-network p,
+.agent-network span {
+    color: #8580a6 !important;
+}
+
+/* Agent items */
+.agent-network .agent-item,
+.agent-network li {
+    background: rgba(18, 12, 45, 0.44) !important;
+
+    border: 1px solid rgba(145, 85, 255, 0.10) !important;
+
+    border-radius: 11px !important;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease !important;
+}
+
+.agent-network .agent-item:hover,
+.agent-network li:hover {
+    background: rgba(42, 24, 80, 0.58) !important;
+
+    border-color: rgba(165, 105, 255, 0.26) !important;
+
+    transform: translateY(-2px);
+}
+
+/* Agent icons */
+.agent-network svg {
+    color: #b58cff !important;
+
+    filter:
+        drop-shadow(
+            0 0 6px rgba(155, 90, 255, 0.45)
+        );
+}
+
+/* Online status */
+.agent-network .online,
+.agent-network .active {
+    color: #32e6a1 !important;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .agent-network {
+        border-radius: 14px !important;
+    }
+}
+/* =========================================================
+   ZARVIS MEMORY + ACTIVITY — PURPLE GLASS
+   ========================================================= */
+
+.memory-card,
+.activity-card,
+.memory-snapshot,
+.activity-timeline {
+    position: relative;
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(24, 16, 56, 0.80),
+            rgba(7, 6, 28, 0.74)
+        ) !important;
+
+    border: 1px solid rgba(145, 85, 255, 0.17) !important;
+    border-radius: 17px !important;
+
+    box-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.17),
+        inset 0 1px 0 rgba(225, 205, 255, 0.04) !important;
+
+    backdrop-filter: blur(16px);
+}
+
+/* Soft purple glow */
+.memory-card::before,
+.activity-card::before,
+.memory-snapshot::before,
+.activity-timeline::before {
+    content: "";
+
+    position: absolute;
+
+    width: 120px;
+    height: 120px;
+
+    top: -60px;
+    right: -35px;
+
+    border-radius: 50%;
+
+    background: rgba(139, 92, 246, 0.10);
+
+    filter: blur(28px);
+
+    pointer-events: none;
+}
+
+/* Headings */
+.memory-card h3,
+.activity-card h3,
+.memory-snapshot h3,
+.activity-timeline h3 {
+    color: #eee8ff !important;
+}
+
+/* Text */
+.memory-card p,
+.memory-card span,
+.activity-card p,
+.activity-card span,
+.memory-snapshot p,
+.memory-snapshot span,
+.activity-timeline p,
+.activity-timeline span {
+    color: #8580a6 !important;
+}
+
+/* Items */
+.memory-card li,
+.activity-card li,
+.memory-snapshot li,
+.activity-timeline li {
+    background: rgba(18, 12, 45, 0.42) !important;
+
+    border: 1px solid rgba(145, 85, 255, 0.10) !important;
+
+    border-radius: 11px !important;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease !important;
+}
+
+.memory-card li:hover,
+.activity-card li:hover,
+.memory-snapshot li:hover,
+.activity-timeline li:hover {
+    background: rgba(40, 23, 78, 0.56) !important;
+
+    border-color: rgba(165, 105, 255, 0.24) !important;
+
+    transform: translateX(2px);
+}
+
+/* Icons */
+.memory-card svg,
+.activity-card svg,
+.memory-snapshot svg,
+.activity-timeline svg {
+    color: #b58cff !important;
+
+    filter:
+        drop-shadow(
+            0 0 6px rgba(155, 90, 255, 0.44)
+        );
+}
+
+/* Active activity */
+.activity-card .active,
+.activity-timeline .active {
+    color: #32e6a1 !important;
+}
+
+@media (max-width: 768px) {
+    .memory-card,
+    .activity-card,
+    .memory-snapshot,
+    .activity-timeline {
+        border-radius: 14px !important;
+    }
+}
+/* =========================================================
+   ZARVIS QUICK COMMANDS — PURPLE GLASS
+   ========================================================= */
+
+.quick-commands,
+.command-center {
+    position: relative;
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(25, 17, 58, 0.80),
+            rgba(7, 6, 28, 0.74)
+        ) !important;
+
+    border: 1px solid rgba(145, 85, 255, 0.18) !important;
+    border-radius: 17px !important;
+
+    box-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.17),
+        inset 0 1px 0 rgba(225, 205, 255, 0.04) !important;
+
+    backdrop-filter: blur(16px);
+}
+
+/* Heading */
+.quick-commands h3,
+.command-center h3 {
+    color: #eee8ff !important;
+}
+
+/* Command buttons */
+.quick-commands button,
+.command-center button {
+    background:
+        linear-gradient(
+            145deg,
+            rgba(34, 22, 75, 0.70),
+            rgba(11, 8, 35, 0.68)
+        ) !important;
+
+    border: 1px solid rgba(145, 85, 255, 0.14) !important;
+
+    border-radius: 11px !important;
+
+    color: #aaa0c9 !important;
+
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease !important;
+}
+
+.quick-commands button:hover,
+.command-center button:hover {
+    transform: translateY(-2px);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(58, 34, 108, 0.78),
+            rgba(18, 11, 48, 0.75)
+        ) !important;
+
+    border-color: rgba(170, 110, 255, 0.32) !important;
+
+    color: #e1d4ff !important;
+}
+
+/* Icons */
+.quick-commands svg,
+.command-center svg {
+    color: #b58cff !important;
+
+    filter:
+        drop-shadow(
+            0 0 6px rgba(155, 90, 255, 0.45)
+        );
+}
+
+/* Supporting text */
+.quick-commands span,
+.command-center span {
+    color: #8580a6 !important;
+}
+/* =========================================================
+   ZARVIS DASHBOARD — RESPONSIVE POLISH
+   ========================================================= */
+
+@media (max-width: 1200px) {
+    .dashboard-hero {
+        grid-template-columns: 46% 54% !important;
+    }
+
+    .dashboard-welcome {
+        padding-left: 28px !important;
+    }
+
+    .hero-search-bar {
+        width: min(580px, 72%) !important;
+    }
+}
+
+@media (max-width: 900px) {
+    .dashboard-hero {
+        grid-template-columns: 1fr !important;
+        min-height: 700px !important;
+        padding-bottom: 75px !important;
+    }
+
+    .dashboard-welcome {
+        padding: 35px 24px 0 !important;
+        text-align: center;
+        align-items: center;
+    }
+
+    .hero-status-cards {
+        max-width: 620px !important;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .hero-quick-actions {
+        justify-content: center;
+    }
+
+    .dashboard-hero > .zarvis-robot-area {
+        min-height: 360px;
+    }
+
+    .hero-search-bar {
+        width: min(620px, 82%) !important;
+        bottom: 18px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-hero {
+        min-height: 760px !important;
+    }
+
+    .dashboard-welcome {
+        padding: 28px 18px 0 !important;
+    }
+
+    .dashboard-welcome h1 {
+        font-size: clamp(28px, 7vw, 38px) !important;
+    }
+
+    .dashboard-welcome p {
+        max-width: 520px;
+    }
+
+    .hero-status-cards {
+        width: 100% !important;
+    }
+
+    .hero-search-bar {
+        width: calc(100% - 32px) !important;
+        height: 48px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-hero {
+        min-height: 730px !important;
+    }
+
+    .dashboard-welcome {
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+    }
+
+    .hero-quick-actions button {
+        font-size: 9px !important;
+    }
+
+    .hero-search-bar {
+        width: calc(100% - 24px) !important;
+        height: 46px !important;
+        padding: 0 10px !important;
+    }
+
+    .hero-search-logo {
+        width: 31px !important;
+        height: 31px !important;
+    }
+
+    .hero-search-voice,
+    .hero-search-send {
+        width: 32px !important;
+        height: 32px !important;
+    }
+}
+/* =========================================================
+   HERO FINAL ALIGNMENT
+   ========================================================= */
+
+.dashboard-hero {
+    margin-top: -12px !important;
+    padding-top: 0 !important;
+    transform: none !important;
+    align-items: center !important;
+}
+
+.dashboard-welcome {
+    transform: translateY(-22px) !important;
+}
+
+.dashboard-hero > .zarvis-robot-area {
+    transform: translateY(-22px) !important;
+}
+
+.hero-search-bar {
+    bottom: 16px !important;
+}
+
+.stats-grid {
+    margin-top: 0 !important;
+}
+
+@media (max-width: 900px) {
+    .dashboard-hero {
+        margin-top: -8px !important;
+    }
+
+    .dashboard-welcome,
+    .dashboard-hero > .zarvis-robot-area {
+        transform: translateY(-15px) !important;
+    }
+}

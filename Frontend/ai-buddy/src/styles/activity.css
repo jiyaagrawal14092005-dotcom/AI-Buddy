@@ -827,3 +827,134 @@
         gap: 8px;
     }
 }
+/* =========================================================
+   ZARVIS — ACTIVITY HUD POLISH
+========================================================= */
+
+.activity-card {
+    position: relative;
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(22, 14, 55, 0.86),
+            rgba(6, 7, 28, 0.84)
+        ) !important;
+
+    border: 1px solid
+        rgba(150, 90, 255, 0.24) !important;
+
+    box-shadow:
+        0 12px 35px rgba(0, 0, 0, 0.24),
+        0 0 24px rgba(130, 65, 240, 0.06);
+}
+
+/* Subtle technical glow */
+
+.activity-card::after {
+    content: "";
+
+    position: absolute;
+    top: 0;
+    left: 18px;
+    right: 18px;
+    height: 1px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(180, 110, 255, 0.55),
+            rgba(125, 85, 255, 0.25),
+            transparent
+        );
+
+    opacity: 0.65;
+}
+
+
+/* Activity heading */
+
+.activity-card h3 {
+    color: #eeeaff !important;
+    font-weight: 600 !important;
+}
+
+
+/* Activity entries */
+
+.activity-card li,
+.activity-card .activity-item {
+    position: relative;
+
+    padding-left: 14px;
+
+    border-left:
+        1px solid
+        rgba(145, 85, 255, 0.18);
+
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease;
+}
+
+
+/* Timeline glow */
+
+.activity-card li::before,
+.activity-card .activity-item::before {
+    content: "";
+
+    position: absolute;
+
+    left: -4px;
+    top: 50%;
+
+    width: 6px;
+    height: 6px;
+
+    transform: translateY(-50%);
+
+    border-radius: 50%;
+
+    background: #b47cff;
+
+    box-shadow:
+        0 0 7px
+        rgba(175, 105, 255, 0.75),
+        0 0 15px
+        rgba(140, 65, 255, 0.35);
+}
+
+
+/* Hover */
+
+.activity-card li:hover,
+.activity-card .activity-item:hover {
+    border-left-color:
+        rgba(175, 105, 255, 0.55);
+
+    background:
+        rgba(120, 65, 220, 0.045);
+}
+
+
+/* Metadata */
+
+.activity-card small {
+    color: #716b98 !important;
+}
+
+
+/* Icons */
+
+.activity-card svg {
+    color: #b07cff !important;
+
+    filter:
+        drop-shadow(
+            0 0 5px
+            rgba(165, 90, 255, 0.45)
+        );
+}

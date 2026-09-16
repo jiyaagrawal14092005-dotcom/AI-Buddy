@@ -23897,3 +23897,917 @@ button {
         margin-right: 12px !important;
     }
 }
+/* =========================================================
+   SIDEBAR BOTTOM SECTIONS
+   Notifications + Account BEFORE Zarvis Core
+========================================================= */
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* Navigation takes its own space */
+
+.sidebar-nav {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+
+/* =========================================================
+   NOTIFICATION + ACCOUNT
+========================================================= */
+
+.sidebar-account-area {
+    flex-shrink: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+
+    margin: 10px 10px 8px;
+    padding: 10px 0 0;
+
+    border-top: 1px solid rgba(139, 92, 246, 0.14);
+}
+
+
+/* =========================================================
+   NOTIFICATION
+========================================================= */
+
+.sidebar-bottom-action {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 9px 10px;
+
+    border-radius: 11px;
+
+    background: rgba(20, 14, 48, 0.48);
+
+    border: 1px solid rgba(139, 92, 246, 0.10);
+
+    color: var(--text-primary);
+
+    text-align: left;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+
+.sidebar-bottom-action:hover {
+    background: rgba(45, 27, 85, 0.65);
+
+    border-color: rgba(155, 95, 255, 0.28);
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 0 16px rgba(139, 92, 246, 0.10);
+}
+
+
+.sidebar-bottom-action-icon {
+    position: relative;
+
+    width: 30px;
+    height: 30px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    border-radius: 9px;
+
+    background: rgba(139, 92, 246, 0.12);
+
+    border: 1px solid rgba(155, 95, 255, 0.18);
+
+    color: #c29aff;
+}
+
+
+.notification-dot {
+    position: absolute;
+
+    top: 4px;
+    right: 4px;
+
+    width: 6px;
+    height: 6px;
+
+    border-radius: 50%;
+
+    background: #c084fc;
+
+    box-shadow:
+        0 0 7px rgba(192, 132, 252, 0.9);
+}
+
+
+.sidebar-bottom-action-text {
+    display: flex;
+    flex-direction: column;
+
+    gap: 2px;
+
+    min-width: 0;
+}
+
+
+.sidebar-bottom-action-text strong {
+    font-size: 11px;
+    font-weight: 600;
+
+    color: #eeeaff;
+}
+
+
+.sidebar-bottom-action-text small {
+    font-size: 9px;
+
+    color: #77709c;
+}
+
+
+/* =========================================================
+   USER ACCOUNT
+========================================================= */
+
+.sidebar-user-account {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 9px 10px;
+
+    border-radius: 11px;
+
+    background: rgba(15, 11, 38, 0.55);
+
+    border: 1px solid rgba(139, 92, 246, 0.10);
+
+    color: var(--text-primary);
+
+    text-align: left;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+
+.sidebar-user-account:hover {
+    background: rgba(42, 25, 78, 0.65);
+
+    border-color: rgba(155, 95, 255, 0.28);
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 0 16px rgba(139, 92, 246, 0.10);
+}
+
+
+.sidebar-user-avatar {
+    width: 30px;
+    height: 30px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(155, 90, 255, 0.35),
+            rgba(70, 35, 135, 0.20)
+        );
+
+    border: 1px solid rgba(175, 110, 255, 0.28);
+
+    color: #c9a6ff;
+
+    box-shadow:
+        0 0 10px rgba(139, 92, 246, 0.12),
+        inset 0 0 8px rgba(175, 105, 255, 0.08);
+}
+
+
+.sidebar-user-info {
+    flex: 1;
+
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 2px;
+}
+
+
+.sidebar-user-info strong {
+    font-size: 11px;
+
+    font-weight: 600;
+
+    color: #f0edff;
+}
+
+
+.sidebar-user-info span {
+    font-size: 9px;
+
+    color: #77709c;
+
+    white-space: nowrap;
+}
+
+
+.sidebar-user-arrow {
+    flex-shrink: 0;
+
+    color: #6f6595;
+
+    transition:
+        color 0.2s ease,
+        transform 0.2s ease;
+}
+
+
+.sidebar-user-account:hover .sidebar-user-arrow {
+    color: #b990ff;
+
+    transform: translateX(2px);
+}
+
+
+/* =========================================================
+   ZARVIS CORE
+========================================================= */
+
+.sidebar-bottom {
+    flex-shrink: 0;
+
+    margin-top: 0;
+}
+
+
+/* =========================================================
+   SMALL SCREENS
+========================================================= */
+
+@media (max-height: 760px) {
+
+    .sidebar-account-area {
+        margin-top: 6px;
+        margin-bottom: 5px;
+        padding-top: 7px;
+    }
+
+    .sidebar-bottom-action,
+    .sidebar-user-account {
+        padding-top: 7px;
+        padding-bottom: 7px;
+    }
+
+}
+
+
+@media (max-width: 768px) {
+
+    .sidebar-account-area {
+        margin-left: 8px;
+        margin-right: 8px;
+    }
+
+}
+/* =========================================================
+   SIDEBAR ACCOUNT + NOTIFICATIONS
+   ========================================================= */
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-nav {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Bottom account area */
+.sidebar-account-area {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+
+    margin: 10px 10px 8px;
+    padding: 10px 0 0;
+
+    border-top: 1px solid rgba(139, 92, 246, 0.14);
+}
+
+/* Notification wrapper */
+.sidebar-notification-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+/* Notification button */
+.sidebar-bottom-action {
+    position: relative !important;
+
+    width: 100%;
+    min-height: 52px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 9px 11px;
+
+    border-radius: 12px;
+
+    background: rgba(18, 12, 45, 0.55);
+    border: 1px solid rgba(139, 92, 246, 0.12);
+
+    color: var(--text-secondary);
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.sidebar-bottom-action:hover,
+.sidebar-bottom-action.notification-open {
+    background: rgba(45, 25, 85, 0.65);
+    border-color: rgba(139, 92, 246, 0.30);
+}
+
+/* Notification icon */
+.sidebar-bottom-action-icon {
+    width: 32px;
+    height: 32px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    position: relative;
+    flex-shrink: 0;
+
+    border-radius: 9px;
+
+    background: rgba(139, 92, 246, 0.12);
+    color: #bd9aff;
+}
+
+/* Red notification dot */
+.notification-dot {
+    position: absolute;
+
+    width: 6px;
+    height: 6px;
+
+    top: 3px;
+    right: 3px;
+
+    border-radius: 50%;
+
+    background: #d946ef;
+
+    box-shadow:
+        0 0 7px rgba(217, 70, 239, 0.8);
+}
+
+/* Notification text */
+.sidebar-bottom-action-text {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    margin-left: 10px;
+
+    text-align: left;
+}
+
+.sidebar-bottom-action-text strong {
+    font-size: 11px;
+    font-weight: 700;
+    color: #eeeaff;
+}
+
+.sidebar-bottom-action-text small {
+    margin-top: 2px;
+
+    font-size: 9px;
+    color: #7777a8;
+}
+
+/* Arrow */
+.sidebar-notification-arrow {
+    margin-left: auto;
+    color: #7777a8;
+
+    transition: transform 0.2s ease;
+}
+
+.sidebar-notification-arrow.open {
+    transform: rotate(90deg);
+}
+
+/* =========================================================
+   NOTIFICATION PANEL
+   ========================================================= */
+
+.sidebar-notification-panel {
+    position: absolute;
+
+    left: calc(100% + 10px);
+    bottom: 0;
+
+    width: 300px;
+
+    padding: 14px;
+
+    border-radius: 16px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(25, 17, 58, 0.98),
+            rgba(7, 7, 27, 0.98)
+        );
+
+    border: 1px solid rgba(139, 92, 246, 0.30);
+
+    box-shadow:
+        0 18px 45px rgba(0, 0, 0, 0.45),
+        0 0 25px rgba(139, 92, 246, 0.10);
+
+    backdrop-filter: blur(20px);
+
+    z-index: 999;
+}
+
+/* Panel header */
+.notification-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding-bottom: 10px;
+    margin-bottom: 8px;
+
+    border-bottom: 1px solid rgba(139, 92, 246, 0.12);
+}
+
+.notification-panel-header div {
+    display: flex;
+    flex-direction: column;
+}
+
+.notification-panel-header span {
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: #9a72ff;
+}
+
+.notification-panel-header strong {
+    margin-top: 3px;
+
+    font-size: 13px;
+    color: #f3efff;
+}
+
+.notification-close {
+    width: 27px;
+    height: 27px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 8px;
+
+    background: rgba(139, 92, 246, 0.10);
+    border: 1px solid rgba(139, 92, 246, 0.16);
+
+    color: #a995c9;
+}
+
+.notification-close:hover {
+    background: rgba(139, 92, 246, 0.20);
+    color: white;
+}
+
+/* Notification item */
+.sidebar-notification-item {
+    display: flex;
+    gap: 10px;
+
+    padding: 10px 7px;
+
+    border-bottom: 1px solid rgba(139, 92, 246, 0.08);
+}
+
+.sidebar-notification-icon {
+    width: 28px;
+    height: 28px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 8px;
+
+    background: rgba(50, 230, 161, 0.10);
+    color: #32e6a1;
+}
+
+.sidebar-notification-icon.schedule {
+    background: rgba(255, 209, 102, 0.10);
+    color: #ffd166;
+}
+
+.sidebar-notification-icon.workflow {
+    background: rgba(139, 92, 246, 0.12);
+    color: #b58cff;
+}
+
+.sidebar-notification-content {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-notification-content strong {
+    font-size: 10px;
+    color: #eeeaff;
+}
+
+.sidebar-notification-content span {
+    margin-top: 3px;
+
+    font-size: 9px;
+    line-height: 1.4;
+
+    color: #8581aa;
+}
+
+.sidebar-notification-content small {
+    margin-top: 4px;
+
+    font-size: 8px;
+    color: #666385;
+}
+
+/* View all */
+.notification-view-all {
+    width: 100%;
+
+    margin-top: 10px;
+    padding: 8px 9px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+
+    border-radius: 9px;
+
+    background: rgba(139, 92, 246, 0.10);
+    border: 1px solid rgba(139, 92, 246, 0.14);
+
+    color: #b99cff;
+    font-size: 9px;
+}
+
+.notification-view-all:hover {
+    background: rgba(139, 92, 246, 0.18);
+}
+
+/* =========================================================
+   USER ACCOUNT
+   ========================================================= */
+
+.sidebar-user-account {
+    width: 100%;
+    min-height: 52px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 9px 11px;
+
+    border-radius: 12px;
+
+    background: rgba(18, 12, 45, 0.42);
+    border: 1px solid rgba(139, 92, 246, 0.10);
+
+    color: var(--text-secondary);
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.sidebar-user-account:hover {
+    background: rgba(45, 25, 85, 0.60);
+    border-color: rgba(139, 92, 246, 0.26);
+}
+
+.sidebar-user-avatar {
+    width: 32px;
+    height: 32px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 9px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(139, 92, 246, 0.28),
+            rgba(91, 45, 180, 0.12)
+        );
+
+    border: 1px solid rgba(139, 92, 246, 0.22);
+
+    color: #c4a6ff;
+}
+
+.sidebar-user-info {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    margin-left: 10px;
+
+    text-align: left;
+}
+
+.sidebar-user-info strong {
+    font-size: 11px;
+    color: #eeeaff;
+}
+
+.sidebar-user-info span {
+    margin-top: 2px;
+
+    font-size: 8px;
+    color: #7777a8;
+}
+
+.sidebar-user-arrow {
+    margin-left: auto;
+    color: #7777a8;
+}
+
+/* =========================================================
+   ZARVIS CORE
+   ========================================================= */
+
+.sidebar-bottom {
+    flex-shrink: 0;
+    margin-top: 0;
+}
+
+/* Short screens */
+@media (max-height: 760px) {
+    .sidebar-account-area {
+        margin-top: 6px;
+        margin-bottom: 5px;
+        padding-top: 7px;
+    }
+
+    .sidebar-bottom-action,
+    .sidebar-user-account {
+        min-height: 46px;
+        padding: 7px 9px;
+    }
+
+    .sidebar-bottom-action-icon,
+    .sidebar-user-avatar {
+        width: 29px;
+        height: 29px;
+    }
+
+    .sidebar-bottom-action-text strong,
+    .sidebar-user-info strong {
+        font-size: 10px;
+    }
+
+    .sidebar-bottom-action-text small,
+    .sidebar-user-info span {
+        font-size: 8px;
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .sidebar-notification-panel {
+        left: 0;
+        bottom: calc(100% + 10px);
+        width: min(300px, calc(100vw - 30px));
+    }
+}
+/* =========================================================
+   SIDEBAR FINAL POLISH
+   ========================================================= */
+
+.sidebar {
+    background:
+        linear-gradient(
+            180deg,
+            rgba(7, 6, 28, 0.98),
+            rgba(3, 3, 18, 0.99)
+        ) !important;
+
+    border-right: 1px solid rgba(139, 92, 246, 0.14) !important;
+}
+
+/* Brand */
+.sidebar-brand {
+    border-bottom: 1px solid rgba(139, 92, 246, 0.10);
+    padding-bottom: 16px !important;
+}
+
+.sidebar-logo-mark {
+    background:
+        linear-gradient(
+            145deg,
+            rgba(139, 92, 246, 0.30),
+            rgba(80, 40, 170, 0.14)
+        ) !important;
+
+    border: 1px solid rgba(170, 105, 255, 0.28) !important;
+    color: #c9a6ff !important;
+
+    box-shadow:
+        0 0 15px rgba(139, 92, 246, 0.16),
+        inset 0 0 12px rgba(170, 100, 255, 0.08) !important;
+}
+
+.sidebar-brand-text h2 {
+    color: #f4efff !important;
+    letter-spacing: 2px;
+}
+
+.sidebar-brand-text span {
+    color: #8e72c7 !important;
+}
+
+/* Navigation items */
+.sidebar-nav-item {
+    border: 1px solid transparent !important;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease !important;
+}
+
+.sidebar-nav-item:hover {
+    background: rgba(139, 92, 246, 0.08) !important;
+    border-color: rgba(139, 92, 246, 0.12) !important;
+}
+
+.sidebar-nav-item.active {
+    background:
+        linear-gradient(
+            90deg,
+            rgba(139, 92, 246, 0.18),
+            rgba(91, 50, 180, 0.08)
+        ) !important;
+
+    border-color: rgba(139, 92, 246, 0.25) !important;
+
+    box-shadow:
+        inset 3px 0 0 #9b6cff,
+        0 0 18px rgba(139, 92, 246, 0.08) !important;
+}
+
+.sidebar-nav-item.active .sidebar-nav-icon {
+    color: #c7a7ff !important;
+}
+
+.sidebar-nav-item.active .sidebar-nav-label {
+    color: #f3edff !important;
+}
+
+/* System status */
+.sidebar-system {
+    border-bottom: 1px solid rgba(139, 92, 246, 0.08);
+}
+
+.system-dot {
+    background: #32e6a1 !important;
+    box-shadow:
+        0 0 7px rgba(50, 230, 161, 0.8),
+        0 0 14px rgba(50, 230, 161, 0.35) !important;
+}
+
+.system-indicator strong {
+    color: #ddd5f5 !important;
+}
+
+.system-indicator small {
+    color: #77709b !important;
+}
+
+/* Section labels */
+.sidebar-section-label {
+    color: #8069ad !important;
+}
+
+.sidebar-section-line {
+    background:
+        linear-gradient(
+            90deg,
+            rgba(139, 92, 246, 0.20),
+            transparent
+        ) !important;
+}
+
+/* Zarvis Core */
+.sidebar-core-card {
+    background:
+        linear-gradient(
+            145deg,
+            rgba(25, 16, 58, 0.82),
+            rgba(8, 7, 28, 0.88)
+        ) !important;
+
+    border: 1px solid rgba(139, 92, 246, 0.20) !important;
+
+    box-shadow:
+        0 0 20px rgba(139, 92, 246, 0.07),
+        inset 0 0 16px rgba(139, 92, 246, 0.04) !important;
+}
+
+.core-status-icon {
+    background: rgba(139, 92, 246, 0.14) !important;
+    border-color: rgba(139, 92, 246, 0.22) !important;
+}
+
+.core-status-icon span {
+    background: #a978ff !important;
+    box-shadow:
+        0 0 7px rgba(169, 120, 255, 0.8),
+        0 0 15px rgba(139, 92, 246, 0.45) !important;
+}
+
+.core-status-text strong {
+    color: #e9e2ff !important;
+}
+
+.core-status-text span {
+    color: #77709c !important;
+}
+
+.core-status-bars i {
+    background: #9b6cff !important;
+    box-shadow: 0 0 5px rgba(155, 108, 255, 0.45);
+}
+
+/* Version */
+.sidebar-version {
+    color: #575174 !important;
+}

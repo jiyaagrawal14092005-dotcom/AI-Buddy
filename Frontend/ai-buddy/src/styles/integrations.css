@@ -708,3 +708,164 @@
         flex-direction: column;
     }
 }
+/* =========================================================
+   ZARVIS — INTEGRATIONS HUD
+========================================================= */
+
+.integrations-page {
+    position: relative;
+}
+
+/* Main integration cards */
+
+.integration-card,
+.integrations-page .glass-card {
+    position: relative;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(22, 14, 55, 0.86),
+            rgba(6, 7, 28, 0.84)
+        ) !important;
+
+    border: 1px solid
+        rgba(150, 90, 255, 0.22) !important;
+
+    border-radius: 16px !important;
+
+    backdrop-filter: blur(18px);
+
+    box-shadow:
+        0 12px 35px rgba(0, 0, 0, 0.22),
+        0 0 24px rgba(130, 65, 240, 0.055),
+        inset 0 1px 0
+        rgba(205, 165, 255, 0.035);
+
+    transition:
+        transform 0.22s ease,
+        border-color 0.22s ease,
+        box-shadow 0.22s ease;
+}
+
+
+/* Hover */
+
+.integration-card:hover,
+.integrations-page .glass-card:hover {
+    transform: translateY(-2px);
+
+    border-color:
+        rgba(175, 105, 255, 0.38) !important;
+
+    box-shadow:
+        0 15px 40px rgba(0, 0, 0, 0.26),
+        0 0 25px rgba(135, 70, 255, 0.09);
+}
+
+
+/* Headings */
+
+.integrations-page h1,
+.integrations-page h2,
+.integrations-page h3 {
+    color: #eeeaff !important;
+}
+
+.integrations-page p {
+    color: #918bb8 !important;
+}
+
+
+/* Integration icons */
+
+.integration-card svg,
+.integrations-page .integration-icon svg {
+    color: #b07cff !important;
+
+    filter:
+        drop-shadow(
+            0 0 6px
+            rgba(165, 90, 255, 0.45)
+        );
+}
+
+
+/* Status */
+
+.integration-card .status,
+.integration-card .connected,
+.integration-card .active {
+    color: #b996ff !important;
+
+    background:
+        rgba(120, 65, 220, 0.10) !important;
+
+    border: 1px solid
+        rgba(150, 95, 255, 0.20) !important;
+
+    border-radius: 20px;
+}
+
+
+/* Buttons */
+
+.integrations-page button {
+    border: 1px solid
+        rgba(145, 85, 255, 0.20) !important;
+
+    background:
+        rgba(25, 17, 60, 0.70) !important;
+
+    color: #c7b5ff !important;
+
+    border-radius: 9px;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.integrations-page button:hover {
+    background:
+        rgba(125, 65, 220, 0.12) !important;
+
+    border-color:
+        rgba(175, 105, 255, 0.45) !important;
+
+    transform: translateY(-1px);
+}
+
+
+/* Divider */
+
+.integrations-page hr {
+    border: 0 !important;
+
+    height: 1px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(145, 85, 255, 0.20),
+            transparent
+        );
+}
+
+
+/* Mobile */
+
+@media (max-width: 768px) {
+
+    .integration-card,
+    .integrations-page .glass-card {
+        border-radius: 14px !important;
+    }
+
+    .integration-card:hover,
+    .integrations-page .glass-card:hover {
+        transform: none;
+    }
+}

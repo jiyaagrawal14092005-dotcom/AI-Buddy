@@ -677,3 +677,14 @@
         margin-left: 0 !important;
     }
 }
+/* =========================================================
+   TOP SPACE BALANCE
+   ========================================================= */
+
+.main-content {
+    padding-top: 6px !important;
+}
+
+.navbar {
+    display: none !important;
+}

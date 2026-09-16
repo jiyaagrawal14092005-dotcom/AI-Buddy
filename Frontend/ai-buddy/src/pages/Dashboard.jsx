@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Mic, Send } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useBuddy } from "../context/BuddyContext";
 
@@ -15,7 +15,9 @@ import AgentNetwork from "../components/AgentNetwork";
 import Timer from "../components/Timer";
 import UpcomingTasks from "../components/UpcomingTasks";
 
+
 function Dashboard() {
+
     const navigate = useNavigate();
 
     const {
@@ -27,11 +29,14 @@ function Dashboard() {
 
     const [activeAction, setActiveAction] = useState("");
 
+
     const handleQuickAction = (action) => {
         setActiveAction(action);
     };
 
+
     const handleStartTimer = () => {
+
         setActiveAction("");
 
         document
@@ -42,7 +47,9 @@ function Dashboard() {
             });
     };
 
+
     return (
+
         <div className="app">
 
             {/* =================================================
@@ -50,6 +57,7 @@ function Dashboard() {
             ================================================= */}
 
             <Sidebar />
+
 
             <main className="main-content">
 
@@ -59,7 +67,9 @@ function Dashboard() {
 
                 <Navbar />
 
+
                 <div className="dashboard">
+
 
                     {/* =================================================
                         HERO SECTION
@@ -67,32 +77,50 @@ function Dashboard() {
 
                     <section className="dashboard-hero">
 
-                        {/* LEFT SIDE — WELCOME TEXT */}
+
+                        {/* =================================================
+                            LEFT SIDE — WELCOME
+                        ================================================= */}
 
                         <div className="dashboard-welcome">
 
                             <div className="welcome-label">
+
                                 <span className="welcome-spark">
                                     ✦
                                 </span>
 
                                 GOOD MORNING
+
                             </div>
 
+
                             <h1>
+
                                 Hello,{" "}
-                                <span>Shanu</span>
+
+                                <span>
+                                    Shanu
+                                </span>
+
                             </h1>
 
+
                             <p>
+
                                 Your AI buddy is here to make your day
                                 <br />
                                 smarter, simpler and more productive.
+
                             </p>
 
-                            {/* QUICK HERO ACTIONS */}
+
+                            {/* =================================================
+                                HERO QUICK ACTIONS
+                            ================================================= */}
 
                             <div className="hero-quick-actions">
+
 
                                 <button
                                     type="button"
@@ -100,9 +128,15 @@ function Dashboard() {
                                         navigate("/schedule")
                                     }
                                 >
-                                    <span>◫</span>
+
+                                    <span>
+                                        ◫
+                                    </span>
+
                                     Plan My Day
+
                                 </button>
+
 
                                 <button
                                     type="button"
@@ -110,9 +144,15 @@ function Dashboard() {
                                         navigate("/assistant")
                                     }
                                 >
-                                    <span>▣</span>
+
+                                    <span>
+                                        ▣
+                                    </span>
+
                                     Study Help
+
                                 </button>
+
 
                                 <button
                                     type="button"
@@ -120,9 +160,15 @@ function Dashboard() {
                                         navigate("/schedule")
                                     }
                                 >
-                                    <span>✈</span>
+
+                                    <span>
+                                        ✈
+                                    </span>
+
                                     Travel Plans
+
                                 </button>
+
 
                                 <button
                                     type="button"
@@ -130,76 +176,108 @@ function Dashboard() {
                                         navigate("/tasks")
                                     }
                                 >
-                                    <span>＋</span>
+
+                                    <span>
+                                        ＋
+                                    </span>
+
                                     Create Task
+
                                 </button>
+
 
                             </div>
 
-                            {/* THINKING STATUS */}
-<div className="hero-status-cards">
 
-    <div className="hero-status-card thinking-card">
+                            {/* =================================================
+                                STATUS CARDS
+                            ================================================= */}
 
-        <div className="hero-status-icon zarvis-thinking-logo">
-    <Sparkles size={27} strokeWidth={2.2} />
-</div>
+                            <div className="hero-status-cards">
 
 
-        <div className="hero-status-content">
+                                {/* THINKING */}
 
-            <strong>
-                Zarvis Thinking
-            </strong>
+                                <div className="hero-status-card thinking-card">
 
-            <span>
-                {isThinking
-                    ? "Analyzing your request..."
-                    : "Ready to understand your request."}
-            </span>
+                                    <div className="hero-status-icon zarvis-thinking-logo">
 
-            <div className="thinking-wave">
-                <i></i>
-                <i></i>
-                <i></i>
-                <i></i>
-                <i></i>
-                <i></i>
-                <i></i>
-                <i></i>
-                <i></i>
-            </div>
+                                        <Sparkles
+                                            size={27}
+                                            strokeWidth={2.2}
+                                        />
 
-        </div>
-
-    </div>
+                                    </div>
 
 
-    <div className="hero-status-card ready-card">
+                                    <div className="hero-status-content">
 
-        <div className="hero-status-icon ready-help-icon">
-    💬
-</div>
+                                        <strong>
+                                            Zarvis Thinking
+                                        </strong>
 
-        <div className="hero-status-content">
 
-            <strong>
-                Ready to Help
-            </strong>
+                                        <span>
 
-            <span>
-                Just tell me what you need!
-            </span>
+                                            {isThinking
+                                                ? "Analyzing your request..."
+                                                : "Ready to understand your request."}
 
-            <div className="ready-indicator">
-                <span></span>
-            </div>
+                                        </span>
 
-        </div>
 
-    </div>
+                                        <div className="thinking-wave">
 
-</div>
+                                            <i></i>
+                                            <i></i>
+                                            <i></i>
+                                            <i></i>
+                                            <i></i>
+                                            <i></i>
+                                            <i></i>
+                                            <i></i>
+                                            <i></i>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+
+                                {/* READY TO HELP */}
+
+                                <div className="hero-status-card ready-card">
+
+                                    <div className="hero-status-icon ready-help-icon">
+                                        💬
+                                    </div>
+
+
+                                    <div className="hero-status-content">
+
+                                        <strong>
+                                            Ready to Help
+                                        </strong>
+
+
+                                        <span>
+                                            Just tell me what you need!
+                                        </span>
+
+
+                                        <div className="ready-indicator">
+
+                                            <span></span>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+
+                            </div>
 
                         </div>
 
@@ -210,6 +288,78 @@ function Dashboard() {
 
                         <ChatBox />
 
+
+                        {/* =================================================
+                            ZARVIS MAIN SEARCH
+                            BOTTOM CENTER OF HERO
+                        ================================================= */}
+
+                        <div className="hero-search-bar">
+
+
+                            {/* ZARVIS LOGO — SAME AS SIDEBAR */}
+
+                            <div className="hero-search-logo">
+
+                                <Sparkles
+                                    size={18}
+                                    strokeWidth={2}
+                                />
+
+                            </div>
+
+
+                            {/* COMMAND INPUT */}
+
+                            <input
+                                type="text"
+                                placeholder="Type your command or ask me anything..."
+                            />
+
+
+                            {/* VOICE + SEND */}
+
+                            <div className="hero-search-actions">
+
+
+                                {/* VOICE */}
+
+                                <button
+                                    type="button"
+                                    className="hero-search-voice"
+                                    aria-label="Voice command"
+                                >
+
+                                    <Mic
+                                        size={19}
+                                        strokeWidth={2}
+                                    />
+
+                                </button>
+
+
+                                {/* SEND */}
+
+                                <button
+                                    type="button"
+                                    className="hero-search-send"
+                                    aria-label="Send command"
+                                >
+
+                                    <Send
+                                        size={18}
+                                        strokeWidth={2}
+                                    />
+
+                                </button>
+
+
+                            </div>
+
+
+                        </div>
+
+
                     </section>
 
 
@@ -218,6 +368,7 @@ function Dashboard() {
                     ================================================= */}
 
                     <section className="stats-grid">
+
 
                         <div className="stat-card">
 
@@ -233,15 +384,18 @@ function Dashboard() {
 
                             </div>
 
+
                             <strong className="stat-value">
                                 08
                             </strong>
+
 
                             <span className="stat-description">
                                 5 completed
                             </span>
 
                         </div>
+
 
 
                         <div className="stat-card">
@@ -258,15 +412,18 @@ function Dashboard() {
 
                             </div>
 
+
                             <strong className="stat-value">
                                 03
                             </strong>
+
 
                             <span className="stat-description">
                                 2 running now
                             </span>
 
                         </div>
+
 
 
                         <div className="stat-card">
@@ -283,15 +440,18 @@ function Dashboard() {
 
                             </div>
 
+
                             <strong className="stat-value">
                                 06
                             </strong>
+
 
                             <span className="stat-description">
                                 Next at 10:00 AM
                             </span>
 
                         </div>
+
 
 
                         <div className="stat-card">
@@ -308,15 +468,18 @@ function Dashboard() {
 
                             </div>
 
+
                             <strong className="stat-value">
                                 {buddyStatus}
                             </strong>
+
 
                             <span className="stat-description">
                                 Core operating normally
                             </span>
 
                         </div>
+
 
                     </section>
 
@@ -326,6 +489,7 @@ function Dashboard() {
                     ================================================= */}
 
                     <section className="quick-section">
+
 
                         <div className="section-title-row">
 
@@ -341,6 +505,7 @@ function Dashboard() {
 
                             </div>
 
+
                             <button
                                 type="button"
                                 className="section-link"
@@ -348,13 +513,16 @@ function Dashboard() {
                                     navigate("/assistant")
                                 }
                             >
+
                                 Open Assistant →
+
                             </button>
 
                         </div>
 
 
                         <div className="quick-actions-grid">
+
 
                             {/* CREATE TASK */}
 
@@ -494,6 +662,7 @@ function Dashboard() {
 
                             </button>
 
+
                         </div>
 
                     </section>
@@ -511,6 +680,7 @@ function Dashboard() {
                                 COMMAND READY
                             </span>
 
+
                             <strong>
 
                                 {activeAction === "task" &&
@@ -526,6 +696,7 @@ function Dashboard() {
                                     "Save Memory selected"}
 
                             </strong>
+
 
                             <button
                                 type="button"
@@ -547,7 +718,9 @@ function Dashboard() {
 
                     <section className="zarvis-core-card glass-card">
 
+
                         <div className="zarvis-core-header">
+
 
                             <div>
 
@@ -566,6 +739,7 @@ function Dashboard() {
 
                             </div>
 
+
                             <div className="core-status">
 
                                 <span></span>
@@ -574,10 +748,12 @@ function Dashboard() {
 
                             </div>
 
+
                         </div>
 
 
                         <div className="zarvis-core-metrics">
+
 
                             <div>
 
@@ -586,9 +762,11 @@ function Dashboard() {
                                 </span>
 
                                 <strong>
+
                                     {isThinking
                                         ? "THINKING"
                                         : "READY"}
+
                                 </strong>
 
                             </div>
@@ -632,6 +810,7 @@ function Dashboard() {
 
                             </div>
 
+
                         </div>
 
                     </section>
@@ -660,11 +839,13 @@ function Dashboard() {
 
                         <MemoryCard />
 
+
                         <div id="zarvis-timer">
 
                             <Timer />
 
                         </div>
+
 
                         <UpcomingTasks />
 
@@ -677,12 +858,16 @@ function Dashboard() {
 
                     <AgentNetwork />
 
+
                 </div>
 
             </main>
 
         </div>
+
     );
+
 }
+
 
 export default Dashboard;
