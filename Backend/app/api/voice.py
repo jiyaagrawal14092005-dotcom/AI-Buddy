@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
 from app.voice.conversation import VoiceConversation
+from app.voice.jarvis_mode import JarvisMode
 
 
 router = APIRouter(
@@ -12,14 +13,18 @@ router = APIRouter(
     tags=["Voice"]
 )
 
+
 voice_conversation = VoiceConversation()
+
+jarvis_mode = JarvisMode()
 
 
 @router.get("/status")
 def voice_status():
     return {
         "success": True,
-        "voice": voice_conversation.get_status()
+        "voice": voice_conversation.get_status(),
+        "jarvis": jarvis_mode.get_status()
     }
 
 
@@ -34,12 +39,12 @@ def stop_voice_conversation():
 
 
 @router.post("/process")
-def process_voice_text(
+async def process_voice_text(
     text: str,
     user_id: int,
     db: Session = Depends(get_db)
 ):
-    return voice_conversation.process_input(
+    return await voice_conversation.process_input(
         text,
         user_id,
         db
@@ -97,7 +102,7 @@ def stop_recording():
 
 
 @router.post("/speech-to-text")
-def speech_to_text(
+async def speech_to_text(
     user_id: int,
     db: Session = Depends(get_db)
 ):
@@ -106,7 +111,66 @@ def speech_to_text(
     the recorded audio into text.
     """
 
-    return voice_conversation.process_recorded_audio(
+    return await voice_conversation.process_recorded_audio(
+        user_id,
+        db
+    )
+
+
+# ==========================================================
+# JARVIS MODE
+# ==========================================================
+
+
+@router.post("/jarvis/start")
+async def start_jarvis(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Start continuous Jarvis mode.
+
+    Jarvis continuously listens for the configured
+    wake word and executes recognized commands.
+    """
+
+    return await jarvis_mode.start(
+        user_id,
+        db
+    )
+
+
+@router.post("/jarvis/stop")
+async def stop_jarvis():
+    """
+    Stop continuous Jarvis mode.
+    """
+
+    return await jarvis_mode.stop()
+
+
+@router.get("/jarvis/status")
+def jarvis_status():
+    """
+    Return the current Jarvis mode status.
+    """
+
+    return {
+        "success": True,
+        "jarvis": jarvis_mode.get_status()
+    }
+
+
+@router.post("/jarvis/toggle")
+async def toggle_jarvis(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Start Jarvis if inactive or stop it if active.
+    """
+
+    return await jarvis_mode.toggle(
         user_id,
         db
     )
@@ -127,4 +191,22 @@ def clear_voice_history():
     return {
         "success": True,
         "message": "Voice conversation history cleared."
+    }
+
+
+@router.get("/jarvis/history")
+def jarvis_history():
+    return {
+        "success": True,
+        "history": jarvis_mode.get_history()
+    }
+
+
+@router.delete("/jarvis/history")
+def clear_jarvis_history():
+    jarvis_mode.clear_history()
+
+    return {
+        "success": True,
+        "message": "Jarvis history cleared."
     }

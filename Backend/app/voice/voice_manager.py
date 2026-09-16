@@ -47,7 +47,9 @@ class VoiceManager:
                 "wake_word_detected": False,
                 "text": "",
                 "command": None,
-                "message": "Text must be a string."
+                "message": (
+                    "Voice input must be a string."
+                )
             }
 
         text = text.strip()
@@ -59,7 +61,9 @@ class VoiceManager:
                 "wake_word_detected": False,
                 "text": "",
                 "command": None,
-                "message": "Text cannot be empty."
+                "message": (
+                    "Voice input cannot be empty."
+                )
             }
 
         if not self.enabled:
@@ -69,28 +73,98 @@ class VoiceManager:
                 "wake_word_detected": False,
                 "text": text,
                 "command": None,
-                "message": "Voice manager is disabled."
+                "message": (
+                    "Voice manager is disabled."
+                )
             }
 
-        wake_word_detected = (
-            self.wake_word_detector.detect(
+        # ---------------------------------
+        # WAKE WORD PROCESSING
+        # ---------------------------------
+
+        wake_word_result = (
+            self.wake_word_detector.process(
                 text
             )
         )
 
-        command = VoiceCommand(
-            text
+        if not wake_word_result.get(
+            "success",
+            False
+        ):
+
+            return {
+                "success": False,
+                "wake_word_detected": False,
+                "text": text,
+                "command": None,
+                "message": (
+                    wake_word_result.get(
+                        "message",
+                        "Unable to process wake word."
+                    )
+                )
+            }
+
+        wake_word_detected = (
+            wake_word_result.get(
+                "wake_word_detected",
+                False
+            )
         )
+
+        command_text = (
+            wake_word_result.get(
+                "command",
+                ""
+            )
+        )
+
+        # ---------------------------------
+        # CREATE VOICE COMMAND
+        # ---------------------------------
+
+        if not command_text:
+
+            return {
+                "success": True,
+                "wake_word_detected": (
+                    wake_word_detected
+                ),
+                "text": text,
+                "command": None,
+                "message": (
+                    "Wake word detected but no command was provided."
+                    if wake_word_detected
+                    else "No command was provided."
+                )
+            }
+
+        command = VoiceCommand()
+
+        command.set_text(
+            command_text
+        )
+
+        command.set_command(
+            command_text
+        )
+
+        # ---------------------------------
+        # RETURN PROCESSED COMMAND
+        # ---------------------------------
 
         return {
             "success": True,
-            "wake_word_detected": wake_word_detected,
+            "wake_word_detected": (
+                wake_word_detected
+            ),
             "text": text,
             "command": command.to_dict(),
             "message": (
-                "Wake word detected."
+                "Wake word detected and command extracted."
                 if wake_word_detected
-                else "Wake word not detected."
+                else "Voice command processed."
             )
         }
 
@@ -104,7 +178,9 @@ class VoiceManager:
             return {
                 "success": False,
                 "text": "",
-                "message": "Voice manager is disabled."
+                "message": (
+                    "Voice manager is disabled."
+                )
             }
 
         if not self.command_listener.is_listening():
@@ -122,7 +198,9 @@ class VoiceManager:
             return {
                 "success": False,
                 "listening": False,
-                "message": "Voice manager is disabled."
+                "message": (
+                    "Voice manager is disabled."
+                )
             }
 
         return self.command_listener.start_listening()
@@ -140,7 +218,9 @@ class VoiceManager:
 
             return {
                 "success": False,
-                "message": "Voice manager is disabled."
+                "message": (
+                    "Voice manager is disabled."
+                )
             }
 
         return self.voice_response.speak(
@@ -151,6 +231,16 @@ class VoiceManager:
         self,
         text: str
     ) -> dict:
+
+        if not self.enabled:
+
+            return {
+                "success": False,
+                "response": "",
+                "message": (
+                    "Voice manager is disabled."
+                )
+            }
 
         return self.voice_response.prepare_response(
             text
@@ -163,7 +253,9 @@ class VoiceManager:
             return {
                 "success": False,
                 "recording": False,
-                "message": "Voice manager is disabled."
+                "message": (
+                    "Voice manager is disabled."
+                )
             }
 
         return self.audio_manager.start_recording()
@@ -172,16 +264,17 @@ class VoiceManager:
 
         return self.audio_manager.stop_recording()
 
-    def set_audio_data(
-        self,
-        audio_data
-    ) -> dict:
-
-        return self.audio_manager.set_audio_data(
-            audio_data
-        )
-
     def start_playback(self) -> dict:
+
+        if not self.enabled:
+
+            return {
+                "success": False,
+                "playing": False,
+                "message": (
+                    "Voice manager is disabled."
+                )
+            }
 
         return self.audio_manager.start_playback()
 
@@ -216,6 +309,7 @@ class VoiceManager:
     def get_status(self) -> dict:
 
         return {
+            "name": "voice_manager",
             "enabled": self.enabled,
             "speech_to_text": (
                 self.speech_to_text.get_status()

@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import FastAPI
 
 from app.api.auth import router as auth_router
@@ -11,6 +13,7 @@ from app.api.memory import router as memory_router
 from app.api.notifications import router as notifications_router
 from app.api.security import router as security_router
 from app.api.timer import router as timer_router
+from app.api.approval import router as approval_router
 
 
 app = FastAPI(
@@ -22,6 +25,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
+
+# ============================================================
+# API ROUTERS
+# ============================================================
 
 app.include_router(
     auth_router,
@@ -77,6 +84,15 @@ app.include_router(
     timer_router
 )
 
+# Approval router already contains /api/approval prefix
+app.include_router(
+    approval_router
+)
+
+
+# ============================================================
+# HOME
+# ============================================================
 
 @app.get("/")
 def home():
@@ -87,9 +103,28 @@ def home():
     }
 
 
+# ============================================================
+# HEALTH CHECK
+# ============================================================
+
 @app.get("/health")
 def health_check():
 
     return {
         "status": "healthy"
+    }
+
+
+# ============================================================
+# TEMPORARY EVENT LOOP DIAGNOSTIC
+# ============================================================
+
+@app.get("/debug/event-loop")
+async def debug_event_loop():
+
+    loop = asyncio.get_running_loop()
+
+    return {
+        "event_loop": type(loop).__name__,
+        "platform": __import__("sys").platform
     }

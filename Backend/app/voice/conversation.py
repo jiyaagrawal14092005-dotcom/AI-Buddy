@@ -75,7 +75,7 @@ class VoiceConversation:
             )
         }
 
-    def process_input(
+    async def process_input(
         self,
         text: str,
         user_id: int,
@@ -205,11 +205,25 @@ class VoiceConversation:
             )
 
         # ---------------------------------
-        # STEP 4: AI BRAIN
+        # STEP 4: SELECT CLEAN COMMAND
         # ---------------------------------
 
-        brain_result = self.ai_brain.respond(
-            text,
+        brain_input = text
+
+        if (
+            wake_word_detected
+            and command is not None
+            and command.get_text().strip()
+        ):
+
+            brain_input = command.get_text().strip()
+
+        # ---------------------------------
+        # STEP 5: AI BRAIN
+        # ---------------------------------
+
+        brain_result = await self.ai_brain.respond(
+            brain_input,
             user_id,
             db
         )
@@ -220,7 +234,7 @@ class VoiceConversation:
         )
 
         # ---------------------------------
-        # STEP 5: TEXT-TO-SPEECH
+        # STEP 6: TEXT-TO-SPEECH
         # ---------------------------------
 
         voice_response_result = None
@@ -244,11 +258,12 @@ class VoiceConversation:
             )
 
         # ---------------------------------
-        # STEP 6: SAVE VOICE HISTORY
+        # STEP 7: SAVE VOICE HISTORY
         # ---------------------------------
 
         history_item = {
             "user": text,
+            "brain_input": brain_input,
             "wake_word_detected": wake_word_detected,
             "command": (
                 command.to_dict()
@@ -267,7 +282,7 @@ class VoiceConversation:
         )
 
         # ---------------------------------
-        # STEP 7: RETURN RESPONSE
+        # STEP 8: RETURN RESPONSE
         # ---------------------------------
 
         return {
@@ -278,6 +293,7 @@ class VoiceConversation:
             "active": True,
             "wake_word_detected": wake_word_detected,
             "text": text,
+            "brain_input": brain_input,
             "command": (
                 command.to_dict()
                 if command is not None
@@ -301,7 +317,7 @@ class VoiceConversation:
             )
         }
 
-    def process_audio(
+    async def process_audio(
         self,
         audio_data,
         user_id: int,
@@ -356,13 +372,13 @@ class VoiceConversation:
                 )
             }
 
-        return self.process_input(
+        return await self.process_input(
             text,
             user_id,
             db
         )
 
-    def process_recorded_audio(
+    async def process_recorded_audio(
         self,
         user_id: int,
         db: Session
@@ -405,7 +421,7 @@ class VoiceConversation:
                 )
             }
 
-        return self.process_audio(
+        return await self.process_audio(
             audio_data,
             user_id,
             db
