@@ -4,40 +4,55 @@ from sqlalchemy.orm import Session
 
 from app.agent.brain import AIBrain
 from app.database.connection import get_db
-from app.security.security_manager import SecurityManager
+from app.security.shared import security_manager
 
 
-router = APIRouter(
-    tags=["Chat"]
+router = APIRouter(tags=["Chat"])
+
+
+# =========================================================
+# SHARED AI BRAIN + SHARED SECURITY MANAGER
+# =========================================================
+
+brain = AIBrain(
+    security_manager=security_manager
 )
 
 
-brain = AIBrain()
-security_manager = SecurityManager()
-
+# =========================================================
+# CHAT REQUEST
+# =========================================================
 
 class ChatRequest(BaseModel):
 
     message: str = Field(
         ...,
         min_length=1,
-        description="Message sent by the user to AI Buddy."
+        description=(
+            "Message sent by the user to AI Buddy."
+        )
     )
 
     user_id: int = Field(
         ...,
         gt=0,
-        description="ID of the user sending the message."
+        description=(
+            "ID of the user sending the message."
+        )
     )
 
     approval_id: str | None = Field(
         default=None,
         description=(
-            "Approval ID returned by AI Buddy when "
-            "user approval is required."
+            "Approval ID returned by AI Buddy "
+            "when user approval is required."
         )
     )
 
+
+# =========================================================
+# CHAT ENDPOINT
+# =========================================================
 
 @router.post("/chat")
 async def chat(
@@ -49,9 +64,9 @@ async def chat(
         f"user-{request.user_id}"
     )
 
-    # =================================
+    # =====================================================
     # REQUEST SECURITY VALIDATION
-    # =================================
+    # =====================================================
 
     security_result = (
         security_manager.validate_request(
@@ -60,6 +75,10 @@ async def chat(
         )
     )
 
+    # =====================================================
+    # BLOCK UNSAFE REQUEST
+    # =====================================================
+
     if not security_result.get(
         "allowed",
         False
@@ -67,14 +86,15 @@ async def chat(
 
         security_manager.record_audit_log(
             username=security_user_id,
-            action="chat_request",
+            action="chat.request_validation",
             status="blocked",
             details={
+                "message": request.message,
                 "stage": security_result.get(
                     "stage",
-                    "security_check"
+                    "request_validation"
                 ),
-                "message": security_result.get(
+                "reason": security_result.get(
                     "message",
                     "Request blocked by security."
                 )
@@ -84,9 +104,8 @@ async def chat(
         return {
             "success": False,
             "user_message": request.message,
-            "user_id": request.user_id,
-            "approval_id": request.approval_id,
             "approval_required": False,
+            "approval_id": None,
             "intent": None,
             "plan": None,
             "reasoning": None,
@@ -94,13 +113,24 @@ async def chat(
                 "message",
                 "Request blocked by security."
             ),
-            "action_result": None,
+            "action_result": {
+                "success": False,
+                "security_blocked": True,
+                "stage": security_result.get(
+                    "stage",
+                    "request_validation"
+                ),
+                "message": security_result.get(
+                    "message",
+                    "Request blocked by security."
+                )
+            },
             "context": []
         }
 
-    # =================================
+    # =====================================================
     # SANITIZED MESSAGE
-    # =================================
+    # =====================================================
 
     sanitized_message = (
         security_result.get(
@@ -109,24 +139,24 @@ async def chat(
         )
     )
 
-    # =================================
-    # BRAIN EXECUTION
-    # =================================
+    # =====================================================
+    # SEND REQUEST TO AI BRAIN
+    # =====================================================
 
-    result = await brain.respond(
+    result = brain.respond(
         message=sanitized_message,
         user_id=request.user_id,
         db=db,
         approval_id=request.approval_id
     )
 
-    # =================================
+    # =====================================================
     # AUDIT LOG
-    # =================================
+    # =====================================================
 
     security_manager.record_audit_log(
         username=security_user_id,
-        action="chat_request",
+        action="chat.request",
         status=(
             "success"
             if result.get(
@@ -136,61 +166,75 @@ async def chat(
             else "failed"
         ),
         details={
-            "intent": result.get(
-                "intent"
-            ),
-            "approval_id": result.get(
-                "approval_id"
+            "message": request.message,
+            "intent": (
+                result.get(
+                    "intent"
+                )
+                if isinstance(
+                    result.get(
+                        "intent"
+                    ),
+                    str
+                )
+                else (
+                    result.get(
+                        "intent",
+                        {}
+                    ).get(
+                        "intent"
+                    )
+                    if isinstance(
+                        result.get(
+                            "intent"
+                        ),
+                        dict
+                    )
+                    else None
+                )
             ),
             "approval_required": result.get(
                 "approval_required",
                 False
+            ),
+            "approval_id": result.get(
+                "approval_id"
             )
         }
     )
 
-    # =================================
-    # FINAL RESPONSE
-    # =================================
+    # =====================================================
+    # RETURN RESPONSE
+    # =====================================================
 
     return {
         "success": result.get(
             "success",
-            True
+            False
         ),
         "user_message": request.message,
-        "user_id": request.user_id,
-
         "approval_required": result.get(
             "approval_required",
             False
         ),
-
         "approval_id": result.get(
             "approval_id"
         ),
-
         "intent": result.get(
             "intent"
         ),
-
         "plan": result.get(
             "plan"
         ),
-
         "reasoning": result.get(
             "reasoning"
         ),
-
         "message": result.get(
-            "message",
-            "No response generated."
+            "message"
         ),
-
         "action_result": result.get(
             "action_result"
         ),
-
         "context": result.get(
             "context",
             []

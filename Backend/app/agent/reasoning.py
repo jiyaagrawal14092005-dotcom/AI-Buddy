@@ -1,5 +1,9 @@
 class ReasoningEngine:
 
+    # =========================================
+    # EXECUTABLE INTENTS
+    # =========================================
+
     EXECUTABLE_INTENTS = {
         "SET_TIMER",
         "CREATE_TASK",
@@ -8,8 +12,20 @@ class ReasoningEngine:
         "OPEN_APPLICATION",
         "SEARCH_INFORMATION",
         "SEND_EMAIL",
-        "BROWSE_WEB"
+        "BROWSE_WEB",
+        "CHECK_CALENDAR",
+
+        # Shopping
+        "SHOPPING_SEARCH",
+        "SHOPPING_COMPARE",
+        "SHOPPING_CART_ADD",
+        "SHOPPING_CART_LIST",
+        "SHOPPING_PURCHASE_PREPARE"
     }
+
+    # =========================================
+    # FUTURE INTENTS
+    # =========================================
 
     FUTURE_INTENTS = {
         "BOOK_RIDE",
@@ -17,6 +33,10 @@ class ReasoningEngine:
         "POST_SOCIAL_MEDIA",
         "SUBMIT_ASSIGNMENT"
     }
+
+    # =========================================
+    # EXPECTED TOOLS
+    # =========================================
 
     EXPECTED_TOOLS = {
         "SET_TIMER": "timer",
@@ -26,19 +46,86 @@ class ReasoningEngine:
         "OPEN_APPLICATION": "application_launcher",
         "SEARCH_INFORMATION": "search",
         "SEND_EMAIL": "email",
-        "BROWSE_WEB": "browser"
+        "BROWSE_WEB": "browser",
+        "CHECK_CALENDAR": "calendar",
+
+        # Shopping
+        "SHOPPING_SEARCH": "shopping",
+        "SHOPPING_COMPARE": "shopping",
+        "SHOPPING_CART_ADD": "shopping",
+        "SHOPPING_CART_LIST": "shopping",
+        "SHOPPING_PURCHASE_PREPARE": "shopping"
     }
 
+    # =========================================
+    # REQUIRED PARAMETERS
+    # =========================================
+
     REQUIRED_PARAMETERS = {
-        "SET_TIMER": ["duration_seconds"],
-        "CREATE_TASK": ["task_name"],
-        "CREATE_REMINDER": ["reminder"],
-        "GET_WEATHER": ["city"],
-        "OPEN_APPLICATION": ["application"],
-        "SEARCH_INFORMATION": ["query"],
-        "SEND_EMAIL": ["recipient", "subject", "message"],
-        "BROWSE_WEB": ["action"]
+        "SET_TIMER": [
+            "duration_seconds"
+        ],
+
+        "CREATE_TASK": [
+            "task_name"
+        ],
+
+        "CREATE_REMINDER": [
+            "reminder"
+        ],
+
+        "GET_WEATHER": [
+            "city"
+        ],
+
+        "OPEN_APPLICATION": [
+            "application"
+        ],
+
+        "SEARCH_INFORMATION": [
+            "query"
+        ],
+
+        "SEND_EMAIL": [
+            "recipient",
+            "subject",
+            "message"
+        ],
+
+        "BROWSE_WEB": [
+            "action"
+        ],
+
+        "CHECK_CALENDAR": [
+            "title",
+            "date",
+            "time"
+        ],
+
+        # =====================================
+        # SHOPPING
+        # =====================================
+
+        "SHOPPING_SEARCH": [
+            "query"
+        ],
+
+        "SHOPPING_COMPARE": [
+            "products"
+        ],
+
+        "SHOPPING_CART_ADD": [
+            "product_id"
+        ],
+
+        "SHOPPING_CART_LIST": [],
+
+        "SHOPPING_PURCHASE_PREPARE": []
     }
+
+    # =========================================
+    # REASON
+    # =========================================
 
     def reason(
         self,
@@ -50,7 +137,11 @@ class ReasoningEngine:
         # VALIDATE INTENT
         # =========================================
 
-        if not isinstance(intent, str):
+        if not isinstance(
+            intent,
+            str
+        ):
+
             return {
                 "success": False,
                 "intent": "UNKNOWN",
@@ -58,9 +149,14 @@ class ReasoningEngine:
                 "message": "Intent must be a string."
             }
 
-        intent = intent.strip().upper()
+        intent = (
+            intent
+            .strip()
+            .upper()
+        )
 
         if not intent:
+
             return {
                 "success": False,
                 "intent": "UNKNOWN",
@@ -73,13 +169,15 @@ class ReasoningEngine:
         # =========================================
 
         if intent in self.FUTURE_INTENTS:
+
             return {
                 "success": True,
                 "intent": intent,
                 "executable": False,
                 "message": (
-                    f"Intent '{intent}' is recognised but "
-                    "its execution is not available yet."
+                    f"Intent '{intent}' is recognised "
+                    "but its execution is not "
+                    "available yet."
                 )
             }
 
@@ -88,13 +186,14 @@ class ReasoningEngine:
         # =========================================
 
         if intent not in self.EXECUTABLE_INTENTS:
+
             return {
                 "success": True,
                 "intent": intent,
                 "executable": False,
                 "message": (
-                    f"Intent '{intent}' cannot be executed "
-                    "by the current system."
+                    f"Intent '{intent}' cannot be "
+                    "executed by the current system."
                 )
             }
 
@@ -102,33 +201,49 @@ class ReasoningEngine:
         # VALIDATE PLAN
         # =========================================
 
-        if not isinstance(plan, dict):
+        if not isinstance(
+            plan,
+            dict
+        ):
+
             return {
                 "success": False,
                 "intent": intent,
                 "executable": False,
-                "message": "Execution plan must be a dictionary."
+                "message": (
+                    "Execution plan must be "
+                    "a dictionary."
+                )
             }
 
-        tool = plan.get("tool")
+        tool = plan.get(
+            "tool"
+        )
 
         parameters = plan.get(
             "parameters",
             {}
         )
 
-        if not isinstance(parameters, dict):
+        if not isinstance(
+            parameters,
+            dict
+        ):
+
             parameters = {}
 
         # =========================================
         # VALIDATE EXPECTED TOOL
         # =========================================
 
-        expected_tool = self.EXPECTED_TOOLS.get(
-            intent
+        expected_tool = (
+            self.EXPECTED_TOOLS.get(
+                intent
+            )
         )
 
         if tool != expected_tool:
+
             return {
                 "success": False,
                 "intent": intent,
@@ -145,9 +260,11 @@ class ReasoningEngine:
         # REQUIRED PARAMETERS
         # =========================================
 
-        required_parameters = self.REQUIRED_PARAMETERS.get(
-            intent,
-            []
+        required_parameters = (
+            self.REQUIRED_PARAMETERS.get(
+                intent,
+                []
+            )
         )
 
         missing_parameters = []
@@ -162,16 +279,19 @@ class ReasoningEngine:
                 intent == "SET_TIMER"
                 and parameter == "duration_seconds"
             ):
+
                 value = parameters.get(
                     "duration_seconds"
                 )
 
                 if value is None:
+
                     value = parameters.get(
                         "duration"
                     )
 
             else:
+
                 value = parameters.get(
                     parameter
                 )
@@ -181,16 +301,420 @@ class ReasoningEngine:
             # -------------------------------------
 
             if value is None:
+
                 missing_parameters.append(
                     parameter
                 )
 
             elif (
-                isinstance(value, str)
+                isinstance(
+                    value,
+                    str
+                )
                 and not value.strip()
             ):
+
                 missing_parameters.append(
                     parameter
+                )
+
+        # =========================================
+        # SHOPPING VALIDATION
+        # =========================================
+
+        if intent == "SHOPPING_SEARCH":
+
+            query = parameters.get(
+                "query"
+            )
+
+            if (
+                not isinstance(
+                    query,
+                    str
+                )
+                or not query.strip()
+            ):
+
+                return {
+                    "success": False,
+                    "intent": intent,
+                    "executable": False,
+                    "message": (
+                        "Shopping search query "
+                        "is required."
+                    )
+                }
+
+            parameters["query"] = query.strip()
+
+        # =========================================
+        # SHOPPING COMPARE VALIDATION
+        # =========================================
+
+        if intent == "SHOPPING_COMPARE":
+
+            products = parameters.get(
+                "products"
+            )
+
+            if not isinstance(
+                products,
+                list
+            ):
+
+                return {
+                    "success": False,
+                    "intent": intent,
+                    "executable": False,
+                    "message": (
+                        "Products must be provided "
+                        "as a list."
+                    )
+                }
+
+            if not products:
+
+                return {
+                    "success": False,
+                    "intent": intent,
+                    "executable": False,
+                    "message": (
+                        "At least one product is "
+                        "required for comparison."
+                    )
+                }
+
+            cleaned_products = []
+
+            for product in products:
+
+                if isinstance(
+                    product,
+                    str
+                ):
+
+                    product = product.strip()
+
+                    if product:
+
+                        cleaned_products.append(
+                            product
+                        )
+
+                elif isinstance(
+                    product,
+                    dict
+                ):
+
+                    cleaned_products.append(
+                        product
+                    )
+
+            if not cleaned_products:
+
+                return {
+                    "success": False,
+                    "intent": intent,
+                    "executable": False,
+                    "message": (
+                        "No valid products were "
+                        "provided for comparison."
+                    )
+                }
+
+            parameters[
+                "products"
+            ] = cleaned_products
+
+        # =========================================
+        # SHOPPING CART ADD VALIDATION
+        # =========================================
+
+        if intent == "SHOPPING_CART_ADD":
+
+            product_id = parameters.get(
+                "product_id"
+            )
+
+            if (
+                not isinstance(
+                    product_id,
+                    str
+                )
+                or not product_id.strip()
+            ):
+
+                return {
+                    "success": False,
+                    "intent": intent,
+                    "executable": False,
+                    "message": (
+                        "Product ID is required "
+                        "to add a product to the cart."
+                    )
+                }
+
+            parameters[
+                "product_id"
+            ] = product_id.strip()
+
+            quantity = parameters.get(
+                "quantity",
+                1
+            )
+
+            try:
+
+                quantity = int(
+                    quantity
+                )
+
+            except (
+                TypeError,
+                ValueError
+            ):
+
+                return {
+                    "success": False,
+                    "intent": intent,
+                    "executable": False,
+                    "message": (
+                        "Shopping quantity must "
+                        "be a valid integer."
+                    )
+                }
+
+            if quantity <= 0:
+
+                return {
+                    "success": False,
+                    "intent": intent,
+                    "executable": False,
+                    "message": (
+                        "Shopping quantity must "
+                        "be greater than zero."
+                    )
+                }
+
+            parameters[
+                "quantity"
+            ] = quantity
+
+        # =========================================
+        # SHOPPING CART LIST VALIDATION
+        # =========================================
+
+        if intent == "SHOPPING_CART_LIST":
+
+            # No special parameters required.
+            parameters = {}
+
+        # =========================================
+        # SHOPPING PURCHASE PREPARATION
+        # =========================================
+
+        if intent == "SHOPPING_PURCHASE_PREPARE":
+
+            # -------------------------------------
+            # IMPORTANT SECURITY RULE
+            # -------------------------------------
+            # This intent only prepares the purchase.
+            # It does NOT perform a real purchase.
+
+            parameters = {}
+
+        # =========================================
+        # CALENDAR VALIDATION
+        # =========================================
+
+        if intent == "CHECK_CALENDAR":
+
+            title = parameters.get(
+                "title"
+            )
+
+            date = parameters.get(
+                "date"
+            )
+
+            time = parameters.get(
+                "time"
+            )
+
+            # -------------------------------------
+            # TITLE
+            # -------------------------------------
+
+            if (
+                not isinstance(
+                    title,
+                    str
+                )
+                or not title.strip()
+            ):
+
+                return {
+                    "success": False,
+                    "intent": intent,
+                    "executable": False,
+                    "message": (
+                        "Calendar event title "
+                        "is required."
+                    )
+                }
+
+            # -------------------------------------
+            # DATE
+            # -------------------------------------
+
+            if (
+                not isinstance(
+                    date,
+                    str
+                )
+                or not date.strip()
+            ):
+
+                return {
+                    "success": False,
+                    "intent": intent,
+                    "executable": False,
+                    "message": (
+                        "Calendar event date "
+                        "is required."
+                    )
+                }
+
+            # -------------------------------------
+            # DATE FORMAT
+            # -------------------------------------
+
+            if not re_match_date(
+                date
+            ):
+
+                return {
+                    "success": False,
+                    "intent": intent,
+                    "executable": False,
+                    "message": (
+                        "Calendar event date must "
+                        "use YYYY-MM-DD format."
+                    )
+                }
+
+            # -------------------------------------
+            # TIME
+            # -------------------------------------
+
+            if (
+                not isinstance(
+                    time,
+                    str
+                )
+                or not time.strip()
+            ):
+
+                return {
+                    "success": False,
+                    "intent": intent,
+                    "executable": False,
+                    "message": (
+                        "Calendar event time "
+                        "is required."
+                    )
+                }
+
+            # -------------------------------------
+            # TIME FORMAT
+            # -------------------------------------
+
+            if not re_match_time(
+                time
+            ):
+
+                return {
+                    "success": False,
+                    "intent": intent,
+                    "executable": False,
+                    "message": (
+                        "Calendar event time must "
+                        "use HH:MM format."
+                    )
+                }
+
+            # -------------------------------------
+            # DURATION
+            # -------------------------------------
+
+            duration = parameters.get(
+                "duration_minutes"
+            )
+
+            if duration is not None:
+
+                try:
+
+                    duration = int(
+                        duration
+                    )
+
+                except (
+                    TypeError,
+                    ValueError
+                ):
+
+                    return {
+                        "success": False,
+                        "intent": intent,
+                        "executable": False,
+                        "message": (
+                            "Calendar event duration "
+                            "must be a number."
+                        )
+                    }
+
+                if duration <= 0:
+
+                    return {
+                        "success": False,
+                        "intent": intent,
+                        "executable": False,
+                        "message": (
+                            "Calendar event duration "
+                            "must be greater than zero."
+                        )
+                    }
+
+                parameters[
+                    "duration_minutes"
+                ] = duration
+
+            # -------------------------------------
+            # DETAILS
+            # -------------------------------------
+
+            details = parameters.get(
+                "details",
+                ""
+            )
+
+            if details is None:
+
+                parameters[
+                    "details"
+                ] = ""
+
+            elif not isinstance(
+                details,
+                str
+            ):
+
+                parameters[
+                    "details"
+                ] = str(
+                    details
                 )
 
         # =========================================
@@ -208,17 +732,27 @@ class ReasoningEngine:
             # -------------------------------------
 
             if (
-                not isinstance(action, str)
+                not isinstance(
+                    action,
+                    str
+                )
                 or not action.strip()
             ):
+
                 return {
                     "success": False,
                     "intent": intent,
                     "executable": False,
-                    "message": "Browser action is required."
+                    "message": (
+                        "Browser action is required."
+                    )
                 }
 
-            action = action.strip().lower()
+            action = (
+                action
+                .strip()
+                .lower()
+            )
 
             # -------------------------------------
             # ALLOWED ACTIONS
@@ -234,27 +768,19 @@ class ReasoningEngine:
             }
 
             if action not in allowed_browser_actions:
+
                 return {
                     "success": False,
                     "intent": intent,
                     "executable": False,
                     "message": (
-                        f"Unsupported browser action "
-                        f"'{action}'."
+                        f"Unsupported browser "
+                        f"action '{action}'."
                     )
                 }
 
             # -------------------------------------
             # URL REQUIREMENT
-            #
-            # open / navigate:
-            # URL is required.
-            #
-            # click / fill / read:
-            # Can operate on the current page.
-            #
-            # close:
-            # Does not need URL.
             # -------------------------------------
 
             if action in {
@@ -267,16 +793,21 @@ class ReasoningEngine:
                 )
 
                 if (
-                    not isinstance(url, str)
+                    not isinstance(
+                        url,
+                        str
+                    )
                     or not url.strip()
                 ):
+
                     return {
                         "success": False,
                         "intent": intent,
                         "executable": False,
                         "message": (
                             f"URL is required for "
-                            f"browser action '{action}'."
+                            f"browser action "
+                            f"'{action}'."
                         )
                     }
 
@@ -290,14 +821,13 @@ class ReasoningEngine:
                 "read"
             }:
 
-                # If URL is not supplied, explicitly
-                # mark that the current browser page
-                # should be used.
-
                 if not parameters.get(
                     "url"
                 ):
-                    parameters["use_current_page"] = True
+
+                    parameters[
+                        "use_current_page"
+                    ] = True
 
             # -------------------------------------
             # CLICK / FILL SELECTOR
@@ -313,9 +843,13 @@ class ReasoningEngine:
                 )
 
                 if (
-                    not isinstance(selector, str)
+                    not isinstance(
+                        selector,
+                        str
+                    )
                     or not selector.strip()
                 ):
+
                     return {
                         "success": False,
                         "intent": intent,
@@ -338,6 +872,7 @@ class ReasoningEngine:
                 )
 
                 if value is None:
+
                     return {
                         "success": False,
                         "intent": intent,
@@ -352,6 +887,7 @@ class ReasoningEngine:
                     value,
                     str
                 ):
+
                     return {
                         "success": False,
                         "intent": intent,
@@ -367,11 +903,13 @@ class ReasoningEngine:
         # =========================================
 
         if missing_parameters:
+
             return {
                 "success": False,
                 "intent": intent,
                 "executable": False,
-                "missing_parameters": missing_parameters,
+                "missing_parameters":
+                    missing_parameters,
                 "message": (
                     "Required parameters are missing: "
                     + ", ".join(
@@ -391,14 +929,14 @@ class ReasoningEngine:
             "tool": tool,
             "parameters": parameters,
             "message": (
-                f"Intent '{intent}' can be executed "
-                f"using tool '{tool}'."
+                f"Intent '{intent}' can be "
+                f"executed using tool '{tool}'."
             )
         }
 
-    # =============================================
+    # =========================================
     # CAN EXECUTE
-    # =============================================
+    # =========================================
 
     def can_execute(
         self,
@@ -409,6 +947,7 @@ class ReasoningEngine:
             intent,
             str
         ):
+
             return False
 
         return (
@@ -416,9 +955,9 @@ class ReasoningEngine:
             in self.EXECUTABLE_INTENTS
         )
 
-    # =============================================
+    # =========================================
     # FUTURE INTENT CHECK
-    # =============================================
+    # =========================================
 
     def is_future_intent(
         self,
@@ -429,9 +968,46 @@ class ReasoningEngine:
             intent,
             str
         ):
+
             return False
 
         return (
             intent.strip().upper()
             in self.FUTURE_INTENTS
         )
+
+
+# =============================================
+# DATE VALIDATION HELPER
+# =============================================
+
+def re_match_date(
+    value: str
+) -> bool:
+
+    import re
+
+    return bool(
+        re.fullmatch(
+            r"20\d{2}-\d{2}-\d{2}",
+            value.strip()
+        )
+    )
+
+
+# =============================================
+# TIME VALIDATION HELPER
+# =============================================
+
+def re_match_time(
+    value: str
+) -> bool:
+
+    import re
+
+    return bool(
+        re.fullmatch(
+            r"(?:[01]\d|2[0-3]):[0-5]\d",
+            value.strip()
+        )
+    )

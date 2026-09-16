@@ -1,5 +1,6 @@
 import json
 import re
+from datetime import date, timedelta
 
 from google import genai
 
@@ -30,10 +31,6 @@ class IntentDetector:
 
         text = response_text.strip()
 
-        # -------------------------------------
-        # Remove markdown code fences
-        # -------------------------------------
-
         text = re.sub(
             r"^```(?:json)?\s*",
             "",
@@ -49,24 +46,14 @@ class IntentDetector:
 
         text = text.strip()
 
-        # -------------------------------------
-        # Try direct JSON
-        # -------------------------------------
-
         try:
-            result = json.loads(
-                text
-            )
+            result = json.loads(text)
 
             if isinstance(result, dict):
                 return result
 
         except json.JSONDecodeError:
             pass
-
-        # -------------------------------------
-        # Extract JSON object
-        # -------------------------------------
 
         match = re.search(
             r"\{.*\}",
@@ -76,9 +63,7 @@ class IntentDetector:
 
         if match:
 
-            json_text = match.group(
-                0
-            )
+            json_text = match.group(0)
 
             try:
 
@@ -95,6 +80,904 @@ class IntentDetector:
         raise ValueError(
             "Gemini response does not contain valid JSON."
         )
+
+    # =========================================
+    # CALENDAR DATE EXTRACTION
+    # =========================================
+
+    def _extract_calendar_date(
+        self,
+        text: str
+    ) -> str:
+
+        lower_text = text.lower()
+
+        date_match = re.search(
+            r"\b(20\d{2}-\d{2}-\d{2})\b",
+            text
+        )
+
+        if date_match:
+            return date_match.group(1)
+
+        if re.search(
+            r"\btoday\b",
+            lower_text
+        ):
+            return date.today().isoformat()
+
+        if re.search(
+            r"\btomorrow\b",
+            lower_text
+        ):
+            return (
+                date.today()
+                + timedelta(days=1)
+            ).isoformat()
+
+        if re.search(
+            r"\bday\s+after\s+tomorrow\b",
+            lower_text
+        ):
+            return (
+                date.today()
+                + timedelta(days=2)
+            ).isoformat()
+
+        return ""
+
+    # =========================================
+    # CALENDAR TIME EXTRACTION
+    # =========================================
+
+    def _extract_calendar_time(
+        self,
+        text: str
+    ) -> str:
+
+        time_match = re.search(
+            r"\b([01]?\d|2[0-3]):([0-5]\d)\b",
+            text
+        )
+
+        if time_match:
+
+            hour = int(
+                time_match.group(1)
+            )
+
+            minute = time_match.group(2)
+
+            return f"{hour:02d}:{minute}"
+
+        am_pm_match = re.search(
+            r"\b("
+            r"0?[1-9]|1[0-2]"
+            r")"
+            r":"
+            r"([0-5]\d)"
+            r"\s*"
+            r"(AM|PM)"
+            r"\b",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        if am_pm_match:
+
+            hour = int(
+                am_pm_match.group(1)
+            )
+
+            minute = int(
+                am_pm_match.group(2)
+            )
+
+            period = (
+                am_pm_match.group(3)
+                .upper()
+            )
+
+            if period == "AM":
+
+                if hour == 12:
+                    hour = 0
+
+            else:
+
+                if hour != 12:
+                    hour += 12
+
+            return f"{hour:02d}:{minute:02d}"
+
+        hour_only_match = re.search(
+            r"\b("
+            r"0?[1-9]|1[0-2]"
+            r")"
+            r"\s*"
+            r"(AM|PM)"
+            r"\b",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        if hour_only_match:
+
+            hour = int(
+                hour_only_match.group(1)
+            )
+
+            period = (
+                hour_only_match.group(2)
+                .upper()
+            )
+
+            if period == "AM":
+
+                if hour == 12:
+                    hour = 0
+
+            else:
+
+                if hour != 12:
+                    hour += 12
+
+            return f"{hour:02d}:00"
+
+        return ""
+
+    # =========================================
+    # CALENDAR DURATION EXTRACTION
+    # =========================================
+
+    def _extract_calendar_duration(
+        self,
+        text: str
+    ) -> int | None:
+
+        duration_match = re.search(
+            r"\bfor\s+(\d+)\s*"
+            r"(minutes?|mins?|"
+            r"hours?|hrs?)\b",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        if not duration_match:
+            return None
+
+        value = int(
+            duration_match.group(1)
+        )
+
+        unit = (
+            duration_match.group(2)
+            .lower()
+        )
+
+        if unit.startswith(
+            ("hour", "hr")
+        ):
+            return value * 60
+
+        return value
+
+    # =========================================
+    # CALENDAR TITLE EXTRACTION
+    # =========================================
+
+    def _extract_calendar_title(
+        self,
+        text: str
+    ) -> str:
+
+        title = ""
+
+        titled_match = re.search(
+            r"\bcreate\s+(?:a\s+)?"
+            r"calendar\s+event"
+            r"\s+titled\s+"
+            r"(.+?)"
+            r"(?=\s+\b(?:on|at|for|today|tomorrow)\b)",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        if titled_match:
+
+            title = (
+                titled_match.group(1)
+                .strip()
+            )
+
+        if not title:
+
+            date_title_match = re.search(
+                r"\bcreate\s+(?:a\s+)?"
+                r"calendar\s+event"
+                r"(?:\s+titled)?\s+"
+                r"(.+?)"
+                r"\s+\bon\s+"
+                r"\d{4}-\d{2}-\d{2}\b",
+                text,
+                flags=re.IGNORECASE
+            )
+
+            if date_title_match:
+
+                title = (
+                    date_title_match.group(1)
+                    .strip()
+                )
+
+        if not title:
+
+            general_match = re.search(
+                r"\b(?:create|add|schedule|book)\s+"
+                r"(?:a\s+)?"
+                r"(?:calendar\s+)?event"
+                r"(?:\s+titled)?\s+"
+                r"(.+?)"
+                r"(?=\s+\b(?:on|at|for|today|tomorrow)\b)",
+                text,
+                flags=re.IGNORECASE
+            )
+
+            if general_match:
+
+                title = (
+                    general_match.group(1)
+                    .strip()
+                )
+
+        title = re.sub(
+            r"\s+",
+            " ",
+            title
+        ).strip(
+            " .?!,"
+        )
+
+        return title
+
+    # =========================================
+    # CALENDAR PARAMETER REPAIR
+    # =========================================
+
+    def _repair_calendar_parameters(
+        self,
+        message: str,
+        parameters: dict
+    ) -> dict:
+
+        if not isinstance(
+            parameters,
+            dict
+        ):
+            parameters = {}
+
+        text = message.strip()
+
+        title = parameters.get(
+            "title",
+            ""
+        )
+
+        extracted_title = (
+            self._extract_calendar_title(
+                text
+            )
+        )
+
+        if extracted_title:
+            title = extracted_title
+
+        date_value = parameters.get(
+            "date",
+            ""
+        )
+
+        extracted_date = (
+            self._extract_calendar_date(
+                text
+            )
+        )
+
+        if extracted_date:
+            date_value = extracted_date
+
+        time_value = parameters.get(
+            "time",
+            ""
+        )
+
+        extracted_time = (
+            self._extract_calendar_time(
+                text
+            )
+        )
+
+        if extracted_time:
+            time_value = extracted_time
+
+        duration_minutes = parameters.get(
+            "duration_minutes"
+        )
+
+        extracted_duration = (
+            self._extract_calendar_duration(
+                text
+            )
+        )
+
+        if extracted_duration is not None:
+            duration_minutes = extracted_duration
+
+        details = parameters.get(
+            "details",
+            ""
+        )
+
+        if not details:
+
+            details_match = re.search(
+                r"\b(?:details?|description)"
+                r"\s*[:\-]?\s*(.+?)"
+                r"(?=\s+(?:on|at|for)\s+|$)",
+                text,
+                flags=re.IGNORECASE
+            )
+
+            if details_match:
+
+                details = (
+                    details_match.group(1)
+                    .strip()
+                )
+
+        title = title.strip(
+            " .?!,"
+        )
+
+        date_value = date_value.strip()
+
+        time_value = time_value.strip()
+
+        details = details.strip()
+
+        parameters["title"] = title
+        parameters["date"] = date_value
+        parameters["time"] = time_value
+        parameters["details"] = details
+
+        if duration_minutes is not None:
+
+            parameters[
+                "duration_minutes"
+            ] = int(
+                duration_minutes
+            )
+
+        return parameters
+
+    # =========================================
+    # BOOKING DATE EXTRACTION
+    # =========================================
+
+    def _extract_booking_date(
+        self,
+        text: str
+    ) -> str:
+
+        lower_text = text.lower()
+
+        date_match = re.search(
+            r"\b(20\d{2}-\d{2}-\d{2})\b",
+            text
+        )
+
+        if date_match:
+            return date_match.group(1)
+
+        if re.search(
+            r"\btoday\b",
+            lower_text
+        ):
+            return date.today().isoformat()
+
+        if re.search(
+            r"\btomorrow\b",
+            lower_text
+        ):
+            return (
+                date.today()
+                + timedelta(days=1)
+            ).isoformat()
+
+        if re.search(
+            r"\bday\s+after\s+tomorrow\b",
+            lower_text
+        ):
+            return (
+                date.today()
+                + timedelta(days=2)
+            ).isoformat()
+
+        return ""
+
+    # =========================================
+    # BOOKING TIME EXTRACTION
+    # =========================================
+
+    def _extract_booking_time(
+        self,
+        text: str
+    ) -> str:
+
+        return self._extract_calendar_time(
+            text
+        )
+
+    # =========================================
+    # BOOKING SERVICE EXTRACTION
+    # =========================================
+
+    def _extract_booking_service(
+        self,
+        text: str
+    ) -> str:
+
+        service = ""
+
+        patterns = [
+            r"\bbook\s+(?:an?\s+)?"
+            r"(?:appointment|service|reservation)"
+            r"(?:\s+(?:for|at))?\s+"
+            r"(.+?)"
+            r"(?=\s+\b(?:on|at|for|today|tomorrow)\b|$)",
+
+            r"\bcreate\s+(?:a\s+)?booking"
+            r"(?:\s+for)?\s+"
+            r"(.+?)"
+            r"(?=\s+\b(?:on|at|for|today|tomorrow)\b|$)",
+
+            r"\bbook\s+"
+            r"(.+?)"
+            r"(?=\s+\b(?:on|at|for|today|tomorrow)\b|$)"
+        ]
+
+        for pattern in patterns:
+
+            match = re.search(
+                pattern,
+                text,
+                flags=re.IGNORECASE
+            )
+
+            if match:
+
+                service = (
+                    match.group(1)
+                    .strip()
+                )
+
+                break
+
+        service = re.sub(
+            r"\s+",
+            " ",
+            service
+        ).strip(
+            " .?!,"
+        )
+
+        return service
+
+    # =========================================
+    # BOOKING DETAILS EXTRACTION
+    # =========================================
+
+    def _extract_booking_details(
+        self,
+        text: str
+    ) -> str:
+
+        details_match = re.search(
+            r"\b(?:details?|description)"
+            r"\s*[:\-]?\s*(.+)$",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        if details_match:
+
+            return (
+                details_match.group(1)
+                .strip()
+                .strip(" .?!,")
+            )
+
+        return ""
+
+    # =========================================
+    # BOOKING PARAMETER REPAIR
+    # =========================================
+
+    def _repair_booking_parameters(
+        self,
+        message: str,
+        parameters: dict
+    ) -> dict:
+
+        if not isinstance(
+            parameters,
+            dict
+        ):
+            parameters = {}
+
+        text = message.strip()
+
+        service = parameters.get(
+            "service",
+            ""
+        )
+
+        extracted_service = (
+            self._extract_booking_service(
+                text
+            )
+        )
+
+        if extracted_service:
+            service = extracted_service
+
+        booking_date = parameters.get(
+            "date",
+            ""
+        )
+
+        extracted_date = (
+            self._extract_booking_date(
+                text
+            )
+        )
+
+        if extracted_date:
+            booking_date = extracted_date
+
+        booking_time = parameters.get(
+            "time",
+            ""
+        )
+
+        extracted_time = (
+            self._extract_booking_time(
+                text
+            )
+        )
+
+        if extracted_time:
+            booking_time = extracted_time
+
+        details = parameters.get(
+            "details",
+            ""
+        )
+
+        extracted_details = (
+            self._extract_booking_details(
+                text
+            )
+        )
+
+        if extracted_details:
+            details = extracted_details
+
+        parameters["service"] = (
+            str(service).strip()
+        )
+
+        parameters["date"] = (
+            str(booking_date).strip()
+        )
+
+        parameters["time"] = (
+            str(booking_time).strip()
+        )
+
+        parameters["details"] = (
+            str(details).strip()
+        )
+
+        return parameters
+
+    # =========================================
+    # SHOPPING QUERY EXTRACTION
+    # =========================================
+
+    def _extract_shopping_query(
+        self,
+        text: str
+    ) -> str:
+
+        query = ""
+
+        patterns = [
+            r"\bsearch\s+(?:for\s+)?"
+            r"(?:a\s+|an\s+|the\s+)?"
+            r"(?:product\s+)?(.+)$",
+
+            r"\bfind\s+(?:a\s+|an\s+|the\s+)?"
+            r"(?:product\s+)?(.+)$",
+
+            r"\blook\s+for\s+"
+            r"(?:a\s+|an\s+|the\s+)?"
+            r"(?:product\s+)?(.+)$",
+
+            r"\bshop\s+for\s+"
+            r"(?:a\s+|an\s+|the\s+)?"
+            r"(.+)$"
+        ]
+
+        for pattern in patterns:
+
+            match = re.search(
+                pattern,
+                text,
+                flags=re.IGNORECASE
+            )
+
+            if match:
+
+                query = (
+                    match.group(1)
+                    .strip()
+                )
+
+                break
+
+        if not query:
+
+            query = text.strip()
+
+        query = re.sub(
+            r"\s+",
+            " ",
+            query
+        ).strip(
+            " .?!,"
+        )
+
+        return query
+
+    # =========================================
+    # SHOPPING PRODUCT ID EXTRACTION
+    # =========================================
+
+    def _extract_product_ids(
+        self,
+        text: str
+    ) -> list[str]:
+
+        product_ids = re.findall(
+            r"\bp\d+\b",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        normalized_ids = [
+            product_id.upper()
+            for product_id in product_ids
+        ]
+
+        # -----------------------------------------
+        # PRODUCT NAME -> PRODUCT ID MAPPING
+        # -----------------------------------------
+
+        product_name_map = {
+            "wireless mouse": "P001",
+            "mechanical keyboard": "P002",
+            "usb-c fast charger": "P003",
+            "usb c fast charger": "P003",
+            "fast charger": "P003",
+            "laptop stand": "P004",
+        }
+
+        normalized_text = text.lower()
+
+        for product_name, product_id in product_name_map.items():
+
+            if product_name in normalized_text:
+
+                if product_id not in normalized_ids:
+
+                    normalized_ids.append(
+                        product_id
+                    )
+
+        return normalized_ids
+
+    # =========================================
+    # SHOPPING QUANTITY EXTRACTION
+    # =========================================
+
+    def _extract_shopping_quantity(
+        self,
+        text: str
+    ) -> int:
+
+        quantity_patterns = [
+            r"\bquantity\s*[:\-]?\s*(\d+)\b",
+            r"\bqty\s*[:\-]?\s*(\d+)\b",
+            r"\b(\d+)\s*(?:items?|pieces?|pcs?)\b",
+            r"\bfor\s+(\d+)\b"
+        ]
+
+        for pattern in quantity_patterns:
+
+            match = re.search(
+                pattern,
+                text,
+                flags=re.IGNORECASE
+            )
+
+            if match:
+
+                quantity = int(
+                    match.group(1)
+                )
+
+                if quantity > 0:
+                    return quantity
+
+        return 1
+
+    # =========================================
+    # SHOPPING PARAMETER REPAIR
+    # =========================================
+
+    def _repair_shopping_parameters(
+        self,
+        message: str,
+        parameters: dict,
+        intent: str
+    ) -> dict:
+
+        if not isinstance(
+            parameters,
+            dict
+        ):
+            parameters = {}
+
+        text = message.strip()
+
+        if intent == "SHOPPING_SEARCH":
+
+            query = parameters.get(
+                "query",
+                ""
+            )
+
+            extracted_query = (
+                self._extract_shopping_query(
+                    text
+                )
+            )
+
+            if extracted_query:
+                query = extracted_query
+
+            parameters["query"] = (
+                str(query).strip()
+            )
+
+        elif intent == "SHOPPING_COMPARE":
+
+            products = parameters.get(
+                "products",
+                []
+            )
+
+            if not isinstance(
+                products,
+                list
+            ):
+                products = []
+
+            extracted_products = (
+                self._extract_product_ids(
+                    text
+                )
+            )
+
+            if extracted_products:
+                products = extracted_products
+
+            cleaned_products = []
+
+            for product_id in products:
+
+                if not isinstance(
+                    product_id,
+                    str
+                ):
+                    continue
+
+                product_id = (
+                    product_id.strip().upper()
+                )
+
+                if (
+                    product_id
+                    and product_id not in cleaned_products
+                ):
+                    cleaned_products.append(
+                        product_id
+                    )
+
+            parameters["products"] = (
+                cleaned_products
+            )
+
+        elif intent == "SHOPPING_CART_ADD":
+
+            product_id = parameters.get(
+                "product_id",
+                ""
+            )
+
+            product_ids = (
+                self._extract_product_ids(
+                    text
+                )
+            )
+
+            if product_ids:
+
+                product_id = product_ids[0]
+
+            parameters["product_id"] = (
+                str(product_id).strip().upper()
+            )
+
+            quantity = parameters.get(
+                "quantity",
+                1
+            )
+
+            extracted_quantity = (
+                self._extract_shopping_quantity(
+                    text
+                )
+            )
+
+            if extracted_quantity > 1:
+                quantity = extracted_quantity
+
+            try:
+
+                quantity = int(
+                    quantity
+                )
+
+            except Exception:
+
+                quantity = 1
+
+            if quantity <= 0:
+                quantity = 1
+
+            parameters["quantity"] = quantity
+
+        elif intent == "SHOPPING_CART_LIST":
+
+            parameters = {}
+
+        elif intent == "SHOPPING_PURCHASE_PREPARE":
+
+            parameters = {}
+
+        return parameters
 
     # =========================================
     # PARAMETER REPAIR
@@ -262,9 +1145,7 @@ class IntentDetector:
 
                 parameters[
                     "duration_seconds"
-                ] = int(
-                    duration
-                )
+                ] = int(duration)
 
         # =====================================
         # GET WEATHER
@@ -290,9 +1171,7 @@ class IntentDetector:
 
                     city = (
                         match.group(1)
-                        .strip(
-                            " .?!,"
-                        )
+                        .strip(" .?!,")
                     )
 
             parameters["city"] = city
@@ -348,13 +1227,9 @@ class IntentDetector:
 
                 if match:
 
-                    recipient = (
-                        match.group(0)
-                    )
+                    recipient = match.group(0)
 
-            parameters["recipient"] = (
-                recipient
-            )
+            parameters["recipient"] = recipient
 
             subject = parameters.get(
                 "subject",
@@ -375,14 +1250,10 @@ class IntentDetector:
 
                     subject = (
                         match.group(1)
-                        .strip(
-                            " .?!,"
-                        )
+                        .strip(" .?!,")
                     )
 
-            parameters["subject"] = (
-                subject
-            )
+            parameters["subject"] = subject
 
             email_message = parameters.get(
                 "message",
@@ -414,24 +1285,44 @@ class IntentDetector:
 
         elif intent == "CHECK_CALENDAR":
 
-            parameters.setdefault(
-                "title",
-                text
+            parameters = (
+                self._repair_calendar_parameters(
+                    message,
+                    parameters
+                )
             )
 
-            parameters.setdefault(
-                "date",
-                ""
+        # =====================================
+        # BOOK SERVICE
+        # =====================================
+
+        elif intent == "BOOK_SERVICE":
+
+            parameters = (
+                self._repair_booking_parameters(
+                    message,
+                    parameters
+                )
             )
 
-            parameters.setdefault(
-                "time",
-                ""
-            )
+        # =====================================
+        # SHOPPING
+        # =====================================
 
-            parameters.setdefault(
-                "details",
-                ""
+        elif intent in {
+            "SHOPPING_SEARCH",
+            "SHOPPING_COMPARE",
+            "SHOPPING_CART_ADD",
+            "SHOPPING_CART_LIST",
+            "SHOPPING_PURCHASE_PREPARE"
+        }:
+
+            parameters = (
+                self._repair_shopping_parameters(
+                    message,
+                    parameters,
+                    intent
+                )
             )
 
         # =====================================
@@ -519,6 +1410,12 @@ class IntentDetector:
             "SEARCH_INFORMATION",
             "SEND_EMAIL",
             "CHECK_CALENDAR",
+            "BOOK_SERVICE",
+            "SHOPPING_SEARCH",
+            "SHOPPING_COMPARE",
+            "SHOPPING_CART_ADD",
+            "SHOPPING_CART_LIST",
+            "SHOPPING_PURCHASE_PREPARE",
             "MANAGE_FILE",
             "OPEN_APPLICATION",
             "BROWSE_WEB",
@@ -531,7 +1428,6 @@ class IntentDetector:
         )
 
         if intent not in allowed_intents:
-
             intent = "GENERAL_QUERY"
 
         confidence = result.get(
@@ -566,7 +1462,6 @@ class IntentDetector:
             parameters,
             dict
         ):
-
             parameters = {}
 
         return {
@@ -594,19 +1489,15 @@ class IntentDetector:
 
             return (
                 url_match.group(0)
-                .rstrip(
-                    ".,?!"
-                )
+                .rstrip(".,?!")
             )
 
         lower_text = text.lower()
 
         if "google" in lower_text:
-
             return "https://www.google.com"
 
         if "youtube" in lower_text:
-
             return "https://www.youtube.com"
 
         return ""
@@ -621,19 +1512,12 @@ class IntentDetector:
     ) -> str:
 
         patterns = [
-
             r"\bwith\s+(.+)$",
-
             r"\bas\s+(.+)$",
-
             r"\bto\s+(.+)$",
-
             r"\bvalue\s*[:\-]?\s*(.+)$",
-
             r"\benter\s+(.+)$",
-
             r"\btype\s+(.+)$"
-
         ]
 
         for pattern in patterns:
@@ -648,13 +1532,10 @@ class IntentDetector:
 
                 value = (
                     match.group(1)
-                    .strip(
-                        " .?!,"
-                    )
+                    .strip(" .?!,")
                 )
 
                 if value:
-
                     return value
 
         return ""
@@ -671,10 +1552,6 @@ class IntentDetector:
 
         lower_text = text.lower()
 
-        # -------------------------------------
-        # Explicit CSS selector
-        # -------------------------------------
-
         selector_match = re.search(
             r"\b(?:selector|css)\s*[:\-]?\s*"
             r"([#.\[\]A-Za-z0-9_='\": >_-]+)",
@@ -686,19 +1563,11 @@ class IntentDetector:
 
             selector = (
                 selector_match.group(1)
-                .strip(
-                    " .,!?;:"
-                )
+                .strip(" .,!?;:")
             )
 
             if selector:
-
                 return selector
-
-        # -------------------------------------
-        # Direct CSS selector
-        # Example: click #submit
-        # -------------------------------------
 
         direct_selector_match = re.search(
             r"(?:click|press|select)\s+"
@@ -715,12 +1584,7 @@ class IntentDetector:
             )
 
             if selector:
-
                 return selector
-
-        # -------------------------------------
-        # Common semantic elements
-        # -------------------------------------
 
         if action == "fill":
 
@@ -802,20 +1666,12 @@ class IntentDetector:
 
         if action == "read":
 
-            # ---------------------------------
-            # Result / output / response
-            # ---------------------------------
-
             if re.search(
                 r"\b(result|output|response)\b",
                 lower_text
             ):
 
                 return "#result"
-
-            # ---------------------------------
-            # Message / status
-            # ---------------------------------
 
             if re.search(
                 r"\b(message|status)\b",
@@ -836,10 +1692,6 @@ class IntentDetector:
     ) -> dict | None:
 
         lower_text = text.lower()
-
-        # -------------------------------------
-        # Must contain browser action language
-        # -------------------------------------
 
         action_words = [
             "open",
@@ -862,10 +1714,6 @@ class IntentDetector:
         ):
             return None
 
-        # -------------------------------------
-        # Split command into action segments
-        # -------------------------------------
-
         parts = re.split(
             r"\s+(?:and|then)\s+|"
             r"\s*,\s*",
@@ -878,11 +1726,6 @@ class IntentDetector:
 
         steps = []
 
-        # -------------------------------------
-        # Track whether a browser page
-        # has already been opened
-        # -------------------------------------
-
         known_url = ""
 
         for part in parts:
@@ -893,10 +1736,6 @@ class IntentDetector:
                 continue
 
             lower_segment = segment.lower()
-
-            # =================================
-            # OPEN
-            # =================================
 
             open_match = re.search(
                 r"\bopen\s+"
@@ -925,10 +1764,6 @@ class IntentDetector:
 
                     continue
 
-            # =================================
-            # NAVIGATE
-            # =================================
-
             navigate_match = re.search(
                 r"\b(?:navigate\s+to|"
                 r"go\s+to|visit)\b",
@@ -954,10 +1789,6 @@ class IntentDetector:
 
                     continue
 
-            # =================================
-            # CLICK
-            # =================================
-
             click_match = re.search(
                 r"\b(?:click|press|select)\b",
                 lower_segment
@@ -981,17 +1812,15 @@ class IntentDetector:
 
                     if known_url:
 
-                        click_parameters["use_current_page"] = True
+                        click_parameters[
+                            "use_current_page"
+                        ] = True
 
                     steps.append(
                         click_parameters
                     )
 
                     continue
-
-            # =================================
-            # FILL
-            # =================================
 
             fill_match = re.search(
                 r"\b(?:fill|enter|type|put)\b",
@@ -1033,10 +1862,6 @@ class IntentDetector:
 
                     continue
 
-            # =================================
-            # READ
-            # =================================
-
             read_match = re.search(
                 r"\b(?:read|extract|get)\b",
                 lower_segment
@@ -1052,7 +1877,6 @@ class IntentDetector:
                 )
 
                 if not selector:
-
                     selector = "body"
 
                 read_parameters = {
@@ -1066,10 +1890,6 @@ class IntentDetector:
                 )
 
                 continue
-
-            # =================================
-            # CLOSE
-            # =================================
 
             close_match = re.search(
                 r"\b(?:close|exit)\b"
@@ -1088,17 +1908,8 @@ class IntentDetector:
 
                 continue
 
-        # -------------------------------------
-        # Need at least 2 valid steps
-        # -------------------------------------
-
         if len(steps) < 2:
-
             return None
-
-        # -------------------------------------
-        # Convert steps to planner format
-        # -------------------------------------
 
         planner_steps = []
 
@@ -1134,10 +1945,6 @@ class IntentDetector:
 
         lower_text = text.lower()
 
-        # =====================================
-        # MULTI-STEP BROWSER COMMAND
-        # =====================================
-
         multi_step_result = (
             self._local_browser_multi_step_detect(
                 text
@@ -1145,12 +1952,7 @@ class IntentDetector:
         )
 
         if multi_step_result is not None:
-
             return multi_step_result
-
-        # =====================================
-        # CLOSE BROWSER
-        # =====================================
 
         close_patterns = [
             r"\bclose\s+(?:the\s+)?browser\b",
@@ -1176,10 +1978,6 @@ class IntentDetector:
                 }
             }
 
-        # =====================================
-        # FILL
-        # =====================================
-
         fill_patterns = [
             r"\bfill\b",
             r"\benter\b.*\bfield\b",
@@ -1195,9 +1993,7 @@ class IntentDetector:
             for pattern in fill_patterns
         ):
 
-            url = self._extract_browser_url(
-                text
-            )
+            url = self._extract_browser_url(text)
 
             selector = (
                 self._extract_browser_selector(
@@ -1207,9 +2003,7 @@ class IntentDetector:
             )
 
             value = (
-                self._extract_fill_value(
-                    text
-                )
+                self._extract_fill_value(text)
             )
 
             if selector and value:
@@ -1226,10 +2020,6 @@ class IntentDetector:
                     }
                 }
 
-        # =====================================
-        # CLICK
-        # =====================================
-
         click_patterns = [
             r"\bclick\b",
             r"\bpress\b.*\bbutton\b",
@@ -1244,9 +2034,7 @@ class IntentDetector:
             for pattern in click_patterns
         ):
 
-            url = self._extract_browser_url(
-                text
-            )
+            url = self._extract_browser_url(text)
 
             selector = (
                 self._extract_browser_selector(
@@ -1268,10 +2056,6 @@ class IntentDetector:
                     }
                 }
 
-        # =====================================
-        # READ PAGE
-        # =====================================
-
         read_patterns = [
             r"\bread\s+(?:(?:the|this)\s+)?page\b",
             r"\bread\s+(?:(?:the|this)\s+)?webpage\b",
@@ -1292,9 +2076,7 @@ class IntentDetector:
             for pattern in read_patterns
         ):
 
-            url = self._extract_browser_url(
-                text
-            )
+            url = self._extract_browser_url(text)
 
             selector = (
                 self._extract_browser_selector(
@@ -1317,10 +2099,6 @@ class IntentDetector:
                 }
             }
 
-        # =====================================
-        # NAVIGATE
-        # =====================================
-
         navigate_patterns = [
             r"\bnavigate\s+to\b",
             r"\bgo\s+to\b",
@@ -1336,9 +2114,7 @@ class IntentDetector:
             for pattern in navigate_patterns
         ):
 
-            url = self._extract_browser_url(
-                text
-            )
+            url = self._extract_browser_url(text)
 
             if url:
 
@@ -1350,10 +2126,6 @@ class IntentDetector:
                         "url": url
                     }
                 }
-
-        # =====================================
-        # OPEN WEBSITE / GOOGLE / YOUTUBE
-        # =====================================
 
         open_patterns = [
             r"\bopen\s+google\b",
@@ -1371,9 +2143,7 @@ class IntentDetector:
             for pattern in open_patterns
         ):
 
-            url = self._extract_browser_url(
-                text
-            )
+            url = self._extract_browser_url(text)
 
             return {
                 "intent": "BROWSE_WEB",
@@ -1404,14 +2174,353 @@ class IntentDetector:
         # =====================================
 
         browser_result = (
-            self._local_browser_detect(
-                text
-            )
+            self._local_browser_detect(text)
         )
 
         if browser_result is not None:
-
             return browser_result
+
+        # =====================================
+        # CALENDAR
+        # =====================================
+
+        calendar_patterns = [
+            r"\bcalendar\b",
+            r"\bschedule\b",
+            r"\bcreate\s+(?:a\s+)?event\b",
+            r"\badd\s+(?:a\s+)?event\b",
+            r"\bschedule\s+(?:a\s+)?event\b",
+            r"\bbook\s+(?:a\s+)?event\b",
+            r"\bcalendar\s+event\b"
+        ]
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in calendar_patterns
+        ):
+
+            parameters = {
+                "title": (
+                    self._extract_calendar_title(
+                        text
+                    )
+                ),
+                "date": (
+                    self._extract_calendar_date(
+                        text
+                    )
+                ),
+                "time": (
+                    self._extract_calendar_time(
+                        text
+                    )
+                ),
+                "details": ""
+            }
+
+            duration_minutes = (
+                self._extract_calendar_duration(
+                    text
+                )
+            )
+
+            if duration_minutes is not None:
+
+                parameters[
+                    "duration_minutes"
+                ] = duration_minutes
+
+            parameters = (
+                self._repair_calendar_parameters(
+                    text,
+                    parameters
+                )
+            )
+
+            return {
+                "intent": "CHECK_CALENDAR",
+                "confidence": 0.99,
+                "parameters": parameters
+            }
+
+        # =====================================
+        # BOOKING
+        # =====================================
+
+        booking_patterns = [
+            r"\bbook\s+(?:an?\s+)?"
+            r"(?:appointment|reservation|service)\b",
+
+            r"\bcreate\s+(?:a\s+)?booking\b",
+
+            r"\bmake\s+(?:a\s+)?booking\b",
+
+            r"\bbook\s+"
+            r"(?:a\s+)?(?:cab|taxi|ride|hotel|"
+            r"flight|ticket|restaurant|table)\b"
+        ]
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in booking_patterns
+        ):
+
+            parameters = {
+                "service": (
+                    self._extract_booking_service(
+                        text
+                    )
+                ),
+                "date": (
+                    self._extract_booking_date(
+                        text
+                    )
+                ),
+                "time": (
+                    self._extract_booking_time(
+                        text
+                    )
+                ),
+                "details": (
+                    self._extract_booking_details(
+                        text
+                    )
+                )
+            }
+
+            parameters = (
+                self._repair_booking_parameters(
+                    text,
+                    parameters
+                )
+            )
+
+            return {
+                "intent": "BOOK_SERVICE",
+                "confidence": 0.98,
+                "parameters": parameters
+            }
+
+        # =====================================
+        # SHOPPING
+        # =====================================
+
+        # -------------------------------------
+        # SHOPPING COMPARE
+        # -------------------------------------
+
+        shopping_compare_patterns = [
+            r"\bcompare\b.*\bp\d+\b",
+            r"\bcompare\b.*\bproducts?\b",
+            r"\bcompare\b.*\bitems?\b",
+            r"\bcomparison\b.*\bproducts?\b",
+            r"\bcompare\b.*\btwo\b",
+            r"\bcompare\b.*\bthese\b",
+            r"\bcompare\b.*\band\b.*",
+            r"\bcompare\b.*\bwith\b.*"
+        ]
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in shopping_compare_patterns
+        ):
+
+            products = (
+                self._extract_product_ids(
+                    text
+                )
+            )
+
+            return {
+                "intent": "SHOPPING_COMPARE",
+                "confidence": 0.98,
+                "parameters": {
+                    "products": products
+                }
+            }
+
+        # -------------------------------------
+        # SHOPPING CART ADD
+        # -------------------------------------
+
+        shopping_cart_add_patterns = [
+            # Product ID based commands
+            r"\badd\b.*\bp\d+\b.*\b(?:cart|basket)\b",
+            r"\badd\b.*\b(?:cart|basket)\b.*\bp\d+\b",
+            r"\bput\b.*\bp\d+\b.*\b(?:cart|basket)\b",
+            r"\bput\b.*\b(?:cart|basket)\b.*\bp\d+\b",
+            r"\bbuy\b.*\bp\d+\b.*\b(?:cart|basket)\b",
+
+            # Generic product/item commands
+            r"\badd\b.*\bproduct\b.*\b(?:cart|basket)\b",
+            r"\badd\b.*\bitem\b.*\b(?:cart|basket)\b",
+
+            # Product-name based commands
+            r"\badd\b.*\b(?:wireless mouse|mechanical keyboard|usb-c fast charger|usb c fast charger|fast charger|laptop stand)\b.*\b(?:cart|basket)\b",
+            r"\bput\b.*\b(?:wireless mouse|mechanical keyboard|usb-c fast charger|usb c fast charger|fast charger|laptop stand)\b.*\b(?:cart|basket)\b",
+            r"\b(?:wireless mouse|mechanical keyboard|usb-c fast charger|usb c fast charger|fast charger|laptop stand)\b.*\b(?:to|in|into)\b.*\b(?:cart|basket)\b"
+        ]
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in shopping_cart_add_patterns
+        ):
+
+            product_ids = (
+                self._extract_product_ids(
+                    text
+                )
+            )
+
+            product_id = (
+                product_ids[0]
+                if product_ids
+                else ""
+            )
+
+            quantity = (
+                self._extract_shopping_quantity(
+                    text
+                )
+            )
+
+            return {
+                "intent": "SHOPPING_CART_ADD",
+                "confidence": 0.98,
+                "parameters": {
+                    "product_id": product_id,
+                    "quantity": quantity
+                }
+            }
+
+        # -------------------------------------
+        # SHOPPING CART LIST
+        # -------------------------------------
+
+        shopping_cart_list_patterns = [
+            r"\bshow\b.*\b(?:my\s+)?cart\b",
+            r"\bview\b.*\b(?:my\s+)?cart\b",
+            r"\bget\b.*\b(?:my\s+)?cart\b",
+            r"\blist\b.*\b(?:my\s+)?cart\b",
+            r"\bwhat(?:'s| is)\b.*\bin\s+(?:my\s+)?cart\b",
+            r"\bshow\b.*\bbasket\b",
+            r"\bview\b.*\bbasket\b",
+            r"\bget\b.*\bbasket\b"
+        ]
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in shopping_cart_list_patterns
+        ):
+
+            return {
+                "intent": "SHOPPING_CART_LIST",
+                "confidence": 0.98,
+                "parameters": {}
+            }
+
+        # -------------------------------------
+        # SHOPPING PURCHASE PREPARATION
+        # -------------------------------------
+
+        shopping_purchase_patterns = [
+            r"\bprepare\b.*\bpurchase\b",
+            r"\bprepare\b.*\border\b",
+            r"\bprepare\b.*\bcheckout\b",
+            r"\bproceed\b.*\bcheckout\b",
+            r"\bcheckout\b",
+            r"\bready\b.*\bpurchase\b",
+            r"\bprepare\b.*\bbuy\b",
+
+            # Direct purchase commands
+            r"\bbuy\b.*\b(?:mouse|keyboard|laptop|phone|"
+            r"mobile|headphones?|earphones?|monitor|tablet|"
+            r"charger|product|item)\b",
+
+            r"\bpurchase\b.*\b(?:mouse|keyboard|laptop|phone|"
+            r"mobile|headphones?|earphones?|monitor|tablet|"
+            r"charger|product|item)\b",
+
+            r"\border\b.*\b(?:mouse|keyboard|laptop|phone|"
+            r"mobile|headphones?|earphones?|monitor|tablet|"
+            r"charger|product|item)\b"
+        ]
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in shopping_purchase_patterns
+        ):
+
+            return {
+                "intent": "SHOPPING_PURCHASE_PREPARE",
+                "confidence": 0.98,
+                "parameters": {}
+            }
+
+        # -------------------------------------
+        # SHOPPING SEARCH
+        # -------------------------------------
+
+        shopping_search_patterns = [
+            r"\bsearch\s+(?:for\s+)?"
+            r"(?:a\s+|an\s+|the\s+)?"
+            r"(?:product\s+)?"
+            r"(?:mouse|keyboard|laptop|phone|"
+            r"mobile|headphones?|earphones?|"
+            r"monitor|tablet|charger|product)\b",
+
+            r"\bfind\s+(?:a\s+|an\s+|the\s+)?"
+            r"(?:product\s+)?"
+            r"(?:mouse|keyboard|laptop|phone|"
+            r"mobile|headphones?|earphones?|"
+            r"monitor|tablet|charger|product)\b",
+
+            r"\bshop\s+for\b",
+
+            r"\blook\s+for\b.*\b(?:product|item)\b",
+
+            r"\bfind\b.*\b(?:product|item)\b"
+        ]
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in shopping_search_patterns
+        ):
+
+            query = (
+                self._extract_shopping_query(
+                    text
+                )
+            )
+
+            return {
+                "intent": "SHOPPING_SEARCH",
+                "confidence": 0.97,
+                "parameters": {
+                    "query": query
+                }
+            }
 
         # =====================================
         # CREATE TASK
@@ -1450,7 +2559,6 @@ class IntentDetector:
                 )
 
             if not task_name:
-
                 task_name = text
 
             return {
@@ -1530,23 +2638,15 @@ class IntentDetector:
             unit = unit.lower()
 
             if (
-                unit.startswith(
-                    "second"
-                )
-                or unit.startswith(
-                    "sec"
-                )
+                unit.startswith("second")
+                or unit.startswith("sec")
             ):
 
                 duration_seconds = value
 
             elif (
-                unit.startswith(
-                    "hour"
-                )
-                or unit.startswith(
-                    "hr"
-                )
+                unit.startswith("hour")
+                or unit.startswith("hr")
             ):
 
                 duration_seconds = (
@@ -1599,9 +2699,7 @@ class IntentDetector:
 
                 city = (
                     match.group(1)
-                    .strip(
-                        " .?!,"
-                    )
+                    .strip(" .?!,")
                 )
 
             return {
@@ -1660,9 +2758,7 @@ class IntentDetector:
 
                 subject = (
                     subject_match.group(1)
-                    .strip(
-                        " .?!,"
-                    )
+                    .strip(" .?!,")
                 )
 
             email_message = ""
@@ -1704,53 +2800,6 @@ class IntentDetector:
                     "recipient": recipient,
                     "subject": subject,
                     "message": email_message
-                }
-            }
-
-        # =====================================
-        # CHECK CALENDAR
-        # =====================================
-
-        calendar_patterns = [
-            r"\bcalendar\b",
-            r"\bschedule\b",
-            r"\badd\b.*\bcalendar\b",
-            r"\bcreate\b.*\bevent\b",
-            r"\badd\b.*\bevent\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in calendar_patterns
-        ):
-
-            title = text
-
-            match = re.search(
-                r"(?:add|create)\s+(.+?)"
-                r"\s+(?:to|on)\s+"
-                r"(?:my\s+)?calendar",
-                lower_text
-            )
-
-            if match:
-
-                title = (
-                    match.group(1)
-                    .strip()
-                )
-
-            return {
-                "intent": "CHECK_CALENDAR",
-                "confidence": 0.9,
-                "parameters": {
-                    "title": title,
-                    "date": "",
-                    "time": "",
-                    "details": ""
                 }
             }
 
@@ -1917,9 +2966,7 @@ class IntentDetector:
 
                 url = (
                     url_match.group(0)
-                    .rstrip(
-                        ".,?!"
-                    )
+                    .rstrip(".,?!")
                 )
 
             elif "google" in lower_text:
@@ -1948,79 +2995,43 @@ class IntentDetector:
         # =====================================
 
         search_patterns = [
-
             r"\bsearch\s+for\b",
-
             r"\bsearch\b",
-
             r"\blook\s+up\b",
-
             r"\bfind\s+information\b",
-
             r"\bfind\s+out\b",
-
             r"^\s*what\s+is\b",
-
             r"^\s*what\s+are\b",
-
             r"^\s*who\s+is\b",
-
             r"^\s*who\s+are\b",
-
             r"^\s*where\s+is\b",
-
             r"^\s*where\s+are\b",
-
             r"^\s*when\s+is\b",
-
             r"^\s*when\s+was\b",
-
             r"^\s*when\s+did\b",
-
             r"^\s*why\s+is\b",
-
             r"^\s*why\s+are\b",
-
             r"^\s*why\s+was\b",
-
             r"^\s*why\s+were\b",
-
             r"^\s*how\s+does\b",
-
             r"^\s*how\s+do\b",
-
             r"^\s*how\s+is\b",
-
             r"^\s*how\s+are\b",
-
             r"^\s*how\s+can\b",
-
             r"^\s*how\s+to\b",
-
             r"\blatest\b",
-
             r"\bcurrent\b",
-
             r"\btoday\b",
-
             r"\brecent\b",
-
             r"\bnews\b",
-
             r"\bupdate\b",
-
             r"\brecently\b",
-
             r"\btell\s+me\s+about\b",
-
             r"\bexplain\b.*"
             r"\b(?:technology|company|person|"
             r"topic|concept)\b",
-
             r"\binformation\s+about\b",
-
             r"\bdetails\s+about\b"
-
         ]
 
         if any(
@@ -2109,6 +3120,12 @@ GET_WEATHER
 SEARCH_INFORMATION
 SEND_EMAIL
 CHECK_CALENDAR
+BOOK_SERVICE
+SHOPPING_SEARCH
+SHOPPING_COMPARE
+SHOPPING_CART_ADD
+SHOPPING_CART_LIST
+SHOPPING_PURCHASE_PREPARE
 MANAGE_FILE
 OPEN_APPLICATION
 BROWSE_WEB
@@ -2119,247 +3136,281 @@ IMPORTANT RULES:
 1. Questions asking for factual or informational
 knowledge should normally use SEARCH_INFORMATION.
 
-Examples:
-
-"What is Python?"
-"What is machine learning?"
-"Who is the CEO of Microsoft?"
-"How does cloud computing work?"
-"Where is Bengaluru?"
-"Why is Python popular?"
-"Tell me about Databricks."
-
 2. Requests that explicitly ask to search for
 information should use SEARCH_INFORMATION.
-
-Examples:
-
-"Search for Python"
-"Look up machine learning"
-"Find information about AI"
 
 3. Requests to open Google, Chrome, YouTube,
 a browser, or a website should use BROWSE_WEB.
 
-Examples:
-
-"Open Google"
-"Open Chrome"
-"Go to YouTube"
-"Search this on Google"
-
 4. Browser interaction requests should use BROWSE_WEB.
-
-Examples:
-
-"Fill the name field with AI Buddy"
-"Fill the email field with test@example.com"
-"Click the submit button"
-"Read the result"
-"Read the page"
-"Close the browser"
-"Navigate to https://example.com"
 
 5. MULTI-STEP BROWSER COMMANDS:
 
 If the user requests multiple browser actions
 in one command, return a "steps" list.
 
-Examples:
-
-"Open https://example.com and read the page"
-
-Return:
-
-{{
-    "intent": "BROWSE_WEB",
-    "confidence": 0.99,
-    "parameters": {{
-        "steps": [
-            {{
-                "action": "open",
-                "url": "https://example.com"
-            }},
-            {{
-                "action": "read",
-                "selector": "body",
-                "use_current_page": true
-            }}
-        ]
-    }}
-}}
-
-Another example:
-
-"Open https://example.com and click the submit button"
-
-Return:
-
-{{
-    "intent": "BROWSE_WEB",
-    "confidence": 0.99,
-    "parameters": {{
-        "steps": [
-            {{
-                "action": "open",
-                "url": "https://example.com"
-            }},
-            {{
-                "action": "click",
-                "selector": "button[type='submit']",
-                "use_current_page": true
-            }}
-        ]
-    }}
-}}
-
-Another example:
-
-"Open https://example.com, fill the name field with Jiya, and read the page"
-
-Return:
-
-{{
-    "intent": "BROWSE_WEB",
-    "confidence": 0.99,
-    "parameters": {{
-        "steps": [
-            {{
-                "action": "open",
-                "url": "https://example.com"
-            }},
-            {{
-                "action": "fill",
-                "selector": "#name",
-                "value": "Jiya",
-                "use_current_page": true
-            }},
-            {{
-                "action": "read",
-                "selector": "body",
-                "use_current_page": true
-            }}
-        ]
-    }}
-}}
-
 6. Do NOT classify an ordinary factual question
-as BROWSE_WEB just because it could be searched
-on the internet.
+as BROWSE_WEB.
 
-7. Do NOT classify an ordinary factual question as
-OPEN_APPLICATION.
+7. Do NOT classify an ordinary factual question
+as OPEN_APPLICATION.
 
 8. For CREATE_TASK, task_name is required.
 
-Example:
+9. For CREATE_REMINDER, return the reminder text.
 
-User:
-"Create a task to learn Python"
+10. For SET_TIMER, return duration.
 
-Return:
+The duration should be in minutes unless another
+unit is clearly specified.
+
+11. For GET_WEATHER, return the city.
+
+12. For SEARCH_INFORMATION, return the query.
+
+13. For OPEN_APPLICATION, return application
+and action.
+
+14. For BROWSE_WEB, return action and URL.
+
+15. For SEND_EMAIL, return recipient, subject,
+and message.
+
+16. CALENDAR RULES:
+
+Any request to create, add, schedule, book,
+or arrange an event in a calendar MUST use:
+
+CHECK_CALENDAR
+
+Examples:
+
+"Create a calendar event titled AI Buddy Test on 2026-09-20 at 17:00 for 30 minutes"
+
+"Schedule a meeting tomorrow at 10 AM"
+
+"Add a doctor appointment to my calendar on Friday"
+
+"Book an AI Buddy meeting for tomorrow at 5 PM"
+
+For CHECK_CALENDAR return:
 
 {{
-    "intent": "CREATE_TASK",
-    "confidence": 0.95,
+    "intent": "CHECK_CALENDAR",
+    "confidence": 0.99,
     "parameters": {{
-        "task_name": "learn Python"
+        "title": "event title",
+        "date": "YYYY-MM-DD",
+        "time": "HH:MM",
+        "details": "",
+        "duration_minutes": 30
     }}
 }}
 
-9. For CREATE_REMINDER, return:
+IMPORTANT:
+
+- "tomorrow" means the next calendar date.
+- "today" means the current calendar date.
+- Convert relative dates into YYYY-MM-DD when possible.
+- Convert AM/PM times into 24-hour HH:MM format.
+- Do NOT include words such as "tomorrow", "today",
+  "at 10 AM", or "for 30 minutes" inside the title.
+- The title must contain ONLY the event title.
+- If duration is not specified, do not invent one.
+- If details are not specified, use an empty string.
+- A request to CREATE an event is still CHECK_CALENDAR.
+- Do not classify a calendar event creation request
+  as SEARCH_INFORMATION or GENERAL_QUERY.
+
+17. BOOKING RULES:
+
+Requests to make a reservation, appointment,
+service booking, hotel booking, cab/taxi booking,
+ride booking, flight booking, ticket booking,
+restaurant/table reservation, or similar booking
+should use:
+
+BOOK_SERVICE
+
+Examples:
+
+"Book an appointment tomorrow at 11 AM"
+
+"Create a booking for a service on 2026-09-20 at 15:00"
+
+"Book a cab for tomorrow at 10 AM"
+
+"Reserve a table for tonight"
+
+For BOOK_SERVICE return:
 
 {{
-    "intent": "CREATE_REMINDER",
-    "confidence": 0.9,
+    "intent": "BOOK_SERVICE",
+    "confidence": 0.98,
     "parameters": {{
-        "reminder": "reminder text"
+        "service": "service or booking description",
+        "date": "YYYY-MM-DD",
+        "time": "HH:MM",
+        "details": ""
     }}
 }}
 
-10. For SET_TIMER, return:
+IMPORTANT:
+
+- "tomorrow" means the next calendar date.
+- "today" means the current calendar date.
+- Convert relative dates into YYYY-MM-DD when possible.
+- Convert AM/PM time into 24-hour HH:MM.
+- Do not invent a date or time if the user did not provide one.
+- Do not confuse calendar meetings/events with external
+  service bookings.
+- Calendar meetings/events MUST remain CHECK_CALENDAR.
+- External reservations/bookings MUST use BOOK_SERVICE.
+
+18. SHOPPING RULES:
+
+Requests to search for products should use:
+
+SHOPPING_SEARCH
+
+Examples:
+
+"Search for a mouse"
+
+"Find a wireless keyboard"
+
+"Search for laptop"
+
+"Look for headphones"
+
+For SHOPPING_SEARCH return:
 
 {{
-    "intent": "SET_TIMER",
-    "confidence": 0.95,
+    "intent": "SHOPPING_SEARCH",
+    "confidence": 0.97,
     "parameters": {{
-        "duration": 10
+        "query": "product search query"
     }}
 }}
 
-The duration should be in minutes unless the
-user clearly specifies another unit.
+19. SHOPPING COMPARISON:
 
-11. For GET_WEATHER, return:
+Requests to compare products should use:
+
+SHOPPING_COMPARE
+
+Examples:
+
+"Compare P001 and P002"
+
+"Compare these products P001 P002"
+
+"Compare the two products"
+
+For SHOPPING_COMPARE return:
 
 {{
-    "intent": "GET_WEATHER",
-    "confidence": 0.9,
+    "intent": "SHOPPING_COMPARE",
+    "confidence": 0.98,
     "parameters": {{
-        "city": "city name"
+        "products": ["P001", "P002"]
     }}
 }}
 
-12. For SEARCH_INFORMATION, return:
+20. SHOPPING CART:
+
+Requests to add a product to the shopping cart
+should use:
+
+SHOPPING_CART_ADD
+
+Examples:
+
+"Add P001 to my cart"
+
+"Put P001 in my cart"
+
+"Add P001 to cart quantity 2"
+
+For SHOPPING_CART_ADD return:
 
 {{
-    "intent": "SEARCH_INFORMATION",
-    "confidence": 0.9,
+    "intent": "SHOPPING_CART_ADD",
+    "confidence": 0.98,
     "parameters": {{
-        "query": "user's information request"
+        "product_id": "P001",
+        "quantity": 1
     }}
 }}
 
-13. For OPEN_APPLICATION, return:
+21. SHOPPING CART LIST:
+
+Requests to view or list the shopping cart
+should use:
+
+SHOPPING_CART_LIST
+
+Examples:
+
+"Show my cart"
+
+"View my shopping cart"
+
+"What's in my cart?"
+
+For SHOPPING_CART_LIST return:
 
 {{
-    "intent": "OPEN_APPLICATION",
-    "confidence": 0.95,
-    "parameters": {{
-        "application": "application name",
-        "action": "open_application"
-    }}
+    "intent": "SHOPPING_CART_LIST",
+    "confidence": 0.98,
+    "parameters": {{}}
 }}
 
-14. For BROWSE_WEB single action, return:
+22. SHOPPING PURCHASE:
+
+Requests to prepare checkout, purchase, buy,
+or order a product should use:
+
+SHOPPING_PURCHASE_PREPARE
+
+Examples:
+
+"Prepare my purchase"
+
+"Prepare my order"
+
+"Proceed to checkout"
+
+"Prepare checkout"
+
+"Buy wireless mouse"
+
+"Purchase a laptop"
+
+"Order mechanical keyboard"
+
+For SHOPPING_PURCHASE_PREPARE return:
 
 {{
-    "intent": "BROWSE_WEB",
-    "confidence": 0.95,
-    "parameters": {{
-        "action": "open",
-        "url": "website URL"
-    }}
+    "intent": "SHOPPING_PURCHASE_PREPARE",
+    "confidence": 0.98,
+    "parameters": {{}}
 }}
 
-15. For SEND_EMAIL, all three parameters are
-required:
+IMPORTANT:
 
-recipient
-subject
-message
+- Preparing a purchase is NOT the same as completing a purchase.
+- Never claim that a real purchase was completed.
+- The purchase preparation step must remain confirmation-based.
+- Never bypass user confirmation.
+- Do not request or expose payment credentials.
+- Do not invent product IDs.
+- Product IDs should normally look like P001, P002, etc.
 
-Example:
-
-User:
-"Send an email to test@example.com with subject Test and message Hello from AI Buddy"
-
-Return:
-
-{{
-    "intent": "SEND_EMAIL",
-    "confidence": 0.95,
-    "parameters": {{
-        "recipient": "test@example.com",
-        "subject": "Test",
-        "message": "Hello from AI Buddy"
-    }}
-}}
-
-16. Always return required parameters when
+23. Always return required parameters when
 the intent needs them.
 
-17. Return ONLY valid JSON.
+24. Always return ONLY valid JSON.
 
 User message:
 {message}
@@ -2419,12 +3470,6 @@ User message:
         # =====================================
         # FAST LOCAL BROWSER DETECTION
         # =====================================
-        #
-        # Browser commands are deterministic.
-        # Detect them locally BEFORE Gemini so
-        # temporary Gemini 503/429 errors do not
-        # convert browser commands into GENERAL_QUERY.
-        #
 
         try:
 
@@ -2451,28 +3496,256 @@ User message:
             )
 
         # =====================================
-        # GEMINI DETECTION
+        # FAST LOCAL CALENDAR DETECTION
         # =====================================
 
         try:
 
-            result = self._detect_with_gemini(
-                message
+            lower_message = message.lower()
+
+            calendar_command = any(
+                re.search(
+                    pattern,
+                    lower_message
+                )
+                for pattern in [
+                    r"\bcalendar\s+event\b",
+                    r"\bcreate\s+(?:a\s+)?event\b",
+                    r"\bcreate\s+(?:a\s+)?calendar\b",
+                    r"\badd\s+(?:a\s+)?event\b",
+                    r"\bschedule\s+(?:a\s+)?event\b",
+                    r"\bschedule\s+(?:a\s+)?meeting\b",
+                    r"\bbook\s+(?:a\s+)?event\b",
+                    r"\badd\s+.*\bcalendar\b"
+                ]
             )
 
-            return self._validate_result(
-                result
-            )
+            if calendar_command:
 
-        except Exception as e:
+                local_calendar_result = (
+                    self._local_detect(
+                        message
+                    )
+                )
+
+                if (
+                    local_calendar_result.get(
+                        "intent"
+                    )
+                    == "CHECK_CALENDAR"
+                ):
+
+                    return self._validate_result(
+                        local_calendar_result
+                    )
+
+        except Exception as error:
 
             print(
-                "⚠️ Gemini unavailable. "
-                "Using local intent detection."
+                "⚠️ Local calendar detection failed:"
             )
 
             print(
-                f"Error: {e}"
+                f"Error: {error}"
+            )
+
+        # =====================================
+        # FAST LOCAL BOOKING DETECTION
+        # =====================================
+
+        try:
+
+            booking_command = any(
+                re.search(
+                    pattern,
+                    message.lower()
+                )
+                for pattern in [
+                    r"\bbook\s+(?:an?\s+)?"
+                    r"(?:appointment|reservation|service)\b",
+
+                    r"\bcreate\s+(?:a\s+)?booking\b",
+
+                    r"\bmake\s+(?:a\s+)?booking\b",
+
+                    r"\bbook\s+(?:a\s+)?"
+                    r"(?:cab|taxi|ride|hotel|flight|"
+                    r"ticket|restaurant|table)\b"
+                ]
+            )
+
+            if booking_command:
+
+                local_booking_result = (
+                    self._local_detect(
+                        message
+                    )
+                )
+
+                if (
+                    local_booking_result.get(
+                        "intent"
+                    )
+                    == "BOOK_SERVICE"
+                ):
+
+                    return self._validate_result(
+                        local_booking_result
+                    )
+
+        except Exception as error:
+
+            print(
+                "⚠️ Local booking detection failed:"
+            )
+
+            print(
+                f"Error: {error}"
+            )
+
+        # =====================================
+        # FAST LOCAL SHOPPING DETECTION
+        # =====================================
+
+        try:
+
+            lower_message = message.lower()
+
+            shopping_command = any(
+                re.search(
+                    pattern,
+                    lower_message
+                )
+                for pattern in [
+
+                    # ---------------------------------
+                    # Search
+                    # ---------------------------------
+
+                    r"\bsearch\s+(?:for\s+)?"
+                    r"(?:a\s+|an\s+|the\s+)?"
+                    r"(?:product\s+)?"
+                    r"(?:mouse|keyboard|laptop|phone|"
+                    r"mobile|headphones?|earphones?|"
+                    r"monitor|tablet|charger|product)\b",
+
+                    r"\bfind\s+(?:a\s+|an\s+|the\s+)?"
+                    r"(?:product\s+)?"
+                    r"(?:mouse|keyboard|laptop|phone|"
+                    r"mobile|headphones?|earphones?|"
+                    r"monitor|tablet|charger|product)\b",
+
+                    r"\bshop\s+for\b",
+
+                    # ---------------------------------
+                    # Compare
+                    # ---------------------------------
+
+                    r"\bcompare\b.*\bp\d+\b",
+
+                    r"\bcompare\b.*\bproducts?\b",
+
+                    r"\bcompare\b.*\bitems?\b",
+
+                    # ---------------------------------
+                    # Cart Add
+                    # ---------------------------------
+
+                    r"\badd\b.*\bp\d+\b.*"
+                    r"\b(?:cart|basket)\b",
+
+                    r"\badd\b.*\b(?:cart|basket)\b.*"
+                    r"\bp\d+\b",
+
+                    r"\bput\b.*\bp\d+\b.*"
+                    r"\b(?:cart|basket)\b",
+
+                    r"\bput\b.*\b(?:cart|basket)\b.*"
+                    r"\bp\d+\b",
+
+                    # ---------------------------------
+                    # Cart List
+                    # ---------------------------------
+
+                    r"\bshow\b.*\b(?:my\s+)?cart\b",
+
+                    r"\bview\b.*\b(?:my\s+)?cart\b",
+
+                    r"\bget\b.*\b(?:my\s+)?cart\b",
+
+                    r"\blist\b.*\b(?:my\s+)?cart\b",
+
+                    r"\bwhat(?:'s| is)\b.*"
+                    r"\bin\s+(?:my\s+)?cart\b",
+
+                    r"\bshow\b.*\bbasket\b",
+
+                    # ---------------------------------
+                    # Purchase Preparation
+                    # ---------------------------------
+
+                    r"\bprepare\b.*\bpurchase\b",
+
+                    r"\bprepare\b.*\border\b",
+
+                    r"\bprepare\b.*\bcheckout\b",
+
+                    r"\bproceed\b.*\bcheckout\b",
+
+                    r"\bcheckout\b",
+
+                    r"\bprepare\b.*\bbuy\b",
+
+                    # Direct purchase commands
+                    r"\bbuy\b.*\b(?:mouse|keyboard|laptop|phone|"
+                    r"mobile|headphones?|earphones?|monitor|tablet|"
+                    r"charger|product|item)\b",
+
+                    r"\bpurchase\b.*\b(?:mouse|keyboard|laptop|phone|"
+                    r"mobile|headphones?|earphones?|monitor|tablet|"
+                    r"charger|product|item)\b",
+
+                    r"\border\b.*\b(?:mouse|keyboard|laptop|phone|"
+                    r"mobile|headphones?|earphones?|monitor|tablet|"
+                    r"charger|product|item)\b"
+                ]
+            )
+
+            if shopping_command:
+
+                local_shopping_result = (
+                    self._local_detect(
+                        message
+                    )
+                )
+
+                shopping_intents = {
+                    "SHOPPING_SEARCH",
+                    "SHOPPING_COMPARE",
+                    "SHOPPING_CART_ADD",
+                    "SHOPPING_CART_LIST",
+                    "SHOPPING_PURCHASE_PREPARE"
+                }
+
+                if (
+                    local_shopping_result.get(
+                        "intent"
+                    )
+                    in shopping_intents
+                ):
+
+                    return self._validate_result(
+                        local_shopping_result
+                    )
+
+        except Exception as error:
+
+            print(
+                "⚠️ Local shopping detection failed:"
+            )
+
+            print(
+                f"Error: {error}"
             )
 
             return self._validate_result(

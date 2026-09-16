@@ -14,6 +14,8 @@ from app.api.notifications import router as notifications_router
 from app.api.security import router as security_router
 from app.api.timer import router as timer_router
 from app.api.approval import router as approval_router
+from app.api.booking import router as booking_router
+from app.api.shopping import router as shopping_router
 
 
 app = FastAPI(
@@ -25,10 +27,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-
-# ============================================================
-# API ROUTERS
-# ============================================================
 
 app.include_router(
     auth_router,
@@ -89,10 +87,16 @@ app.include_router(
     approval_router
 )
 
+app.include_router(
+    booking_router,
+    prefix="/api"
+)
 
-# ============================================================
-# HOME
-# ============================================================
+app.include_router(
+    shopping_router,
+    prefix="/api"
+)
+
 
 @app.get("/")
 def home():
@@ -103,10 +107,6 @@ def home():
     }
 
 
-# ============================================================
-# HEALTH CHECK
-# ============================================================
-
 @app.get("/health")
 def health_check():
 
@@ -114,10 +114,6 @@ def health_check():
         "status": "healthy"
     }
 
-
-# ============================================================
-# TEMPORARY EVENT LOOP DIAGNOSTIC
-# ============================================================
 
 @app.get("/debug/event-loop")
 async def debug_event_loop():

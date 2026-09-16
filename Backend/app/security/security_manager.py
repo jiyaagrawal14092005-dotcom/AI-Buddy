@@ -840,9 +840,9 @@ class SecurityManager:
         permission: str
     ) -> dict:
 
-        return self.permissions.grant(
-            username,
-            permission
+        return self.permissions.grant_permission(
+            username=username,
+            permission=permission
         )
 
     def revoke_permission(
@@ -851,9 +851,9 @@ class SecurityManager:
         permission: str
     ) -> dict:
 
-        return self.permissions.revoke(
-            username,
-            permission
+        return self.permissions.revoke_permission(
+            username=username,
+            permission=permission
         )
 
     def has_permission(
@@ -862,9 +862,9 @@ class SecurityManager:
         permission: str
     ) -> bool:
 
-        return self.permissions.has(
-            username,
-            permission
+        return self.permissions.has_permission(
+            username=username,
+            permission=permission
         )
 
     def get_permissions(
@@ -872,9 +872,47 @@ class SecurityManager:
         username: str
     ) -> list:
 
-        return self.permissions.get(
-            username
+        return self.permissions.get_permissions(
+            username=username
         )
+
+    def check_permission(
+        self,
+        user_id: str,
+        permission: str
+    ) -> dict:
+        """
+        Check whether a user has a specific permission.
+        """
+
+        try:
+            user_id = str(user_id)
+
+            granted = self.permissions.has_permission(
+                username=user_id,
+                permission=permission
+            )
+
+            return {
+                "allowed": granted,
+                "granted": granted,
+                "user_id": user_id,
+                "permission": permission,
+                "message": (
+                    "Permission granted."
+                    if granted
+                    else "Permission not granted."
+                )
+            }
+
+        except Exception as error:
+            return {
+                "allowed": False,
+                "granted": False,
+                "user_id": str(user_id),
+                "permission": permission,
+                "message": f"Permission check failed: {error}"
+            }
 
     # =============================================================
     # USER CONTEXT

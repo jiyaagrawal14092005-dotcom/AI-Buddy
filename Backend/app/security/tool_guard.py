@@ -16,6 +16,7 @@ class ToolGuard:
             "file",
             "search",
             "browser",
+            "shopping",
         }
 
         # Tools that normally require explicit user approval.
@@ -23,6 +24,14 @@ class ToolGuard:
             "email",
             "calendar",
             "file",
+        }
+
+        # Shopping actions that require explicit user approval.
+        # Search, comparison, cart operations do not require approval.
+        # Purchase preparation is approval-sensitive.
+        self._restricted_shopping_actions = {
+            "purchase",
+            "buy",
         }
 
         # Browser actions that can change external state.
@@ -101,6 +110,24 @@ class ToolGuard:
         return tool_name in self._restricted_tools
 
     # =============================================================
+    # SHOPPING ACTION RESTRICTED
+    # =============================================================
+
+    def is_shopping_action_restricted(
+        self,
+        action: str | None
+    ) -> bool:
+
+        action = self._normalize_action(
+            action
+        )
+
+        if not action:
+            return False
+
+        return action in self._restricted_shopping_actions
+
+    # =============================================================
     # BROWSER ACTION RESTRICTED
     # =============================================================
 
@@ -157,7 +184,10 @@ class ToolGuard:
         if not tool_name:
             return False
 
-        # Browser uses action-level security.
+        # ---------------------------------------------------------
+        # BROWSER USES ACTION-LEVEL SECURITY
+        # ---------------------------------------------------------
+
         if tool_name == "browser":
 
             if not action:
@@ -167,6 +197,26 @@ class ToolGuard:
                 action
                 in self._restricted_browser_actions
             )
+
+        # ---------------------------------------------------------
+        # SHOPPING USES ACTION-LEVEL SECURITY
+        # ---------------------------------------------------------
+
+        if tool_name == "shopping":
+
+            if not action:
+                # Unknown shopping action should not execute
+                # without explicit approval.
+                return True
+
+            return (
+                action
+                in self._restricted_shopping_actions
+            )
+
+        # ---------------------------------------------------------
+        # NORMAL TOOL-LEVEL SECURITY
+        # ---------------------------------------------------------
 
         return (
             tool_name
@@ -461,6 +511,18 @@ class ToolGuard:
         )
 
     # =============================================================
+    # GET RESTRICTED SHOPPING ACTIONS
+    # =============================================================
+
+    def get_restricted_shopping_actions(
+        self
+    ) -> list:
+
+        return sorted(
+            self._restricted_shopping_actions
+        )
+
+    # =============================================================
     # GET RESTRICTED BROWSER ACTIONS
     # =============================================================
 
@@ -486,6 +548,9 @@ class ToolGuard:
             "enabled": True,
             "allowed_tools": self.get_allowed_tools(),
             "restricted_tools": self.get_restricted_tools(),
+            "restricted_shopping_actions": (
+                self.get_restricted_shopping_actions()
+            ),
             "restricted_browser_actions": (
                 self.get_restricted_browser_actions()
             ),

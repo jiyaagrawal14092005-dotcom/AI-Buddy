@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import uuid4
 
 from app.integrations.base import BaseIntegration
 
@@ -11,11 +12,15 @@ class BookingProvider(BaseIntegration):
             name="booking",
             description=(
                 "Booking service integration for preparing "
-                "reservations and appointment actions."
+                "and managing reservations and appointments."
             )
         )
 
         self.connected = False
+
+        # Temporary in-memory booking store.
+        # Real booking API/database integration will be added later.
+        self.bookings = {}
 
     def get_status(self) -> dict:
 
@@ -28,7 +33,8 @@ class BookingProvider(BaseIntegration):
                 "connected"
                 if self.connected
                 else "disconnected"
-            )
+            ),
+            "booking_count": len(self.bookings)
         }
 
     def connect(self) -> dict:
@@ -64,10 +70,7 @@ class BookingProvider(BaseIntegration):
         field_name: str
     ) -> str:
 
-        if not isinstance(
-            value,
-            str
-        ):
+        if not isinstance(value, str):
             raise TypeError(
                 f"{field_name} must be a string."
             )
@@ -92,14 +95,12 @@ class BookingProvider(BaseIntegration):
         )
 
         try:
-
             datetime.strptime(
                 date,
                 "%Y-%m-%d"
             )
 
         except ValueError:
-
             raise ValueError(
                 "Date must use YYYY-MM-DD format."
             )
@@ -117,19 +118,223 @@ class BookingProvider(BaseIntegration):
         )
 
         try:
-
             datetime.strptime(
                 time,
                 "%H:%M"
             )
 
         except ValueError:
-
             raise ValueError(
                 "Time must use HH:MM format."
             )
 
         return time
+
+    def _validate_user_id(
+        self,
+        user_id
+    ) -> int:
+
+        try:
+            user_id = int(user_id)
+
+        except (
+            TypeError,
+            ValueError
+        ):
+            raise ValueError(
+                "User ID must be a valid integer."
+            )
+
+        if user_id <= 0:
+            raise ValueError(
+                "User ID must be greater than zero."
+            )
+
+        return user_id
+
+    def _create_booking(
+        self,
+        user_id: int,
+        parameters: dict
+    ) -> dict:
+
+        service = parameters.get(
+            "service",
+            parameters.get(
+                "name",
+                ""
+            )
+        )
+
+        date = parameters.get(
+            "date",
+            ""
+        )
+
+        time = parameters.get(
+            "time",
+            ""
+        )
+
+        details = parameters.get(
+            "details",
+            ""
+        )
+
+        try:
+
+            service = self._validate_text(
+                service,
+                "Service"
+            )
+
+            date = self._validate_date(
+                date
+            )
+
+            time = self._validate_time(
+                time
+            )
+
+            if not isinstance(
+                details,
+                str
+            ):
+                raise TypeError(
+                    "Details must be a string."
+                )
+
+            details = details.strip()
+
+        except (
+            TypeError,
+            ValueError
+        ) as error:
+
+            return {
+                "success": False,
+                "message": str(error)
+            }
+
+        booking_id = str(uuid4())
+
+        booking = {
+            "booking_id": booking_id,
+            "user_id": user_id,
+            "service": service,
+            "date": date,
+            "time": time,
+            "details": details,
+            "status": "confirmed",
+            "created_at": datetime.utcnow().isoformat()
+        }
+
+        self.bookings[booking_id] = booking
+
+        return {
+            "success": True,
+            "status": "confirmed",
+            "action": "create",
+            "booking": booking,
+            "message": (
+                "Booking created successfully."
+            )
+        }
+
+    def _cancel_booking(
+        self,
+        user_id: int,
+        parameters: dict
+    ) -> dict:
+
+        booking_id = parameters.get(
+            "booking_id",
+            ""
+        )
+
+        try:
+
+            booking_id = self._validate_text(
+                booking_id,
+                "Booking ID"
+            )
+
+        except (
+            TypeError,
+            ValueError
+        ) as error:
+
+            return {
+                "success": False,
+                "message": str(error)
+            }
+
+        booking = self.bookings.get(
+            booking_id
+        )
+
+        if booking is None:
+            return {
+                "success": False,
+                "message": (
+                    "Booking was not found."
+                )
+            }
+
+        if booking["user_id"] != user_id:
+            return {
+                "success": False,
+                "message": (
+                    "You are not authorized to "
+                    "cancel this booking."
+                )
+            }
+
+        if booking["status"] == "cancelled":
+            return {
+                "success": False,
+                "message": (
+                    "Booking is already cancelled."
+                )
+            }
+
+        booking["status"] = "cancelled"
+        booking["cancelled_at"] = (
+            datetime.utcnow().isoformat()
+        )
+
+        return {
+            "success": True,
+            "status": "cancelled",
+            "action": "cancel",
+            "booking": booking,
+            "message": (
+                "Booking cancelled successfully."
+            )
+        }
+
+    def _list_bookings(
+        self,
+        user_id: int
+    ) -> dict:
+
+        user_bookings = [
+            booking
+            for booking in self.bookings.values()
+            if booking["user_id"] == user_id
+        ]
+
+        return {
+            "success": True,
+            "status": "listed",
+            "action": "list",
+            "bookings": user_bookings,
+            "count": len(user_bookings),
+            "message": (
+                "Bookings retrieved successfully."
+            )
+        }
 
     def execute(
         self,
@@ -178,83 +383,40 @@ class BookingProvider(BaseIntegration):
                 )
             }
 
-        if action == "create":
+        try:
 
-            service = parameters.get(
-                "service",
-                parameters.get(
-                    "name",
-                    ""
-                )
+            user_id = self._validate_user_id(
+                parameters.get("user_id")
             )
 
-            date = parameters.get(
-                "date",
-                ""
-            )
-
-            time = parameters.get(
-                "time",
-                ""
-            )
-
-            details = parameters.get(
-                "details",
-                ""
-            )
-
-            try:
-
-                service = self._validate_text(
-                    service,
-                    "Service"
-                )
-
-                date = self._validate_date(
-                    date
-                )
-
-                time = self._validate_time(
-                    time
-                )
-
-                if not isinstance(
-                    details,
-                    str
-                ):
-                    raise TypeError(
-                        "Details must be a string."
-                    )
-
-                details = details.strip()
-
-            except (
-                TypeError,
-                ValueError
-            ) as e:
-
-                return {
-                    "success": False,
-                    "message": str(e)
-                }
+        except ValueError as error:
 
             return {
-                "success": True,
-                "status": "prepared",
-                "action": "create",
-                "booking": {
-                    "service": service,
-                    "date": date,
-                    "time": time,
-                    "details": details
-                },
-                "message": (
-                    "Booking creation action "
-                    "prepared successfully."
-                )
+                "success": False,
+                "message": str(error)
             }
 
+        if action == "create":
+
+            return self._create_booking(
+                user_id=user_id,
+                parameters=parameters
+            )
+
         if action == "cancel":
+
+            return self._cancel_booking(
+                user_id=user_id,
+                parameters=parameters
+            )
+
+        if action == "list":
+
+            return self._list_bookings(
+                user_id=user_id
+            )
+
+        if action == "get":
 
             booking_id = parameters.get(
                 "booking_id",
@@ -271,33 +433,41 @@ class BookingProvider(BaseIntegration):
             except (
                 TypeError,
                 ValueError
-            ) as e:
+            ) as error:
 
                 return {
                     "success": False,
-                    "message": str(e)
+                    "message": str(error)
+                }
+
+            booking = self.bookings.get(
+                booking_id
+            )
+
+            if booking is None:
+                return {
+                    "success": False,
+                    "message": (
+                        "Booking was not found."
+                    )
+                }
+
+            if booking["user_id"] != user_id:
+                return {
+                    "success": False,
+                    "message": (
+                        "You are not authorized "
+                        "to view this booking."
+                    )
                 }
 
             return {
                 "success": True,
-                "status": "prepared",
-                "action": "cancel",
-                "booking_id": booking_id,
+                "status": "found",
+                "action": "get",
+                "booking": booking,
                 "message": (
-                    "Booking cancellation action "
-                    "prepared successfully."
-                )
-            }
-
-        if action == "list":
-
-            return {
-                "success": True,
-                "status": "prepared",
-                "action": "list",
-                "message": (
-                    "Booking listing action "
-                    "prepared successfully."
+                    "Booking retrieved successfully."
                 )
             }
 

@@ -20,109 +20,149 @@ class ActionPolicy:
 
         self._policies = {
 
-            # =====================================================
-            # LOW-RISK ACTIONS
-            # =====================================================
+            # =========================================
+            # BASIC TASK ACTIONS
+            # =========================================
 
             "task": {
                 "risk": "low",
-                "approval_required": False,
+                "approval_required": False
             },
 
             "reminder": {
                 "risk": "low",
-                "approval_required": False,
+                "approval_required": False
             },
 
             "timer": {
                 "risk": "low",
-                "approval_required": False,
+                "approval_required": False
             },
 
             "weather": {
                 "risk": "low",
-                "approval_required": False,
+                "approval_required": False
             },
 
             "search": {
                 "risk": "low",
-                "approval_required": False,
+                "approval_required": False
             },
 
-            # =====================================================
-            # MEDIUM-RISK ACTIONS
-            # =====================================================
+            # =========================================
+            # CALENDAR
+            # =========================================
 
             "calendar": {
                 "risk": "medium",
-                "approval_required": True,
+                "approval_required": True
             },
+
+            # =========================================
+            # FILE
+            # =========================================
 
             "file": {
                 "risk": "medium",
-                "approval_required": True,
+                "approval_required": True
             },
 
-            # =====================================================
-            # HIGH-RISK ACTIONS
-            # =====================================================
+            # =========================================
+            # EMAIL
+            # =========================================
 
             "email": {
                 "risk": "high",
-                "approval_required": True,
+                "approval_required": True
             },
 
-            # =====================================================
-            # BROWSER BASE POLICY
-            # =====================================================
+            # =========================================
+            # BROWSER
+            # =========================================
 
             "browser": {
                 "risk": "medium",
-                "approval_required": True,
+                "approval_required": True
             },
-
-            # =====================================================
-            # BROWSER SAFE ACTIONS
-            # =====================================================
 
             "browser.open": {
                 "risk": "low",
-                "approval_required": False,
+                "approval_required": False
             },
 
             "browser.navigate": {
                 "risk": "low",
-                "approval_required": False,
+                "approval_required": False
             },
 
             "browser.read": {
                 "risk": "low",
-                "approval_required": False,
+                "approval_required": False
             },
 
             "browser.close": {
                 "risk": "low",
-                "approval_required": False,
+                "approval_required": False
             },
-
-            # =====================================================
-            # BROWSER INTERACTIVE ACTIONS
-            # =====================================================
 
             "browser.click": {
                 "risk": "medium",
-                "approval_required": True,
+                "approval_required": True
             },
 
             "browser.fill": {
                 "risk": "medium",
-                "approval_required": True,
+                "approval_required": True
+            },
+
+            # =========================================
+            # SHOPPING
+            # =========================================
+
+            "shopping": {
+                "risk": "low",
+                "approval_required": False
+            },
+
+            "shopping.search": {
+                "risk": "low",
+                "approval_required": False
+            },
+
+            "shopping.compare": {
+                "risk": "low",
+                "approval_required": False
+            },
+
+            "shopping.cart_add": {
+                "risk": "medium",
+                "approval_required": False
+            },
+
+            "shopping.cart_list": {
+                "risk": "low",
+                "approval_required": False
+            },
+
+            "shopping.cart_remove": {
+                "risk": "medium",
+                "approval_required": False
+            },
+
+            "shopping.purchase": {
+                "risk": "high",
+                "approval_required": True
+            },
+
+            "shopping.buy": {
+                "risk": "high",
+                "approval_required": True
             },
         }
 
-    # =============================================================
-    # NORMALIZE ACTION
-    # =============================================================
+    # =========================================
+    # ACTION NORMALIZATION
+    # =========================================
 
     def _normalize_action(
         self,
@@ -134,392 +174,305 @@ class ActionPolicy:
 
         return action.strip().lower()
 
-    # =============================================================
-    # VALIDATE RISK
-    # =============================================================
-
-    def _validate_risk(
-        self,
-        risk: str
-    ) -> bool:
-
-        if not isinstance(risk, str):
-            return False
-
-        return (
-            risk.strip().lower()
-            in self.VALID_RISK_LEVELS
-        )
-
-    # =============================================================
+    # =========================================
     # GET POLICY
-    # =============================================================
+    # =========================================
 
     def get_policy(
         self,
         action: str
-    ) -> dict:
+    ) -> dict | None:
 
-        action = self._normalize_action(
-            action
+        normalized_action = self._normalize_action(action)
+
+        return self._policies.get(
+            normalized_action
         )
 
-        if not action:
-
-            return {
-                "success": False,
-                "message": "Action is required.",
-            }
-
-        policy = self._policies.get(
-            action
-        )
-
-        if policy is None:
-
-            return {
-                "success": False,
-                "action": action,
-                "message": (
-                    "No policy found for this action."
-                ),
-            }
-
-        return {
-            "success": True,
-            "action": action,
-            "policy": policy.copy(),
-        }
-
-    # =============================================================
-    # CHECK ACTION
-    # =============================================================
+    # =========================================
+    # CHECK WHETHER ACTION IS ALLOWED
+    # =========================================
 
     def is_allowed(
         self,
         action: str,
-        permission_granted: bool = False,
+        permission_granted: bool = True,
         approval_granted: bool = False
     ) -> dict:
-        """
-        Check whether an action can be executed.
 
-        Security order:
-        1. Action must have a registered policy.
-        2. Permission must be granted.
-        3. Approval must be granted when required.
-        """
-
-        action = self._normalize_action(
+        normalized_action = self._normalize_action(
             action
         )
 
-        if not action:
+        # -----------------------------------------
+        # UNKNOWN ACTION
+        # -----------------------------------------
+
+        if normalized_action not in self._policies:
 
             return {
                 "allowed": False,
-                "message": "Action is required.",
-            }
-
-        policy_result = self.get_policy(
-            action
-        )
-
-        if not policy_result["success"]:
-
-            return {
-                "allowed": False,
-                "action": action,
+                "action": normalized_action,
                 "message": (
-                    policy_result["message"]
-                ),
+                    f"Unknown action '{normalized_action}'. "
+                    "Action denied by default."
+                )
             }
 
-        policy = policy_result["policy"]
+        policy = self._policies[
+            normalized_action
+        ]
 
-        if not isinstance(
-            permission_granted,
-            bool
-        ):
-
-            return {
-                "allowed": False,
-                "action": action,
-                "message": (
-                    "Invalid permission status."
-                ),
-            }
+        # -----------------------------------------
+        # PERMISSION CHECK
+        # -----------------------------------------
 
         if not permission_granted:
 
             return {
                 "allowed": False,
-                "action": action,
-                "requires_permission": True,
-                "risk": policy["risk"],
-                "message": (
-                    "Required permission is not granted."
+                "action": normalized_action,
+                "risk": policy.get("risk"),
+                "approval_required": policy.get(
+                    "approval_required",
+                    False
                 ),
+                "message": (
+                    f"Permission not granted for "
+                    f"action '{normalized_action}'."
+                )
             }
 
-        if not isinstance(
-            approval_granted,
-            bool
-        ):
+        # -----------------------------------------
+        # APPROVAL CHECK
+        # -----------------------------------------
 
-            return {
-                "allowed": False,
-                "action": action,
-                "message": (
-                    "Invalid approval status."
-                ),
-            }
-
-        approval_required = (
-            policy["approval_required"]
+        approval_required = policy.get(
+            "approval_required",
+            False
         )
 
-        if (
-            approval_required
-            and not approval_granted
-        ):
+        if approval_required and not approval_granted:
 
             return {
                 "allowed": False,
-                "action": action,
-                "requires_approval": True,
-                "risk": policy["risk"],
+                "action": normalized_action,
+                "risk": policy.get("risk"),
+                "approval_required": True,
                 "message": (
-                    "User approval is required."
-                ),
+                    f"Explicit approval is required "
+                    f"for action '{normalized_action}'."
+                )
             }
+
+        # -----------------------------------------
+        # ACTION ALLOWED
+        # -----------------------------------------
 
         return {
             "allowed": True,
-            "action": action,
-            "risk": policy["risk"],
-            "requires_approval": approval_required,
+            "action": normalized_action,
+            "risk": policy.get("risk"),
+            "approval_required": approval_required,
             "message": (
-                "Action allowed by policy."
-            ),
+                f"Action '{normalized_action}' is allowed."
+            )
         }
 
-    # =============================================================
+    # =========================================
     # ADD POLICY
-    # =============================================================
+    # =========================================
 
     def add_policy(
         self,
         action: str,
-        risk: str = "medium",
-        approval_required: bool = True
+        risk: str,
+        approval_required: bool
     ) -> dict:
-        """
-        Add or update an action policy.
-        """
 
-        action = self._normalize_action(
+        normalized_action = self._normalize_action(
             action
         )
 
-        if not action:
+        normalized_risk = (
+            risk.strip().lower()
+            if isinstance(risk, str)
+            else ""
+        )
+
+        if not normalized_action:
 
             return {
                 "success": False,
-                "message": "Action is required.",
+                "message": "Action cannot be empty."
             }
 
-        if not self._validate_risk(
-            risk
-        ):
+        if normalized_risk not in self.VALID_RISK_LEVELS:
 
             return {
                 "success": False,
-                "message": (
-                    "Invalid risk level."
-                ),
-                "allowed_risk_levels": sorted(
-                    self.VALID_RISK_LEVELS
-                ),
+                "message": "Invalid risk level."
             }
 
-        if not isinstance(
-            approval_required,
-            bool
-        ):
-
-            return {
-                "success": False,
-                "message": (
-                    "approval_required must be boolean."
-                ),
-            }
-
-        self._policies[action] = {
-            "risk": risk.strip().lower(),
-            "approval_required": approval_required,
+        self._policies[normalized_action] = {
+            "risk": normalized_risk,
+            "approval_required": bool(
+                approval_required
+            )
         }
 
         return {
             "success": True,
-            "action": action,
-            "policy": self._policies[action].copy(),
+            "action": normalized_action,
+            "policy": self._policies[
+                normalized_action
+            ],
             "message": (
                 "Action policy added successfully."
-            ),
+            )
         }
 
-    # =============================================================
+    # =========================================
     # REMOVE POLICY
-    # =============================================================
+    # =========================================
 
     def remove_policy(
         self,
         action: str
     ) -> dict:
 
-        action = self._normalize_action(
+        normalized_action = self._normalize_action(
             action
         )
 
-        if not action:
+        if normalized_action not in self._policies:
 
             return {
                 "success": False,
-                "message": "Action is required.",
+                "message": "Action policy not found."
             }
 
-        if action not in self._policies:
-
-            return {
-                "success": False,
-                "action": action,
-                "message": (
-                    "Action policy not found."
-                ),
-            }
-
-        del self._policies[action]
+        removed_policy = self._policies.pop(
+            normalized_action
+        )
 
         return {
             "success": True,
-            "action": action,
+            "action": normalized_action,
+            "policy": removed_policy,
             "message": (
                 "Action policy removed successfully."
-            ),
+            )
         }
 
-    # =============================================================
-    # CHECK POLICY EXISTS
-    # =============================================================
+    # =========================================
+    # CHECK POLICY EXISTENCE
+    # =========================================
 
     def has_policy(
         self,
         action: str
     ) -> bool:
 
-        action = self._normalize_action(
+        normalized_action = self._normalize_action(
             action
         )
 
-        if not action:
-            return False
+        return normalized_action in self._policies
 
-        return action in self._policies
-
-    # =============================================================
+    # =========================================
     # GET ALL POLICIES
-    # =============================================================
+    # =========================================
 
-    def get_all_policies(
+    def get_all(
         self
     ) -> dict:
 
-        policies = {
-            action: policy.copy()
-            for action, policy
-            in self._policies.items()
-        }
+        return dict(
+            self._policies
+        )
 
-        return {
-            "success": True,
-            "policies": policies,
-            "count": len(policies),
-        }
+    # =========================================
+    # GET POLICIES BY RISK
+    # =========================================
 
-    # =============================================================
-    # GET ACTIONS BY RISK
-    # =============================================================
-
-    def get_actions_by_risk(
+    def get_by_risk(
         self,
         risk: str
     ) -> dict:
 
-        if not self._validate_risk(
-            risk
-        ):
-
-            return {
-                "success": False,
-                "message": (
-                    "Invalid risk level."
-                ),
-            }
-
-        risk = risk.strip().lower()
-
-        actions = sorted(
-            action
-            for action, policy
-            in self._policies.items()
-            if policy["risk"] == risk
+        normalized_risk = (
+            risk.strip().lower()
+            if isinstance(risk, str)
+            else ""
         )
 
         return {
-            "success": True,
-            "risk": risk,
-            "actions": actions,
-            "count": len(actions),
-        }
-
-    # =============================================================
-    # GET APPROVAL-REQUIRED ACTIONS
-    # =============================================================
-
-    def get_approval_required_actions(
-        self
-    ) -> list:
-
-        return sorted(
-            action
+            action: policy
             for action, policy
             in self._policies.items()
-            if policy["approval_required"]
-        )
+            if policy.get("risk") == normalized_risk
+        }
 
-    # =============================================================
-    # GET STATUS
-    # =============================================================
+    # =========================================
+    # GET APPROVAL-REQUIRED POLICIES
+    # =========================================
+
+    def get_approval_required(
+        self
+    ) -> dict:
+
+        return {
+            action: policy
+            for action, policy
+            in self._policies.items()
+            if policy.get(
+                "approval_required"
+            ) is True
+        }
+
+    # =========================================
+    # STATUS
+    # =========================================
 
     def get_status(
         self
     ) -> dict:
 
+        policies = self._policies
+
+        approval_required_count = sum(
+            1
+            for policy in policies.values()
+            if policy.get(
+                "approval_required"
+            ) is True
+        )
+
+        risk_counts = {
+            "low": 0,
+            "medium": 0,
+            "high": 0,
+            "critical": 0
+        }
+
+        for policy in policies.values():
+
+            risk = policy.get("risk")
+
+            if risk in risk_counts:
+                risk_counts[risk] += 1
+
         return {
-            "name": "action_policy",
-            "available": True,
-            "enabled": True,
-            "policy_count": len(
-                self._policies
+            "success": True,
+            "service": "action_policy",
+            "status": "ready",
+            "policy_count": len(policies),
+            "approval_required_count": (
+                approval_required_count
             ),
-            "approval_required_count": len(
-                self.get_approval_required_actions()
-            ),
-            "risk_levels": sorted(
-                self.VALID_RISK_LEVELS
-            ),
+            "risk_counts": risk_counts,
             "message": (
-                "Action policy is operational."
-            ),
+                "Action policy system is ready."
+            )
         }

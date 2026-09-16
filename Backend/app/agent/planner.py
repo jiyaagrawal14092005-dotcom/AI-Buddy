@@ -23,7 +23,31 @@ class Planner:
             "SEND_NOTIFICATION": "notification",
 
             # Browser automation
-            "BROWSE_WEB": "browser"
+            "BROWSE_WEB": "browser",
+
+            # Shopping
+            "SHOPPING_SEARCH": "shopping",
+            "SHOPPING_COMPARE": "shopping",
+            "SHOPPING_CART_ADD": "shopping",
+            "SHOPPING_CART_LIST": "shopping",
+            "SHOPPING_PURCHASE_PREPARE": "shopping"
+        }
+
+        # ---------------------------------
+        # SHOPPING ACTION MAPPING
+        # ---------------------------------
+
+        self.shopping_actions = {
+
+            "SHOPPING_SEARCH": "search",
+
+            "SHOPPING_COMPARE": "compare",
+
+            "SHOPPING_CART_ADD": "cart_add",
+
+            "SHOPPING_CART_LIST": "cart_list",
+
+            "SHOPPING_PURCHASE_PREPARE": "purchase"
         }
 
         # ---------------------------------
@@ -83,6 +107,27 @@ class Planner:
             "intent": intent_name,
             "parameters": parameters
         }
+
+    # =================================
+    # ADD SHOPPING ACTION
+    # =================================
+
+    def _prepare_shopping_parameters(
+        self,
+        intent_name: str,
+        parameters: dict
+    ) -> dict:
+
+        validated = dict(parameters)
+
+        action = self.shopping_actions.get(
+            intent_name
+        )
+
+        if action:
+            validated["action"] = action
+
+        return validated
 
     # =================================
     # VALIDATE BROWSER PARAMETERS
@@ -631,10 +676,28 @@ class Planner:
             }
 
         # ---------------------------------
+        # SHOPPING PLAN
+        # ---------------------------------
+
+        if intent_name in self.shopping_actions:
+
+            parameters = (
+                self._prepare_shopping_parameters(
+                    intent_name,
+                    parameters
+                )
+            )
+
+            steps = self._create_generic_steps(
+                tool,
+                parameters
+            )
+
+        # ---------------------------------
         # BROWSER PLAN
         # ---------------------------------
 
-        if intent_name == "BROWSE_WEB":
+        elif intent_name == "BROWSE_WEB":
 
             valid, steps, message = (
                 self._create_browser_steps(
