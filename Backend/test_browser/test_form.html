@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Buddy Browser Test</title>
+</head>
+
+<body>
+
+    <h1>AI Buddy Browser Test</h1>
+
+    <form id="testForm">
+        <label for="name">Name:</label>
+
+        <input
+            type="text"
+            id="name"
+            name="name"
+            placeholder="Enter your name"
+        >
+
+        <button type="submit" id="submit">
+            Submit
+        </button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        document.getElementById("testForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            const name = document.getElementById("name").value;
+
+            document.getElementById("result").textContent =
+                "Hello, " + name + "!";
+        });
+    </script>
+
+</body>
+</html>

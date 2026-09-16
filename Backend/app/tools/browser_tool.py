@@ -1,19 +1,188 @@
 from urllib.parse import urlparse
+import traceback
 
 from app.tools.base_tool import BaseTool
+from app.tools.browser_session import BrowserSession
 
 
 class BrowserTool(BaseTool):
 
-    def __init__(self):
+    # =================================
+    # PER-USER BROWSER SESSIONS
+    # =================================
+
+    _user_sessions: dict[str, BrowserSession] = {}
+
+    def __init__(
+        self,
+        user_id: int | str | None = None
+    ):
 
         super().__init__(
             name="browser",
             description=(
-                "Prepare browser actions such as opening "
-                "a website or navigating to a URL."
+                "Execute safe browser actions such as opening "
+                "websites, navigating to URLs, clicking elements, "
+                "filling input fields, reading page content, "
+                "and managing browser sessions."
             )
         )
+
+        self.user_id = (
+            str(user_id)
+            if user_id is not None
+            else None
+        )
+
+        self.session: BrowserSession | None = None
+
+        if self.user_id is not None:
+            self.session = (
+                self._get_or_create_session(
+                    self.user_id
+                )
+            )
+
+    # =================================
+    # USER SESSION MANAGEMENT
+    # =================================
+
+    @classmethod
+    def _get_or_create_session(
+        cls,
+        user_id: str
+    ) -> BrowserSession:
+
+        if user_id not in cls._user_sessions:
+            cls._user_sessions[user_id] = (
+                BrowserSession()
+            )
+
+        return cls._user_sessions[user_id]
+
+    def set_user_id(
+        self,
+        user_id: int | str
+    ) -> None:
+
+        if user_id is None:
+            raise ValueError(
+                "User ID cannot be empty."
+            )
+
+        self.user_id = str(user_id)
+
+        self.session = (
+            self._get_or_create_session(
+                self.user_id
+            )
+        )
+
+    def _get_session(self) -> BrowserSession:
+
+        if not self.user_id:
+            raise ValueError(
+                "Browser user ID is required."
+            )
+
+        if self.session is None:
+            self.session = (
+                self._get_or_create_session(
+                    self.user_id
+                )
+            )
+
+        return self.session
+
+    @classmethod
+    async def close_user_session(
+        cls,
+        user_id: int | str
+    ) -> dict:
+
+        user_key = str(user_id)
+
+        session = cls._user_sessions.get(
+            user_key
+        )
+
+        if session is None:
+            return {
+                "success": True,
+                "status": "completed",
+                "user_id": user_key,
+                "was_active": False,
+                "message": (
+                    "No browser session exists "
+                    "for this user."
+                )
+            }
+
+        was_active = session.is_active()
+
+        try:
+            await session.close()
+        finally:
+            cls._user_sessions.pop(
+                user_key,
+                None
+            )
+
+        return {
+            "success": True,
+            "status": "completed",
+            "user_id": user_key,
+            "was_active": was_active,
+            "message": (
+                "User browser session closed successfully."
+            )
+        }
+
+    @classmethod
+    def get_user_session_status(
+        cls,
+        user_id: int | str
+    ) -> dict:
+
+        user_key = str(user_id)
+
+        session = cls._user_sessions.get(
+            user_key
+        )
+
+        if session is None:
+            return {
+                "success": True,
+                "user_id": user_key,
+                "exists": False,
+                "active": False
+            }
+
+        return {
+            "success": True,
+            "user_id": user_key,
+            "exists": True,
+            "active": session.is_active()
+        }
+
+    @classmethod
+    def get_active_user_sessions(
+        cls
+    ) -> list[str]:
+
+        active_users = []
+
+        for user_id, session in (
+            cls._user_sessions.items()
+        ):
+            if session.is_active():
+                active_users.append(user_id)
+
+        return sorted(active_users)
+
+    # =================================
+    # URL VALIDATION
+    # =================================
 
     def _validate_url(
         self,
@@ -35,9 +204,7 @@ class BrowserTool(BaseTool):
                 "URL cannot be empty."
             )
 
-        parsed_url = urlparse(
-            url
-        )
+        parsed_url = urlparse(url)
 
         if parsed_url.scheme not in {
             "http",
@@ -53,6 +220,10 @@ class BrowserTool(BaseTool):
             )
 
         return url
+
+    # =================================
+    # ACTION VALIDATION
+    # =================================
 
     def _validate_action(
         self,
@@ -71,37 +242,380 @@ class BrowserTool(BaseTool):
 
         allowed_actions = {
             "open",
-            "navigate"
+            "navigate",
+            "click",
+            "fill",
+            "read",
+            "close"
         }
 
         if action not in allowed_actions:
             raise ValueError(
                 "Unsupported browser action. "
-                "Use open or navigate."
+                "Use open, navigate, click, fill, read, or close."
             )
 
         return action
 
+    # =================================
+    # SELECTOR VALIDATION
+    # =================================
+
+    def _validate_selector(
+        self,
+        selector: str
+    ) -> str:
+
+        if not isinstance(
+            selector,
+            str
+        ):
+            raise TypeError(
+                "Selector must be a string."
+            )
+
+        selector = selector.strip()
+
+        if not selector:
+            raise ValueError(
+                "Selector cannot be empty."
+            )
+
+        return selector
+
+    # =================================
+    # VALUE VALIDATION
+    # =================================
+
+    def _validate_value(
+        self,
+        value: str
+    ) -> str:
+
+        if not isinstance(
+            value,
+            str
+        ):
+            raise TypeError(
+                "Value must be a string."
+            )
+
+        return value
+
+    # =================================
+    # PREPARE ACTION
+    # =================================
+
     def prepare_action(
         self,
         action: str,
-        url: str
+        url: str | None = None,
+        selector: str | None = None,
+        value: str | None = None,
+        use_current_page: bool = False
     ) -> dict:
 
         action = self._validate_action(
             action
         )
 
-        url = self._validate_url(
+        prepared_action = {
+            "action": action
+        }
+
+        # ---------------------------------
+        # CLOSE DOES NOT REQUIRE URL
+        # ---------------------------------
+
+        if action == "close":
+            return prepared_action
+
+        # ---------------------------------
+        # OPEN / NAVIGATE REQUIRE URL
+        # ---------------------------------
+
+        if action in {
+            "open",
+            "navigate"
+        }:
+
+            if url is None:
+                raise ValueError(
+                    f"URL is required for '{action}' action."
+                )
+
+            url = self._validate_url(
+                url
+            )
+
+            prepared_action["url"] = url
+
+        # ---------------------------------
+        # CLICK / FILL / READ
+        # ---------------------------------
+
+        elif action in {
+            "click",
+            "fill",
+            "read"
+        }:
+
+            if isinstance(
+                url,
+                str
+            ) and url.strip():
+
+                prepared_action["url"] = (
+                    self._validate_url(
+                        url
+                    )
+                )
+
+                prepared_action[
+                    "use_current_page"
+                ] = False
+
+            else:
+
+                prepared_action[
+                    "use_current_page"
+                ] = bool(
+                    use_current_page
+                    or url is None
+                )
+
+        # ---------------------------------
+        # CLICK / FILL REQUIRE SELECTOR
+        # ---------------------------------
+
+        if action in {
+            "click",
+            "fill"
+        }:
+
+            if selector is None:
+                raise ValueError(
+                    f"Selector is required for '{action}' action."
+                )
+
+            prepared_action["selector"] = (
+                self._validate_selector(
+                    selector
+                )
+            )
+
+        # ---------------------------------
+        # FILL REQUIRES VALUE
+        # ---------------------------------
+
+        if action == "fill":
+
+            if value is None:
+                raise ValueError(
+                    "Value is required for 'fill' action."
+                )
+
+            prepared_action["value"] = (
+                self._validate_value(
+                    value
+                )
+            )
+
+        # ---------------------------------
+        # READ SELECTOR IS OPTIONAL
+        # ---------------------------------
+
+        if (
+            action == "read"
+            and selector is not None
+        ):
+
+            prepared_action["selector"] = (
+                self._validate_selector(
+                    selector
+                )
+            )
+
+        return prepared_action
+
+    # =================================
+    # GET SESSION PAGE
+    # =================================
+
+    async def _get_page(self):
+
+        session = self._get_session()
+
+        if not session.is_active():
+            await session.start()
+
+        return session.get_page()
+
+    # =================================
+    # OPEN PAGE
+    # =================================
+
+    async def _open_page(
+        self,
+        url: str
+    ) -> dict:
+
+        session = self._get_session()
+
+        return await session.open(
             url
         )
 
+    # =================================
+    # CLICK ELEMENT
+    # =================================
+
+    async def _click_element(
+        self,
+        selector: str
+    ) -> dict:
+
+        selector = self._validate_selector(
+            selector
+        )
+
+        page = await self._get_page()
+
+        element = page.locator(
+            selector
+        )
+
+        await element.first.wait_for(
+            state="visible",
+            timeout=10000
+        )
+
+        await element.first.click(
+            timeout=10000
+        )
+
         return {
-            "action": action,
-            "url": url
+            "selector": selector,
+            "url": page.url,
+            "title": await page.title()
         }
 
-    def execute(
+    # =================================
+    # FILL INPUT
+    # =================================
+
+    async def _fill_input(
+        self,
+        selector: str,
+        value: str
+    ) -> dict:
+
+        selector = self._validate_selector(
+            selector
+        )
+
+        value = self._validate_value(
+            value
+        )
+
+        page = await self._get_page()
+
+        element = page.locator(
+            selector
+        )
+
+        await element.first.wait_for(
+            state="visible",
+            timeout=10000
+        )
+
+        await element.first.fill(
+            value,
+            timeout=10000
+        )
+
+        return {
+            "selector": selector,
+            "value_length": len(value),
+            "url": page.url,
+            "title": await page.title()
+        }
+
+    # =================================
+    # READ PAGE
+    # =================================
+
+    async def _read_page(
+        self,
+        selector: str | None = None
+    ) -> dict:
+
+        page = await self._get_page()
+
+        if selector is not None:
+
+            selector = self._validate_selector(
+                selector
+            )
+
+            element = page.locator(
+                selector
+            )
+
+            if await element.count() == 0:
+                raise ValueError(
+                    f"Element not found for selector '{selector}'."
+                )
+
+            content = await element.first.inner_text(
+                timeout=10000
+            )
+
+        else:
+
+            content = await page.locator(
+                "body"
+            ).inner_text(
+                timeout=10000
+            )
+
+        content = content.strip()
+
+        return {
+            "url": page.url,
+            "title": await page.title(),
+            "content": content
+        }
+
+    # =================================
+    # CLOSE CURRENT USER SESSION
+    # =================================
+
+    async def _close_session(self) -> dict:
+
+        if not self.user_id:
+            return {
+                "was_active": False
+            }
+
+        result = await self.close_user_session(
+            self.user_id
+        )
+
+        self.session = None
+
+        return {
+            "was_active": result.get(
+                "was_active",
+                False
+            )
+        }
+
+    # =================================
+    # EXECUTE
+    # =================================
+
+    async def execute(
         self,
         parameters: dict | None = None
     ) -> dict:
@@ -120,21 +634,67 @@ class BrowserTool(BaseTool):
                 )
             }
 
+        # ---------------------------------
+        # USER ID
+        # ---------------------------------
+
+        parameter_user_id = parameters.get(
+            "user_id"
+        )
+
+        if parameter_user_id is not None:
+
+            try:
+                self.set_user_id(
+                    parameter_user_id
+                )
+
+            except ValueError as e:
+
+                return {
+                    "success": False,
+                    "message": str(e)
+                }
+
+        if not self.user_id:
+
+            return {
+                "success": False,
+                "message": (
+                    "Browser user ID is required."
+                )
+            }
+
         action = parameters.get(
             "action",
             "open"
         )
 
         url = parameters.get(
-            "url",
-            ""
+            "url"
+        )
+
+        selector = parameters.get(
+            "selector"
+        )
+
+        value = parameters.get(
+            "value"
+        )
+
+        use_current_page = parameters.get(
+            "use_current_page",
+            False
         )
 
         try:
 
             browser_data = self.prepare_action(
-                action,
-                url
+                action=action,
+                url=url,
+                selector=selector,
+                value=value,
+                use_current_page=use_current_page
             )
 
         except (
@@ -147,14 +707,380 @@ class BrowserTool(BaseTool):
                 "message": str(e)
             }
 
-        return {
-            "success": True,
-            "status": "prepared",
-            "browser": browser_data,
-            "message": (
-                "Browser action prepared successfully."
+        action_name = browser_data[
+            "action"
+        ]
+
+        try:
+
+            # =============================
+            # CLOSE
+            # =============================
+
+            if action_name == "close":
+
+                close_data = (
+                    await self._close_session()
+                )
+
+                return {
+                    "success": True,
+                    "status": "completed",
+                    "browser": {
+                        "action": "close",
+                        "user_id": self.user_id,
+                        "was_active": (
+                            close_data[
+                                "was_active"
+                            ]
+                        )
+                    },
+                    "message": (
+                        "Browser session closed successfully."
+                    )
+                }
+
+            # =============================
+            # OPEN / NAVIGATE
+            # =============================
+
+            if action_name in {
+                "open",
+                "navigate"
+            }:
+
+                await self._get_page()
+
+                page_data = await self._open_page(
+                    browser_data["url"]
+                )
+
+                return {
+                    "success": True,
+                    "status": "completed",
+                    "browser": {
+                        "action": action_name,
+                        "user_id": self.user_id,
+                        "requested_url": (
+                            browser_data["url"]
+                        ),
+                        "final_url": (
+                            page_data["url"]
+                        ),
+                        "title": (
+                            page_data["title"]
+                        ),
+                        "status_code": (
+                            page_data["status_code"]
+                        )
+                    },
+                    "message": (
+                        "Browser action executed successfully."
+                    )
+                }
+
+            # =============================
+            # CLICK
+            # =============================
+
+            if action_name == "click":
+
+                await self._get_page()
+
+                current_page = (
+                    self._get_session().get_page()
+                )
+
+                requested_url = (
+                    browser_data.get(
+                        "url"
+                    )
+                )
+
+                use_current = (
+                    browser_data.get(
+                        "use_current_page",
+                        False
+                    )
+                )
+
+                # ---------------------------------
+                # NAVIGATE ONLY WHEN URL PROVIDED
+                # ---------------------------------
+
+                if (
+                    requested_url
+                    and not use_current
+                    and current_page.url
+                    != requested_url
+                ):
+
+                    await self._open_page(
+                        requested_url
+                    )
+
+                click_data = (
+                    await self._click_element(
+                        selector=browser_data[
+                            "selector"
+                        ]
+                    )
+                )
+
+                return {
+                    "success": True,
+                    "status": "completed",
+                    "browser": {
+                        "action": "click",
+                        "user_id": self.user_id,
+                        "requested_url": (
+                            requested_url
+                        ),
+                        "used_current_page": (
+                            use_current
+                        ),
+                        "final_url": (
+                            click_data["url"]
+                        ),
+                        "title": (
+                            click_data["title"]
+                        ),
+                        "selector": (
+                            click_data["selector"]
+                        )
+                    },
+                    "message": (
+                        "Browser click executed successfully."
+                    )
+                }
+
+            # =============================
+            # FILL
+            # =============================
+
+            if action_name == "fill":
+
+                await self._get_page()
+
+                current_page = (
+                    self._get_session().get_page()
+                )
+
+                requested_url = (
+                    browser_data.get(
+                        "url"
+                    )
+                )
+
+                use_current = (
+                    browser_data.get(
+                        "use_current_page",
+                        False
+                    )
+                )
+
+                # ---------------------------------
+                # NAVIGATE ONLY WHEN URL PROVIDED
+                # ---------------------------------
+
+                if (
+                    requested_url
+                    and not use_current
+                    and current_page.url
+                    != requested_url
+                ):
+
+                    await self._open_page(
+                        requested_url
+                    )
+
+                fill_data = (
+                    await self._fill_input(
+                        selector=browser_data[
+                            "selector"
+                        ],
+                        value=browser_data[
+                            "value"
+                        ]
+                    )
+                )
+
+                return {
+                    "success": True,
+                    "status": "completed",
+                    "browser": {
+                        "action": "fill",
+                        "user_id": self.user_id,
+                        "requested_url": (
+                            requested_url
+                        ),
+                        "used_current_page": (
+                            use_current
+                        ),
+                        "final_url": (
+                            fill_data["url"]
+                        ),
+                        "title": (
+                            fill_data["title"]
+                        ),
+                        "selector": (
+                            fill_data["selector"]
+                        ),
+                        "value_length": (
+                            fill_data[
+                                "value_length"
+                            ]
+                        )
+                    },
+                    "message": (
+                        "Browser input filled successfully."
+                    )
+                }
+
+            # =============================
+            # READ
+            # =============================
+
+            if action_name == "read":
+
+                await self._get_page()
+
+                current_page = (
+                    self._get_session().get_page()
+                )
+
+                requested_url = (
+                    browser_data.get(
+                        "url"
+                    )
+                )
+
+                use_current = (
+                    browser_data.get(
+                        "use_current_page",
+                        False
+                    )
+                )
+
+                # ---------------------------------
+                # NAVIGATE ONLY WHEN URL PROVIDED
+                # ---------------------------------
+
+                if (
+                    requested_url
+                    and not use_current
+                    and current_page.url
+                    != requested_url
+                ):
+
+                    await self._open_page(
+                        requested_url
+                    )
+
+                read_data = (
+                    await self._read_page(
+                        selector=browser_data.get(
+                            "selector"
+                        )
+                    )
+                )
+
+                return {
+                    "success": True,
+                    "status": "completed",
+                    "browser": {
+                        "action": "read",
+                        "user_id": self.user_id,
+                        "requested_url": (
+                            requested_url
+                        ),
+                        "used_current_page": (
+                            use_current
+                        ),
+                        "final_url": (
+                            read_data["url"]
+                        ),
+                        "title": (
+                            read_data["title"]
+                        ),
+                        "content": (
+                            read_data["content"]
+                        )
+                    },
+                    "message": (
+                        "Browser page read successfully."
+                    )
+                }
+
+            return {
+                "success": False,
+                "status": "failed",
+                "message": (
+                    "Unsupported browser action."
+                )
+            }
+
+        except Exception as e:
+
+            print(
+                "\n"
+                "========================================\n"
+                "BROWSER TOOL FULL TRACEBACK\n"
+                "========================================"
             )
-        }
+
+            print(
+                "ERROR TYPE:",
+                type(e).__name__
+            )
+
+            print(
+                "ERROR REPR:",
+                repr(e)
+            )
+
+            print(
+                "ERROR STRING:",
+                str(e)
+            )
+
+            print(
+                "TRACEBACK:"
+            )
+
+            traceback.print_exc()
+
+            print(
+                "========================================\n"
+            )
+
+            return {
+                "success": False,
+                "status": "failed",
+                "browser": browser_data,
+                "error_type": type(e).__name__,
+                "error": repr(e),
+                "message": (
+                    f"Browser action failed: "
+                    f"{type(e).__name__}: {repr(e)}"
+                )
+            }
+
+    # =================================
+    # AVAILABILITY
+    # =================================
 
     def is_available(self) -> bool:
+
         return True
+
+    # =================================
+    # SESSION STATUS
+    # =================================
+
+    def is_session_active(self) -> bool:
+
+        if not self.user_id:
+            return False
+
+        return self._get_session().is_active()

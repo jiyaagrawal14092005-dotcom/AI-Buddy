@@ -4,6 +4,7 @@ from app.tools.task import TaskTool
 from app.tools.reminder import ReminderTool
 from app.tools.timer import TimerTool
 from app.tools.weather import WeatherTool
+from app.tools.browser_tool import BrowserTool
 
 
 class WorkflowExecutor:
@@ -14,19 +15,21 @@ class WorkflowExecutor:
         self.reminder_tool = ReminderTool()
         self.timer_tool = TimerTool()
         self.weather_tool = WeatherTool()
+        self.browser_tool = BrowserTool()
 
         self.available_tools = {
             "task",
             "reminder",
             "timer",
-            "weather"
+            "weather",
+            "browser"
         }
 
     # ---------------------------------
     # EXECUTE ONE WORKFLOW STEP
     # ---------------------------------
 
-    def execute_step(
+    async def execute_step(
         self,
         step,
         user_id: int,
@@ -124,6 +127,8 @@ class WorkflowExecutor:
                 "message": "Tool parameters must be a dictionary."
             }
 
+        parameters = dict(parameters)
+
         # ---------------------------------
         # START STEP
         # ---------------------------------
@@ -210,6 +215,51 @@ class WorkflowExecutor:
                 result = self.weather_tool.get_weather(
                     city
                 )
+
+            # -----------------------------
+            # BROWSER
+            # -----------------------------
+
+            elif tool == "browser":
+
+                # ---------------------------------
+                # SET USER-SPECIFIC BROWSER CONTEXT
+                # ---------------------------------
+
+                try:
+
+                    self.browser_tool.set_user_id(
+                        user_id
+                    )
+
+                except Exception as error:
+
+                    return {
+                        "success": False,
+                        "message": (
+                            "Unable to initialize "
+                            "user browser session."
+                        ),
+                        "error": str(error)
+                    }
+
+                # ---------------------------------
+                # PASS USER ID TO BROWSER PARAMETERS
+                # ---------------------------------
+
+                browser_parameters = dict(
+                    parameters
+                )
+
+                browser_parameters["user_id"] = user_id
+
+                result = await self.browser_tool.execute(
+                    browser_parameters
+                )
+
+            # -----------------------------
+            # UNKNOWN TOOL
+            # -----------------------------
 
             else:
 

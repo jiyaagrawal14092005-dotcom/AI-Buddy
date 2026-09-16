@@ -7,19 +7,15 @@ from google import genai
 class IntentDetector:
 
     def __init__(self):
-
         self.client = None
 
         try:
-
             self.client = genai.Client()
-
         except Exception:
-
             self.client = None
 
     # =========================================
-    # CLEAN GEMINI JSON RESPONSE
+    # JSON CLEANER
     # =========================================
 
     def _clean_json_response(
@@ -27,110 +23,81 @@ class IntentDetector:
         response_text: str
     ) -> dict:
 
-        if not isinstance(
-            response_text,
-            str
-        ):
-
+        if not response_text:
             raise ValueError(
-                "Invalid AI response."
+                "Empty response received."
             )
 
-        response_text = response_text.strip()
+        text = response_text.strip()
 
-        response_text = re.sub(
-            r"^```json\s*",
+        # -------------------------------------
+        # Remove markdown code fences
+        # -------------------------------------
+
+        text = re.sub(
+            r"^```(?:json)?\s*",
             "",
-            response_text,
+            text,
             flags=re.IGNORECASE
         )
 
-        response_text = re.sub(
-            r"^```\s*",
-            "",
-            response_text
-        )
-
-        response_text = re.sub(
+        text = re.sub(
             r"\s*```$",
             "",
-            response_text
+            text
         )
 
-        return json.loads(
-            response_text
-        )
+        text = text.strip()
 
-    # =========================================
-    # VALIDATE INTENT RESULT
-    # =========================================
+        # -------------------------------------
+        # Try direct JSON
+        # -------------------------------------
 
-    def _validate_result(
-        self,
-        result: dict
-    ) -> dict:
-
-        if not isinstance(
-            result,
-            dict
-        ):
-
-            raise ValueError(
-                "Intent result must be a dictionary."
+        try:
+            result = json.loads(
+                text
             )
 
-        intent = result.get(
-            "intent",
-            "GENERAL_QUERY"
+            if isinstance(result, dict):
+                return result
+
+        except json.JSONDecodeError:
+            pass
+
+        # -------------------------------------
+        # Extract JSON object
+        # -------------------------------------
+
+        match = re.search(
+            r"\{.*\}",
+            text,
+            flags=re.DOTALL
         )
 
-        confidence = result.get(
-            "confidence",
-            0.5
-        )
+        if match:
 
-        parameters = result.get(
-            "parameters",
-            {}
-        )
-
-        if not isinstance(
-            intent,
-            str
-        ) or not intent.strip():
-
-            intent = "GENERAL_QUERY"
-
-        if not isinstance(
-            confidence,
-            (int, float)
-        ):
-
-            confidence = 0.5
-
-        confidence = max(
-            0.0,
-            min(
-                1.0,
-                float(confidence)
+            json_text = match.group(
+                0
             )
+
+            try:
+
+                result = json.loads(
+                    json_text
+                )
+
+                if isinstance(result, dict):
+                    return result
+
+            except json.JSONDecodeError:
+                pass
+
+        raise ValueError(
+            "Gemini response does not contain valid JSON."
         )
-
-        if not isinstance(
-            parameters,
-            dict
-        ):
-
-            parameters = {}
-
-        return {
-            "intent": intent.strip().upper(),
-            "confidence": confidence,
-            "parameters": parameters
-        }
 
     # =========================================
-    # REPAIR MISSING PARAMETERS
+    # PARAMETER REPAIR
     # =========================================
 
     def _repair_parameters(
@@ -143,7 +110,6 @@ class IntentDetector:
             result,
             dict
         ):
-
             return result
 
         intent = result.get(
@@ -160,11 +126,14 @@ class IntentDetector:
             parameters,
             dict
         ):
-
             parameters = {}
 
+        text = message.strip()
+
+        lower_text = text.lower()
+
         # =====================================
-        # CREATE TASK PARAMETER REPAIR
+        # CREATE TASK
         # =====================================
 
         if intent == "CREATE_TASK":
@@ -174,50 +143,1248 @@ class IntentDetector:
                 ""
             )
 
-            if (
-                not isinstance(
-                    task_name,
-                    str
-                )
-                or not task_name.strip()
-            ):
+            if not task_name:
 
-                local_result = self._local_detect(
-                    message
+                match = re.search(
+                    r"(?:create|make|add)"
+                    r"\s+(?:a\s+)?task"
+                    r"(?:\s+(?:to|for))?\s+(.+)",
+                    text,
+                    flags=re.IGNORECASE
                 )
 
-                local_parameters = local_result.get(
-                    "parameters",
-                    {}
+                if match:
+
+                    task_name = (
+                        match.group(1)
+                        .strip()
+                    )
+
+            parameters["task_name"] = (
+                task_name
+            )
+
+        # =====================================
+        # CREATE REMINDER
+        # =====================================
+
+        elif intent == "CREATE_REMINDER":
+
+            reminder = parameters.get(
+                "reminder",
+                ""
+            )
+
+            if not reminder:
+
+                match = re.search(
+                    r"remind\s+me"
+                    r"(?:\s+to)?\s+(.+)",
+                    text,
+                    flags=re.IGNORECASE
                 )
 
-                if isinstance(
-                    local_parameters,
-                    dict
-                ):
+                if match:
 
-                    local_task_name = (
-                        local_parameters.get(
-                            "task_name",
-                            ""
+                    reminder = (
+                        match.group(1)
+                        .strip()
+                    )
+
+            parameters["reminder"] = (
+                reminder
+            )
+
+        # =====================================
+        # SET TIMER
+        # =====================================
+
+        elif intent == "SET_TIMER":
+
+            duration = (
+                parameters.get(
+                    "duration_seconds"
+                )
+                or parameters.get(
+                    "duration"
+                )
+            )
+
+            if duration is None:
+
+                match = re.search(
+                    r"timer"
+                    r"(?:\s+for)?\s+"
+                    r"(\d+)"
+                    r"\s*"
+                    r"(seconds?|secs?|"
+                    r"minutes?|mins?|"
+                    r"hours?|hrs?)?",
+                    lower_text
+                )
+
+                if match:
+
+                    value = int(
+                        match.group(1)
+                    )
+
+                    unit = (
+                        match.group(2)
+                        or "minutes"
+                    )
+
+                    if unit.startswith(
+                        "second"
+                    ) or unit.startswith(
+                        "sec"
+                    ):
+
+                        duration = value
+
+                    elif unit.startswith(
+                        "hour"
+                    ) or unit.startswith(
+                        "hr"
+                    ):
+
+                        duration = (
+                            value * 60 * 60
+                        )
+
+                    else:
+
+                        duration = (
+                            value * 60
+                        )
+
+            if duration is not None:
+
+                parameters[
+                    "duration_seconds"
+                ] = int(
+                    duration
+                )
+
+        # =====================================
+        # GET WEATHER
+        # =====================================
+
+        elif intent == "GET_WEATHER":
+
+            city = parameters.get(
+                "city",
+                ""
+            )
+
+            if not city:
+
+                match = re.search(
+                    r"\b(?:in|at|for)\s+"
+                    r"([A-Za-z\s]+)",
+                    text,
+                    flags=re.IGNORECASE
+                )
+
+                if match:
+
+                    city = (
+                        match.group(1)
+                        .strip(
+                            " .?!,"
                         )
                     )
 
-                    if (
-                        isinstance(
-                            local_task_name,
-                            str
-                        )
-                        and local_task_name.strip()
-                    ):
+            parameters["city"] = city
 
-                        parameters["task_name"] = (
-                            local_task_name.strip()
+        # =====================================
+        # SEARCH INFORMATION
+        # =====================================
+
+        elif intent == "SEARCH_INFORMATION":
+
+            query = parameters.get(
+                "query",
+                ""
+            )
+
+            if not query:
+
+                match = re.search(
+                    r"(?:search\s+for|"
+                    r"look\s+up|search)"
+                    r"\s+(.+)",
+                    text,
+                    flags=re.IGNORECASE
+                )
+
+                if match:
+
+                    query = (
+                        match.group(1)
+                        .strip()
+                    )
+
+            parameters["query"] = query
+
+        # =====================================
+        # SEND EMAIL
+        # =====================================
+
+        elif intent == "SEND_EMAIL":
+
+            recipient = parameters.get(
+                "recipient",
+                ""
+            )
+
+            if not recipient:
+
+                match = re.search(
+                    r"\b[A-Za-z0-9._%+-]+@"
+                    r"[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b",
+                    text
+                )
+
+                if match:
+
+                    recipient = (
+                        match.group(0)
+                    )
+
+            parameters["recipient"] = (
+                recipient
+            )
+
+            subject = parameters.get(
+                "subject",
+                ""
+            )
+
+            if not subject:
+
+                match = re.search(
+                    r"\bsubject\s*[:\-]?\s*"
+                    r"(.+?)"
+                    r"(?=\s+\bmessage\b|\s*$)",
+                    text,
+                    flags=re.IGNORECASE
+                )
+
+                if match:
+
+                    subject = (
+                        match.group(1)
+                        .strip(
+                            " .?!,"
                         )
+                    )
+
+            parameters["subject"] = (
+                subject
+            )
+
+            email_message = parameters.get(
+                "message",
+                ""
+            )
+
+            if not email_message:
+
+                match = re.search(
+                    r"\bmessage\s*[:\-]?\s*(.+)$",
+                    text,
+                    flags=re.IGNORECASE
+                )
+
+                if match:
+
+                    email_message = (
+                        match.group(1)
+                        .strip()
+                    )
+
+            parameters["message"] = (
+                email_message
+            )
+
+        # =====================================
+        # CHECK CALENDAR
+        # =====================================
+
+        elif intent == "CHECK_CALENDAR":
+
+            parameters.setdefault(
+                "title",
+                text
+            )
+
+            parameters.setdefault(
+                "date",
+                ""
+            )
+
+            parameters.setdefault(
+                "time",
+                ""
+            )
+
+            parameters.setdefault(
+                "details",
+                ""
+            )
+
+        # =====================================
+        # MANAGE FILE
+        # =====================================
+
+        elif intent == "MANAGE_FILE":
+
+            parameters.setdefault(
+                "operation",
+                "read"
+            )
+
+            parameters.setdefault(
+                "file_path",
+                ""
+            )
+
+            parameters.setdefault(
+                "content",
+                ""
+            )
+
+        # =====================================
+        # OPEN APPLICATION
+        # =====================================
+
+        elif intent == "OPEN_APPLICATION":
+
+            parameters.setdefault(
+                "application",
+                ""
+            )
+
+            parameters.setdefault(
+                "action",
+                "open_application"
+            )
+
+        # =====================================
+        # BROWSE WEB
+        # =====================================
+
+        elif intent == "BROWSE_WEB":
+
+            parameters.setdefault(
+                "action",
+                "open"
+            )
+
+            parameters.setdefault(
+                "url",
+                ""
+            )
 
         result["parameters"] = parameters
 
         return result
+
+    # =========================================
+    # VALIDATE RESULT
+    # =========================================
+
+    def _validate_result(
+        self,
+        result: dict
+    ) -> dict:
+
+        if not isinstance(
+            result,
+            dict
+        ):
+
+            return {
+                "intent": "GENERAL_QUERY",
+                "confidence": 0.0,
+                "parameters": {}
+            }
+
+        allowed_intents = {
+            "CREATE_TASK",
+            "CREATE_REMINDER",
+            "SET_TIMER",
+            "GET_WEATHER",
+            "SEARCH_INFORMATION",
+            "SEND_EMAIL",
+            "CHECK_CALENDAR",
+            "MANAGE_FILE",
+            "OPEN_APPLICATION",
+            "BROWSE_WEB",
+            "GENERAL_QUERY"
+        }
+
+        intent = result.get(
+            "intent",
+            "GENERAL_QUERY"
+        )
+
+        if intent not in allowed_intents:
+
+            intent = "GENERAL_QUERY"
+
+        confidence = result.get(
+            "confidence",
+            0.5
+        )
+
+        try:
+
+            confidence = float(
+                confidence
+            )
+
+        except Exception:
+
+            confidence = 0.5
+
+        confidence = max(
+            0.0,
+            min(
+                confidence,
+                1.0
+            )
+        )
+
+        parameters = result.get(
+            "parameters",
+            {}
+        )
+
+        if not isinstance(
+            parameters,
+            dict
+        ):
+
+            parameters = {}
+
+        return {
+            "intent": intent,
+            "confidence": confidence,
+            "parameters": parameters
+        }
+
+    # =========================================
+    # BROWSER URL EXTRACTION
+    # =========================================
+
+    def _extract_browser_url(
+        self,
+        text: str
+    ) -> str:
+
+        url_match = re.search(
+            r"https?://[^\s]+",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        if url_match:
+
+            return (
+                url_match.group(0)
+                .rstrip(
+                    ".,?!"
+                )
+            )
+
+        lower_text = text.lower()
+
+        if "google" in lower_text:
+
+            return "https://www.google.com"
+
+        if "youtube" in lower_text:
+
+            return "https://www.youtube.com"
+
+        return ""
+
+    # =========================================
+    # BROWSER VALUE EXTRACTION
+    # =========================================
+
+    def _extract_fill_value(
+        self,
+        text: str
+    ) -> str:
+
+        patterns = [
+
+            r"\bwith\s+(.+)$",
+
+            r"\bas\s+(.+)$",
+
+            r"\bto\s+(.+)$",
+
+            r"\bvalue\s*[:\-]?\s*(.+)$",
+
+            r"\benter\s+(.+)$",
+
+            r"\btype\s+(.+)$"
+
+        ]
+
+        for pattern in patterns:
+
+            match = re.search(
+                pattern,
+                text,
+                flags=re.IGNORECASE
+            )
+
+            if match:
+
+                value = (
+                    match.group(1)
+                    .strip(
+                        " .?!,"
+                    )
+                )
+
+                if value:
+
+                    return value
+
+        return ""
+
+    # =========================================
+    # BROWSER SELECTOR EXTRACTION
+    # =========================================
+
+    def _extract_browser_selector(
+        self,
+        text: str,
+        action: str
+    ) -> str:
+
+        lower_text = text.lower()
+
+        # -------------------------------------
+        # Explicit CSS selector
+        # -------------------------------------
+
+        selector_match = re.search(
+            r"\b(?:selector|css)\s*[:\-]?\s*"
+            r"([#.\[\]A-Za-z0-9_='\": >_-]+)",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        if selector_match:
+
+            selector = (
+                selector_match.group(1)
+                .strip(
+                    " .,!?;:"
+                )
+            )
+
+            if selector:
+
+                return selector
+
+        # -------------------------------------
+        # Direct CSS selector
+        # Example: click #submit
+        # -------------------------------------
+
+        direct_selector_match = re.search(
+            r"(?:click|press|select)\s+"
+            r"(?:the\s+)?([#.][A-Za-z0-9_-]+)",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        if direct_selector_match:
+
+            selector = (
+                direct_selector_match.group(1)
+                .strip()
+            )
+
+            if selector:
+
+                return selector
+
+        # -------------------------------------
+        # Common semantic elements
+        # -------------------------------------
+
+        if action == "fill":
+
+            if re.search(
+                r"\b(name\s+field|"
+                r"name\s+input|"
+                r"name\s+box|"
+                r"my\s+name|"
+                r"name\s+textbox|"
+                r"enter\s+(?:your\s+)?name)\b",
+                lower_text
+            ):
+
+                return "#name"
+
+            if re.search(
+                r"\b(email\s+field|"
+                r"email\s+input|"
+                r"email\s+box)\b",
+                lower_text
+            ):
+
+                return "#email"
+
+            if re.search(
+                r"\b(password\s+field|"
+                r"password\s+input|"
+                r"password\s+box)\b",
+                lower_text
+            ):
+
+                return "#password"
+
+            if re.search(
+                r"\b(search\s+field|"
+                r"search\s+input|"
+                r"search\s+box)\b",
+                lower_text
+            ):
+
+                return "#search"
+
+        if action == "click":
+
+            if re.search(
+                r"\b(submit\s+button|"
+                r"submit\s+btn|"
+                r"button\s+to\s+submit|"
+                r"click\s+submit)\b",
+                lower_text
+            ):
+
+                return "button[type='submit']"
+
+            if re.search(
+                r"\b(login\s+button|"
+                r"login\s+btn|"
+                r"sign\s+in\s+button)\b",
+                lower_text
+            ):
+
+                return "button:has-text('Login')"
+
+            if re.search(
+                r"\b(search\s+button|"
+                r"search\s+btn)\b",
+                lower_text
+            ):
+
+                return "button:has-text('Search')"
+
+            if re.search(
+                r"\b(cancel\s+button|"
+                r"cancel\s+btn)\b",
+                lower_text
+            ):
+
+                return "button:has-text('Cancel')"
+
+        if action == "read":
+
+            # ---------------------------------
+            # Result / output / response
+            # ---------------------------------
+
+            if re.search(
+                r"\b(result|output|response)\b",
+                lower_text
+            ):
+
+                return "#result"
+
+            # ---------------------------------
+            # Message / status
+            # ---------------------------------
+
+            if re.search(
+                r"\b(message|status)\b",
+                lower_text
+            ):
+
+                return "#message"
+
+        return ""
+
+    # =========================================
+    # MULTI-STEP BROWSER DETECTION
+    # =========================================
+
+    def _local_browser_multi_step_detect(
+        self,
+        text: str
+    ) -> dict | None:
+
+        lower_text = text.lower()
+
+        # -------------------------------------
+        # Must contain browser action language
+        # -------------------------------------
+
+        action_words = [
+            "open",
+            "navigate",
+            "go to",
+            "visit",
+            "click",
+            "press",
+            "fill",
+            "enter",
+            "type",
+            "read",
+            "extract",
+            "close"
+        ]
+
+        if not any(
+            word in lower_text
+            for word in action_words
+        ):
+            return None
+
+        # -------------------------------------
+        # Split command into action segments
+        # -------------------------------------
+
+        parts = re.split(
+            r"\s+(?:and|then)\s+|"
+            r"\s*,\s*",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        if len(parts) < 2:
+            return None
+
+        steps = []
+
+        # -------------------------------------
+        # Track whether a browser page
+        # has already been opened
+        # -------------------------------------
+
+        known_url = ""
+
+        for part in parts:
+
+            segment = part.strip()
+
+            if not segment:
+                continue
+
+            lower_segment = segment.lower()
+
+            # =================================
+            # OPEN
+            # =================================
+
+            open_match = re.search(
+                r"\bopen\s+"
+                r"(https?://[^\s,]+|"
+                r"(?:the\s+)?(?:google|youtube)\b)",
+                segment,
+                flags=re.IGNORECASE
+            )
+
+            if open_match:
+
+                url = self._extract_browser_url(
+                    segment
+                )
+
+                if url:
+
+                    known_url = url
+
+                    steps.append(
+                        {
+                            "action": "open",
+                            "url": url
+                        }
+                    )
+
+                    continue
+
+            # =================================
+            # NAVIGATE
+            # =================================
+
+            navigate_match = re.search(
+                r"\b(?:navigate\s+to|"
+                r"go\s+to|visit)\b",
+                lower_segment
+            )
+
+            if navigate_match:
+
+                url = self._extract_browser_url(
+                    segment
+                )
+
+                if url:
+
+                    known_url = url
+
+                    steps.append(
+                        {
+                            "action": "navigate",
+                            "url": url
+                        }
+                    )
+
+                    continue
+
+            # =================================
+            # CLICK
+            # =================================
+
+            click_match = re.search(
+                r"\b(?:click|press|select)\b",
+                lower_segment
+            )
+
+            if click_match:
+
+                selector = (
+                    self._extract_browser_selector(
+                        segment,
+                        "click"
+                    )
+                )
+
+                if selector:
+
+                    click_parameters = {
+                        "action": "click",
+                        "selector": selector
+                    }
+
+                    if known_url:
+
+                        click_parameters["use_current_page"] = True
+
+                    steps.append(
+                        click_parameters
+                    )
+
+                    continue
+
+            # =================================
+            # FILL
+            # =================================
+
+            fill_match = re.search(
+                r"\b(?:fill|enter|type|put)\b",
+                lower_segment
+            )
+
+            if fill_match:
+
+                selector = (
+                    self._extract_browser_selector(
+                        segment,
+                        "fill"
+                    )
+                )
+
+                value = (
+                    self._extract_fill_value(
+                        segment
+                    )
+                )
+
+                if selector and value:
+
+                    fill_parameters = {
+                        "action": "fill",
+                        "selector": selector,
+                        "value": value
+                    }
+
+                    if known_url:
+
+                        fill_parameters[
+                            "use_current_page"
+                        ] = True
+
+                    steps.append(
+                        fill_parameters
+                    )
+
+                    continue
+
+            # =================================
+            # READ
+            # =================================
+
+            read_match = re.search(
+                r"\b(?:read|extract|get)\b",
+                lower_segment
+            )
+
+            if read_match:
+
+                selector = (
+                    self._extract_browser_selector(
+                        segment,
+                        "read"
+                    )
+                )
+
+                if not selector:
+
+                    selector = "body"
+
+                read_parameters = {
+                    "action": "read",
+                    "selector": selector,
+                    "use_current_page": True
+                }
+
+                steps.append(
+                    read_parameters
+                )
+
+                continue
+
+            # =================================
+            # CLOSE
+            # =================================
+
+            close_match = re.search(
+                r"\b(?:close|exit)\b"
+                r".*\bbrowser\b",
+                lower_segment
+            )
+
+            if close_match:
+
+                steps.append(
+                    {
+                        "action": "close",
+                        "use_current_page": True
+                    }
+                )
+
+                continue
+
+        # -------------------------------------
+        # Need at least 2 valid steps
+        # -------------------------------------
+
+        if len(steps) < 2:
+
+            return None
+
+        # -------------------------------------
+        # Convert steps to planner format
+        # -------------------------------------
+
+        planner_steps = []
+
+        for index, step_parameters in enumerate(
+            steps,
+            start=1
+        ):
+
+            planner_steps.append(
+                {
+                    "step": index,
+                    "tool": "browser",
+                    "parameters": step_parameters
+                }
+            )
+
+        return {
+            "intent": "BROWSE_WEB",
+            "confidence": 0.99,
+            "parameters": {
+                "steps": planner_steps
+            }
+        }
+
+    # =========================================
+    # LOCAL BROWSER DETECTION
+    # =========================================
+
+    def _local_browser_detect(
+        self,
+        text: str
+    ) -> dict | None:
+
+        lower_text = text.lower()
+
+        # =====================================
+        # MULTI-STEP BROWSER COMMAND
+        # =====================================
+
+        multi_step_result = (
+            self._local_browser_multi_step_detect(
+                text
+            )
+        )
+
+        if multi_step_result is not None:
+
+            return multi_step_result
+
+        # =====================================
+        # CLOSE BROWSER
+        # =====================================
+
+        close_patterns = [
+            r"\bclose\s+(?:the\s+)?browser\b",
+            r"\bclose\s+(?:the\s+)?web\s+browser\b",
+            r"\bexit\s+(?:the\s+)?browser\b"
+        ]
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in close_patterns
+        ):
+
+            return {
+                "intent": "BROWSE_WEB",
+                "confidence": 0.99,
+                "parameters": {
+                    "action": "close",
+                    "url": "",
+                    "use_current_page": True
+                }
+            }
+
+        # =====================================
+        # FILL
+        # =====================================
+
+        fill_patterns = [
+            r"\bfill\b",
+            r"\benter\b.*\bfield\b",
+            r"\btype\b.*\bfield\b",
+            r"\bput\b.*\bfield\b"
+        ]
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in fill_patterns
+        ):
+
+            url = self._extract_browser_url(
+                text
+            )
+
+            selector = (
+                self._extract_browser_selector(
+                    text,
+                    "fill"
+                )
+            )
+
+            value = (
+                self._extract_fill_value(
+                    text
+                )
+            )
+
+            if selector and value:
+
+                return {
+                    "intent": "BROWSE_WEB",
+                    "confidence": 0.98,
+                    "parameters": {
+                        "action": "fill",
+                        "url": url,
+                        "selector": selector,
+                        "value": value,
+                        "use_current_page": not bool(url)
+                    }
+                }
+
+        # =====================================
+        # CLICK
+        # =====================================
+
+        click_patterns = [
+            r"\bclick\b",
+            r"\bpress\b.*\bbutton\b",
+            r"\bselect\b.*\bbutton\b"
+        ]
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in click_patterns
+        ):
+
+            url = self._extract_browser_url(
+                text
+            )
+
+            selector = (
+                self._extract_browser_selector(
+                    text,
+                    "click"
+                )
+            )
+
+            if selector:
+
+                return {
+                    "intent": "BROWSE_WEB",
+                    "confidence": 0.98,
+                    "parameters": {
+                        "action": "click",
+                        "url": url,
+                        "selector": selector,
+                        "use_current_page": not bool(url)
+                    }
+                }
+
+        # =====================================
+        # READ PAGE
+        # =====================================
+
+        read_patterns = [
+            r"\bread\s+(?:(?:the|this)\s+)?page\b",
+            r"\bread\s+(?:(?:the|this)\s+)?webpage\b",
+            r"\bread\s+(?:the\s+)?current\s+page\b",
+            r"\bread\s+(?:the\s+)?result\b",
+            r"\bread\s+(?:the\s+)?output\b",
+            r"\bread\s+(?:the\s+)?response\b",
+            r"\bget\s+(?:the\s+)?page\s+text\b",
+            r"\bextract\s+(?:the\s+)?page\b",
+            r"\bread\s+selector\b"
+        ]
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in read_patterns
+        ):
+
+            url = self._extract_browser_url(
+                text
+            )
+
+            selector = (
+                self._extract_browser_selector(
+                    text,
+                    "read"
+                )
+            )
+
+            if not selector:
+                selector = "body"
+
+            return {
+                "intent": "BROWSE_WEB",
+                "confidence": 0.98,
+                "parameters": {
+                    "action": "read",
+                    "url": url,
+                    "selector": selector,
+                    "use_current_page": not bool(url)
+                }
+            }
+
+        # =====================================
+        # NAVIGATE
+        # =====================================
+
+        navigate_patterns = [
+            r"\bnavigate\s+to\b",
+            r"\bgo\s+to\b",
+            r"\bvisit\b",
+            r"\bopen\s+(?:the\s+)?website\b"
+        ]
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in navigate_patterns
+        ):
+
+            url = self._extract_browser_url(
+                text
+            )
+
+            if url:
+
+                return {
+                    "intent": "BROWSE_WEB",
+                    "confidence": 0.98,
+                    "parameters": {
+                        "action": "navigate",
+                        "url": url
+                    }
+                }
+
+        # =====================================
+        # OPEN WEBSITE / GOOGLE / YOUTUBE
+        # =====================================
+
+        open_patterns = [
+            r"\bopen\s+google\b",
+            r"\bopen\s+youtube\b",
+            r"\bopen\s+(?:the\s+)?browser\b",
+            r"\bopen\s+(?:a\s+)?website\b",
+            r"\bopen\s+(?:this\s+)?url\b"
+        ]
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in open_patterns
+        ):
+
+            url = self._extract_browser_url(
+                text
+            )
+
+            return {
+                "intent": "BROWSE_WEB",
+                "confidence": 0.98,
+                "parameters": {
+                    "action": "open",
+                    "url": url
+                }
+            }
+
+        return None
 
     # =========================================
     # LOCAL INTENT DETECTION
@@ -229,7 +1396,22 @@ class IntentDetector:
     ) -> dict:
 
         text = message.strip()
+
         lower_text = text.lower()
+
+        # =====================================
+        # BROWSER
+        # =====================================
+
+        browser_result = (
+            self._local_browser_detect(
+                text
+            )
+        )
+
+        if browser_result is not None:
+
+            return browser_result
 
         # =====================================
         # CREATE TASK
@@ -254,16 +1436,18 @@ class IntentDetector:
             task_name = ""
 
             match = re.search(
-                r"(?:task\s+(?:to\s+)?|to\s+complete\s+)"
+                r"(?:task\s+(?:to\s+)?|"
+                r"to\s+complete\s+)"
                 r"(.+)",
                 lower_text
             )
 
             if match:
 
-                task_name = match.group(
-                    1
-                ).strip()
+                task_name = (
+                    match.group(1)
+                    .strip()
+                )
 
             if not task_name:
 
@@ -299,15 +1483,17 @@ class IntentDetector:
             reminder_text = text
 
             match = re.search(
-                r"remind\s+me\s+(?:to\s+)?(.+)",
+                r"remind\s+me\s+"
+                r"(?:to\s+)?(.+)",
                 lower_text
             )
 
             if match:
 
-                reminder_text = match.group(
-                    1
-                ).strip()
+                reminder_text = (
+                    match.group(1)
+                    .strip()
+                )
 
             return {
                 "intent": "CREATE_REMINDER",
@@ -324,50 +1510,61 @@ class IntentDetector:
         timer_match = re.search(
             r"\b(?:set\s+)?(?:a\s+)?timer\b"
             r"(?:\s+for)?\s+(\d+)"
-            r"\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?)?",
+            r"\s*(seconds?|secs?|"
+            r"minutes?|mins?|"
+            r"hours?|hrs?)?",
             lower_text
         )
 
         if timer_match:
 
             value = int(
-                timer_match.group(
-                    1
-                )
+                timer_match.group(1)
             )
 
             unit = (
-                timer_match.group(
-                    2
-                )
+                timer_match.group(2)
                 or "minutes"
             )
 
             unit = unit.lower()
 
             if (
-                unit.startswith("second")
-                or unit.startswith("sec")
+                unit.startswith(
+                    "second"
+                )
+                or unit.startswith(
+                    "sec"
+                )
             ):
 
-                duration = value / 60
+                duration_seconds = value
 
             elif (
-                unit.startswith("hour")
-                or unit.startswith("hr")
+                unit.startswith(
+                    "hour"
+                )
+                or unit.startswith(
+                    "hr"
+                )
             ):
 
-                duration = value * 60
+                duration_seconds = (
+                    value * 60 * 60
+                )
 
             else:
 
-                duration = value
+                duration_seconds = (
+                    value * 60
+                )
 
             return {
                 "intent": "SET_TIMER",
                 "confidence": 0.95,
                 "parameters": {
-                    "duration": duration
+                    "duration_seconds":
+                        duration_seconds
                 }
             }
 
@@ -392,17 +1589,19 @@ class IntentDetector:
             city = ""
 
             match = re.search(
-                r"\b(?:in|at|for)\s+([A-Za-z\s]+)",
+                r"\b(?:in|at|for)\s+"
+                r"([A-Za-z\s]+)",
                 text,
                 flags=re.IGNORECASE
             )
 
             if match:
 
-                city = match.group(
-                    1
-                ).strip(
-                    " .?!,"
+                city = (
+                    match.group(1)
+                    .strip(
+                        " .?!,"
+                    )
                 )
 
             return {
@@ -443,24 +1642,60 @@ class IntentDetector:
 
             if email_match:
 
-                recipient = email_match.group(
-                    0
+                recipient = (
+                    email_match.group(0)
                 )
 
             subject = ""
 
             subject_match = re.search(
-                r"\bsubject\s*[:\-]?\s*(.+?)"
-                r"(?:\s+message\s*[:\-]?|\s*$)",
+                r"\bsubject\s*[:\-]?\s*"
+                r"(.+?)"
+                r"(?=\s+\bmessage\b|\s*$)",
                 text,
                 flags=re.IGNORECASE
             )
 
             if subject_match:
 
-                subject = subject_match.group(
-                    1
-                ).strip()
+                subject = (
+                    subject_match.group(1)
+                    .strip(
+                        " .?!,"
+                    )
+                )
+
+            email_message = ""
+
+            message_match = re.search(
+                r"\bmessage\s*[:\-]?\s*(.+)$",
+                text,
+                flags=re.IGNORECASE
+            )
+
+            if message_match:
+
+                email_message = (
+                    message_match.group(1)
+                    .strip()
+                )
+
+            if not email_message:
+
+                fallback_message_match = re.search(
+                    r"\b(?:saying|that\s+says|"
+                    r"with\s+message)\s+(.+)$",
+                    text,
+                    flags=re.IGNORECASE
+                )
+
+                if fallback_message_match:
+
+                    email_message = (
+                        fallback_message_match
+                        .group(1)
+                        .strip()
+                    )
 
             return {
                 "intent": "SEND_EMAIL",
@@ -468,7 +1703,7 @@ class IntentDetector:
                 "parameters": {
                     "recipient": recipient,
                     "subject": subject,
-                    "message": ""
+                    "message": email_message
                 }
             }
 
@@ -496,15 +1731,17 @@ class IntentDetector:
 
             match = re.search(
                 r"(?:add|create)\s+(.+?)"
-                r"\s+(?:to|on)\s+(?:my\s+)?calendar",
+                r"\s+(?:to|on)\s+"
+                r"(?:my\s+)?calendar",
                 lower_text
             )
 
             if match:
 
-                title = match.group(
-                    1
-                ).strip()
+                title = (
+                    match.group(1)
+                    .strip()
+                )
 
             return {
                 "intent": "CHECK_CALENDAR",
@@ -566,15 +1803,16 @@ class IntentDetector:
 
             file_match = re.search(
                 r"\b[\w.-]+\."
-                r"(txt|pdf|docx?|xlsx?|csv|json|py|jpg|jpeg|png)\b",
+                r"(txt|pdf|docx?|xlsx?|"
+                r"csv|json|py|jpg|jpeg|png)\b",
                 text,
                 flags=re.IGNORECASE
             )
 
             if file_match:
 
-                file_path = file_match.group(
-                    0
+                file_path = (
+                    file_match.group(0)
                 )
 
             return {
@@ -598,8 +1836,14 @@ class IntentDetector:
             r"\bopen\s+(chrome|google\s+chrome)\b",
             r"\bopen\s+(edge|microsoft\s+edge)\b",
             r"\bopen\s+(vs\s+code|visual\s+studio\s+code)\b",
-            r"\blaunch\s+(calculator|calc|notepad|paint|chrome|google\s+chrome|edge|microsoft\s+edge|vs\s+code|visual\s+studio\s+code)\b",
-            r"\bstart\s+(calculator|calc|notepad|paint|chrome|google\s+chrome|edge|microsoft\s+edge|vs\s+code|visual\s+studio\s+code)\b"
+            r"\blaunch\s+(calculator|calc|"
+            r"notepad|paint|chrome|google\s+chrome|"
+            r"edge|microsoft\s+edge|vs\s+code|"
+            r"visual\s+studio\s+code)\b",
+            r"\bstart\s+(calculator|calc|"
+            r"notepad|paint|chrome|google\s+chrome|"
+            r"edge|microsoft\s+edge|vs\s+code|"
+            r"visual\s+studio\s+code)\b"
         ]
 
         if any(
@@ -614,15 +1858,19 @@ class IntentDetector:
 
             application_match = re.search(
                 r"\b(?:open|launch|start)\s+"
-                r"(calculator|calc|notepad|paint|chrome|google\s+chrome|edge|microsoft\s+edge|vs\s+code|visual\s+studio\s+code)\b",
+                r"(calculator|calc|notepad|paint|"
+                r"chrome|google\s+chrome|edge|"
+                r"microsoft\s+edge|vs\s+code|"
+                r"visual\s+studio\s+code)\b",
                 lower_text
             )
 
             if application_match:
 
-                application = application_match.group(
-                    1
-                ).strip()
+                application = (
+                    application_match.group(1)
+                    .strip()
+                )
 
             return {
                 "intent": "OPEN_APPLICATION",
@@ -638,7 +1886,8 @@ class IntentDetector:
         # =====================================
 
         browser_patterns = [
-            r"\bopen\s+(google|youtube|website|browser)\b",
+            r"\bopen\s+(google|youtube|"
+            r"website|browser)\b",
             r"\bopen\s+(https?://)",
             r"\bnavigate\s+to\b",
             r"\bgo\s+to\b",
@@ -666,19 +1915,24 @@ class IntentDetector:
 
             if url_match:
 
-                url = url_match.group(
-                    0
-                ).rstrip(
-                    ".,?!"
+                url = (
+                    url_match.group(0)
+                    .rstrip(
+                        ".,?!"
+                    )
                 )
 
             elif "google" in lower_text:
 
-                url = "https://www.google.com"
+                url = (
+                    "https://www.google.com"
+                )
 
             elif "youtube" in lower_text:
 
-                url = "https://www.youtube.com"
+                url = (
+                    "https://www.youtube.com"
+                )
 
             return {
                 "intent": "BROWSE_WEB",
@@ -695,52 +1949,78 @@ class IntentDetector:
 
         search_patterns = [
 
-            # Explicit search commands
-
             r"\bsearch\s+for\b",
+
             r"\bsearch\b",
+
             r"\blook\s+up\b",
+
             r"\bfind\s+information\b",
+
             r"\bfind\s+out\b",
 
-            # Information questions
-
             r"^\s*what\s+is\b",
+
             r"^\s*what\s+are\b",
+
             r"^\s*who\s+is\b",
+
             r"^\s*who\s+are\b",
+
             r"^\s*where\s+is\b",
+
             r"^\s*where\s+are\b",
+
             r"^\s*when\s+is\b",
+
             r"^\s*when\s+was\b",
+
             r"^\s*when\s+did\b",
+
             r"^\s*why\s+is\b",
+
             r"^\s*why\s+are\b",
+
             r"^\s*why\s+was\b",
+
             r"^\s*why\s+were\b",
+
             r"^\s*how\s+does\b",
+
             r"^\s*how\s+do\b",
+
             r"^\s*how\s+is\b",
+
             r"^\s*how\s+are\b",
+
             r"^\s*how\s+can\b",
+
             r"^\s*how\s+to\b",
 
-            # Current/latest information
-
             r"\blatest\b",
+
             r"\bcurrent\b",
+
             r"\btoday\b",
+
             r"\brecent\b",
+
             r"\bnews\b",
+
             r"\bupdate\b",
+
             r"\brecently\b",
 
-            # Knowledge-oriented phrases
-
             r"\btell\s+me\s+about\b",
-            r"\bexplain\b.*\b(?:technology|company|person|topic|concept)\b",
+
+            r"\bexplain\b.*"
+            r"\b(?:technology|company|person|"
+            r"topic|concept)\b",
+
             r"\binformation\s+about\b",
+
             r"\bdetails\s+about\b"
+
         ]
 
         if any(
@@ -754,28 +2034,33 @@ class IntentDetector:
             query = text
 
             explicit_search_match = re.search(
-                r"(?:search\s+for|look\s+up|search)\s+(.+)",
+                r"(?:search\s+for|"
+                r"look\s+up|search)\s+(.+)",
                 lower_text
             )
 
             if explicit_search_match:
 
-                query = explicit_search_match.group(
-                    1
-                ).strip()
+                query = (
+                    explicit_search_match.group(1)
+                    .strip()
+                )
 
             else:
 
                 about_match = re.search(
-                    r"(?:tell\s+me\s+about|information\s+about|details\s+about)\s+(.+)",
+                    r"(?:tell\s+me\s+about|"
+                    r"information\s+about|"
+                    r"details\s+about)\s+(.+)",
                     lower_text
                 )
 
                 if about_match:
 
-                    query = about_match.group(
-                        1
-                    ).strip()
+                    query = (
+                        about_match.group(1)
+                        .strip()
+                    )
 
             return {
                 "intent": "SEARCH_INFORMATION",
@@ -863,18 +2148,113 @@ Examples:
 "Go to YouTube"
 "Search this on Google"
 
-4. Do NOT classify an ordinary factual question
+4. Browser interaction requests should use BROWSE_WEB.
+
+Examples:
+
+"Fill the name field with AI Buddy"
+"Fill the email field with test@example.com"
+"Click the submit button"
+"Read the result"
+"Read the page"
+"Close the browser"
+"Navigate to https://example.com"
+
+5. MULTI-STEP BROWSER COMMANDS:
+
+If the user requests multiple browser actions
+in one command, return a "steps" list.
+
+Examples:
+
+"Open https://example.com and read the page"
+
+Return:
+
+{{
+    "intent": "BROWSE_WEB",
+    "confidence": 0.99,
+    "parameters": {{
+        "steps": [
+            {{
+                "action": "open",
+                "url": "https://example.com"
+            }},
+            {{
+                "action": "read",
+                "selector": "body",
+                "use_current_page": true
+            }}
+        ]
+    }}
+}}
+
+Another example:
+
+"Open https://example.com and click the submit button"
+
+Return:
+
+{{
+    "intent": "BROWSE_WEB",
+    "confidence": 0.99,
+    "parameters": {{
+        "steps": [
+            {{
+                "action": "open",
+                "url": "https://example.com"
+            }},
+            {{
+                "action": "click",
+                "selector": "button[type='submit']",
+                "use_current_page": true
+            }}
+        ]
+    }}
+}}
+
+Another example:
+
+"Open https://example.com, fill the name field with Jiya, and read the page"
+
+Return:
+
+{{
+    "intent": "BROWSE_WEB",
+    "confidence": 0.99,
+    "parameters": {{
+        "steps": [
+            {{
+                "action": "open",
+                "url": "https://example.com"
+            }},
+            {{
+                "action": "fill",
+                "selector": "#name",
+                "value": "Jiya",
+                "use_current_page": true
+            }},
+            {{
+                "action": "read",
+                "selector": "body",
+                "use_current_page": true
+            }}
+        ]
+    }}
+}}
+
+6. Do NOT classify an ordinary factual question
 as BROWSE_WEB just because it could be searched
 on the internet.
 
-5. Do NOT classify an ordinary factual question as
+7. Do NOT classify an ordinary factual question as
 OPEN_APPLICATION.
 
-6. For CREATE_TASK, task_name is required.
+8. For CREATE_TASK, task_name is required.
 
-For example:
+Example:
 
-User message:
+User:
 "Create a task to learn Python"
 
 Return:
@@ -887,22 +2267,7 @@ Return:
     }}
 }}
 
-Another example:
-
-User message:
-"Add a task to practice SQL"
-
-Return:
-
-{{
-    "intent": "CREATE_TASK",
-    "confidence": 0.95,
-    "parameters": {{
-        "task_name": "practice SQL"
-    }}
-}}
-
-7. For CREATE_REMINDER, return:
+9. For CREATE_REMINDER, return:
 
 {{
     "intent": "CREATE_REMINDER",
@@ -912,7 +2277,7 @@ Return:
     }}
 }}
 
-8. For SET_TIMER, return:
+10. For SET_TIMER, return:
 
 {{
     "intent": "SET_TIMER",
@@ -925,7 +2290,7 @@ Return:
 The duration should be in minutes unless the
 user clearly specifies another unit.
 
-9. For GET_WEATHER, return:
+11. For GET_WEATHER, return:
 
 {{
     "intent": "GET_WEATHER",
@@ -935,7 +2300,7 @@ user clearly specifies another unit.
     }}
 }}
 
-10. For SEARCH_INFORMATION, return:
+12. For SEARCH_INFORMATION, return:
 
 {{
     "intent": "SEARCH_INFORMATION",
@@ -945,7 +2310,7 @@ user clearly specifies another unit.
     }}
 }}
 
-11. For OPEN_APPLICATION, return:
+13. For OPEN_APPLICATION, return:
 
 {{
     "intent": "OPEN_APPLICATION",
@@ -956,7 +2321,7 @@ user clearly specifies another unit.
     }}
 }}
 
-12. For BROWSE_WEB, return:
+14. For BROWSE_WEB single action, return:
 
 {{
     "intent": "BROWSE_WEB",
@@ -967,10 +2332,34 @@ user clearly specifies another unit.
     }}
 }}
 
-13. Always return the required parameters
-when the intent needs them.
+15. For SEND_EMAIL, all three parameters are
+required:
 
-14. Return ONLY valid JSON.
+recipient
+subject
+message
+
+Example:
+
+User:
+"Send an email to test@example.com with subject Test and message Hello from AI Buddy"
+
+Return:
+
+{{
+    "intent": "SEND_EMAIL",
+    "confidence": 0.95,
+    "parameters": {{
+        "recipient": "test@example.com",
+        "subject": "Test",
+        "message": "Hello from AI Buddy"
+    }}
+}}
+
+16. Always return required parameters when
+the intent needs them.
+
+17. Return ONLY valid JSON.
 
 User message:
 {message}
@@ -1026,6 +2415,44 @@ User message:
             }
 
         message = message.strip()
+
+        # =====================================
+        # FAST LOCAL BROWSER DETECTION
+        # =====================================
+        #
+        # Browser commands are deterministic.
+        # Detect them locally BEFORE Gemini so
+        # temporary Gemini 503/429 errors do not
+        # convert browser commands into GENERAL_QUERY.
+        #
+
+        try:
+
+            local_browser_result = (
+                self._local_browser_detect(
+                    message
+                )
+            )
+
+            if local_browser_result is not None:
+
+                return self._validate_result(
+                    local_browser_result
+                )
+
+        except Exception as error:
+
+            print(
+                "⚠️ Local browser detection failed:"
+            )
+
+            print(
+                f"Error: {error}"
+            )
+
+        # =====================================
+        # GEMINI DETECTION
+        # =====================================
 
         try:
 

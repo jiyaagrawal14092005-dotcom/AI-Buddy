@@ -16,7 +16,7 @@ print("\n=== OPEN WEBSITE ===")
 print(
     browser_tool.execute({
         "action": "open",
-        "url": "https://www.google.com"
+        "url": "https://example.com"
     })
 )
 
@@ -26,7 +26,40 @@ print("\n=== NAVIGATE WEBSITE ===")
 print(
     browser_tool.execute({
         "action": "navigate",
-        "url": "https://www.github.com"
+        "url": "https://example.com"
+    })
+)
+
+
+print("\n=== READ PAGE ===")
+
+print(
+    browser_tool.execute({
+        "action": "read",
+        "url": "https://example.com"
+    })
+)
+
+
+print("\n=== CLICK ELEMENT ===")
+
+print(
+    browser_tool.execute({
+        "action": "click",
+        "url": "https://example.com",
+        "selector": "a"
+    })
+)
+
+
+print("\n=== FILL INPUT ===")
+
+print(
+    browser_tool.execute({
+        "action": "fill",
+        "url": "https://example.com",
+        "selector": "input",
+        "value": "AI Buddy"
     })
 )
 
@@ -46,7 +79,17 @@ print("\n=== INVALID ACTION ===")
 print(
     browser_tool.execute({
         "action": "delete",
-        "url": "https://www.google.com"
+        "url": "https://example.com"
+    })
+)
+
+
+print("\n=== MISSING SELECTOR ===")
+
+print(
+    browser_tool.execute({
+        "action": "click",
+        "url": "https://example.com"
     })
 )
 

@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
 from google import genai
@@ -21,6 +22,9 @@ from app.tools.browser_tool import BrowserTool
 from app.tools.application_launcher import ApplicationLauncher
 
 from app.security.security_manager import SecurityManager
+from app.security.approval import approval_manager
+
+from app.workflow.engine import WorkflowEngine
 
 
 load_dotenv()
@@ -40,6 +44,8 @@ class AIBrain:
 
         self.security_manager = SecurityManager()
 
+        self.workflow_engine = WorkflowEngine()
+
         self.tools = {
             "task": TaskTool(),
             "reminder": ReminderTool(),
@@ -57,7 +63,9 @@ class AIBrain:
 
         try:
 
-            api_key = os.getenv("GEMINI_API_KEY")
+            api_key = os.getenv(
+                "GEMINI_API_KEY"
+            )
 
             if not api_key:
 
@@ -82,9 +90,238 @@ class AIBrain:
                 "Gemini client initialization failed:"
             )
 
-            print(repr(error))
+            print(
+                repr(error)
+            )
 
             self.client = None
+
+    # =================================
+    # REMINDER TIME NORMALIZATION
+    # =================================
+
+    def _normalize_reminder_time(
+        self,
+        reminder_time
+    ):
+
+        if reminder_time is None:
+            return None
+
+        if not isinstance(
+            reminder_time,
+            str
+        ):
+
+            return reminder_time
+
+        reminder_time = reminder_time.strip()
+
+        if not reminder_time:
+            return reminder_time
+
+        try:
+
+            datetime.fromisoformat(
+                reminder_time
+            )
+
+            return reminder_time
+
+        except ValueError:
+
+            pass
+
+        normalized = (
+            reminder_time
+            .upper()
+            .replace(".", "")
+            .strip()
+        )
+
+        current = datetime.now()
+
+        formats = [
+            "%I %p",
+            "%I:%M %p",
+            "%I%p",
+            "%I:%M%p",
+            "%H:%M",
+            "%H",
+        ]
+
+        parsed_time = None
+
+        for time_format in formats:
+
+            try:
+
+                parsed_time = datetime.strptime(
+                    normalized,
+                    time_format
+                )
+
+                break
+
+            except ValueError:
+
+                continue
+
+        if parsed_time is None:
+            return reminder_time
+
+        target = current.replace(
+            hour=parsed_time.hour,
+            minute=parsed_time.minute,
+            second=0,
+            microsecond=0
+        )
+
+        if target <= current:
+
+            target += timedelta(
+                days=1
+            )
+
+        return target.isoformat(
+            timespec="seconds"
+        )
+
+    # =================================
+    # SECURITY EVENT HELPER
+    # =================================
+
+    def _record_security_event(
+        self,
+        user_id: int,
+        event_type: str,
+        action: str,
+        success: bool,
+        details: dict | None = None
+    ) -> None:
+
+        security_user_id = f"user-{user_id}"
+
+        event_details = {
+            "user_id": security_user_id,
+            "event_type": event_type,
+            "action": action,
+            "success": success,
+            "details": details or {}
+        }
+
+        try:
+
+            self.security_manager._record_security_event(
+                event_type=event_type,
+                user_id=security_user_id,
+                action=action,
+                success=success,
+                details=event_details
+            )
+
+        except TypeError:
+
+            try:
+
+                self.security_manager._record_security_event(
+                    event_type,
+                    security_user_id,
+                    action,
+                    success,
+                    event_details
+                )
+
+            except Exception as error:
+
+                print(
+                    f"Security event recording failed: {error}"
+                )
+
+        except Exception as error:
+
+            print(
+                f"Security event recording failed: {error}"
+            )
+
+    # =================================
+    # AUDIT LOG HELPER
+    # =================================
+
+    def _record_audit(
+        self,
+        user_id: int,
+        action: str,
+        success: bool,
+        details: dict | None = None
+    ) -> None:
+
+        try:
+
+            result = self.security_manager.record_audit_log(
+                user_id=f"user-{user_id}",
+                action=action,
+                success=success,
+                details=details or {}
+            )
+
+            if isinstance(result, dict):
+
+                if not result.get(
+                    "success",
+                    True
+                ):
+
+                    print(
+                        "Audit log recording failed:"
+                    )
+
+                    print(
+                        result.get(
+                            "message",
+                            "Unknown audit error."
+                        )
+                    )
+
+        except TypeError:
+
+            try:
+
+                result = self.security_manager.record_audit_log(
+                    user_id=f"user-{user_id}",
+                    action=action,
+                    details={
+                        "success": success,
+                        **(details or {})
+                    }
+                )
+
+                if isinstance(result, dict):
+
+                    if not result.get(
+                        "success",
+                        True
+                    ):
+
+                        print(
+                            "Audit log recording failed:"
+                        )
+
+            except Exception as error:
+
+                print(
+                    f"Audit log recording failed: {error}"
+                )
+
+        except Exception as error:
+
+            print(
+                f"Audit log recording failed: {error}"
+            )
+
+    # =================================
+    # DIRECT TOOL EXECUTION
+    # =================================
 
     def _execute_tool(
         self,
@@ -94,7 +331,9 @@ class AIBrain:
         db: Session
     ) -> dict:
 
-        tool = self.tools.get(tool_name)
+        tool = self.tools.get(
+            tool_name
+        )
 
         if tool is None:
 
@@ -138,6 +377,12 @@ class AIBrain:
 
                 reminder_time = parameters.get(
                     "time"
+                )
+
+                reminder_time = (
+                    self._normalize_reminder_time(
+                        reminder_time
+                    )
                 )
 
                 try:
@@ -233,19 +478,262 @@ class AIBrain:
                 )
             }
 
+    # =================================
+    # APPROVAL HELPERS
+    # =================================
+
+    def _create_approval_request(
+        self,
+        user_id: int,
+        tool_name: str,
+        action: str | None,
+        parameters: dict
+    ) -> dict:
+
+        username = f"user-{user_id}"
+
+        approval_action = tool_name
+
+        if (
+            tool_name == "browser"
+            and action
+        ):
+
+            approval_action = (
+                f"browser.{action}"
+            )
+
+        details = {
+            "tool": tool_name,
+            "action": action,
+            "parameters": parameters
+        }
+
+        try:
+
+            result = approval_manager.create_request(
+                username=username,
+                action=approval_action,
+                details=details
+            )
+
+            if not isinstance(
+                result,
+                dict
+            ):
+
+                return {
+                    "success": False,
+                    "message": (
+                        "Approval manager returned "
+                        "an invalid response."
+                    )
+                }
+
+            return result
+
+        except Exception as error:
+
+            return {
+                "success": False,
+                "message": (
+                    f"Approval request creation failed: {str(error)}"
+                )
+            }
+
+    def _get_approved_request(
+        self,
+        user_id: int,
+        approval_id: str,
+        tool_name: str,
+        action: str | None
+    ) -> dict:
+
+        if not approval_id:
+
+            return {
+                "success": False,
+                "approved": False,
+                "message": "Approval ID is required."
+            }
+
+        username = f"user-{user_id}"
+
+        approval_action = tool_name
+
+        if (
+            tool_name == "browser"
+            and action
+        ):
+
+            approval_action = (
+                f"browser.{action}"
+            )
+
+        try:
+
+            result = approval_manager.get_request(
+                approval_id
+            )
+
+            if not result.get(
+                "success",
+                False
+            ):
+
+                return {
+                    "success": False,
+                    "approved": False,
+                    "message": result.get(
+                        "message",
+                        "Approval request not found."
+                    )
+                }
+
+            request = result.get(
+                "request"
+            )
+
+            if not isinstance(
+                request,
+                dict
+            ):
+
+                return {
+                    "success": False,
+                    "approved": False,
+                    "message": (
+                        "Invalid approval request."
+                    )
+                }
+
+            if request.get(
+                "username"
+            ) != username:
+
+                return {
+                    "success": False,
+                    "approved": False,
+                    "message": (
+                        "Approval request does not "
+                        "belong to this user."
+                    )
+                }
+
+            if request.get(
+                "action"
+            ) != approval_action:
+
+                return {
+                    "success": False,
+                    "approved": False,
+                    "message": (
+                        "Approval request does not "
+                        "match this action."
+                    )
+                }
+
+            if request.get(
+                "status"
+            ) != "APPROVED":
+
+                return {
+                    "success": False,
+                    "approved": False,
+                    "message": (
+                        "Approval has not been granted "
+                        "for this action."
+                    )
+                }
+
+            return {
+                "success": True,
+                "approved": True,
+                "approval_id": approval_id,
+                "request": request,
+                "message": (
+                    "Approved request verified."
+                )
+            }
+
+        except Exception as error:
+
+            return {
+                "success": False,
+                "approved": False,
+                "message": (
+                    f"Approval verification failed: {str(error)}"
+                )
+            }
+
+    # =================================
+    # SECURITY ACCESS CHECK
+    # =================================
+
     def _check_security_access(
         self,
         user_id: int,
-        tool_name: str
+        tool_name: str,
+        action: str | None = None,
+        approval_granted: bool = False
     ) -> dict:
 
-        security_user_id = f"user-{user_id}"
+        security_user_id = (
+            f"user-{user_id}"
+        )
 
-        tool_access = self.security_manager.check_tool_access(
-            user_id=security_user_id,
-            tool_name=tool_name,
-            permission_granted=True,
-            approval_granted=False
+        # ---------------------------------
+        # TOOL PERMISSION
+        # ---------------------------------
+
+        permission_granted = False
+
+        try:
+
+            permission_result = (
+                self.security_manager.check_permission(
+                    user_id=security_user_id,
+                    permission=tool_name
+                )
+            )
+
+            if isinstance(
+                permission_result,
+                dict
+            ):
+
+                permission_granted = (
+                    permission_result.get(
+                        "allowed",
+                        permission_result.get(
+                            "granted",
+                            False
+                        )
+                    )
+                )
+
+            else:
+
+                permission_granted = bool(
+                    permission_result
+                )
+
+        except Exception:
+
+            permission_granted = False
+
+        # ---------------------------------
+        # TOOL GUARD
+        # ---------------------------------
+
+        tool_access = (
+            self.security_manager.check_tool_access(
+                user_id=security_user_id,
+                tool_name=tool_name,
+                permission_granted=permission_granted,
+                approval_granted=approval_granted,
+                action=action
+            )
         )
 
         if not tool_access.get(
@@ -256,17 +744,39 @@ class AIBrain:
             return {
                 "allowed": False,
                 "stage": "tool_guard",
+                "requires_approval": tool_access.get(
+                    "requires_approval",
+                    False
+                ),
+                "permission_granted": permission_granted,
                 "message": tool_access.get(
                     "message",
                     "Tool execution blocked by security."
                 )
             }
 
-        action_access = self.security_manager.check_action_access(
-            user_id=security_user_id,
-            action=tool_name,
-            permission_granted=True,
-            approval_granted=False
+        # ---------------------------------
+        # ACTION POLICY
+        # ---------------------------------
+
+        policy_action = tool_name
+
+        if (
+            tool_name == "browser"
+            and action
+        ):
+
+            policy_action = (
+                f"browser.{action}"
+            )
+
+        action_access = (
+            self.security_manager.check_action_access(
+                user_id=security_user_id,
+                action=policy_action,
+                permission_granted=permission_granted,
+                approval_granted=approval_granted
+            )
         )
 
         if not action_access.get(
@@ -277,6 +787,15 @@ class AIBrain:
             return {
                 "allowed": False,
                 "stage": "action_policy",
+                "requires_approval": action_access.get(
+                    "requires_approval",
+                    False
+                ),
+                "permission_granted": permission_granted,
+                "risk": action_access.get(
+                    "risk",
+                    "unknown"
+                ),
                 "message": action_access.get(
                     "message",
                     "Action blocked by security policy."
@@ -285,8 +804,67 @@ class AIBrain:
 
         return {
             "allowed": True,
-            "message": "Tool and action security checks passed."
+            "tool": tool_name,
+            "action": action,
+            "policy_action": policy_action,
+            "permission_granted": permission_granted,
+            "risk": action_access.get(
+                "risk",
+                "unknown"
+            ),
+            "message": (
+                "Tool and action security checks passed."
+            )
         }
+
+    # =================================
+    # WORKFLOW EXECUTION
+    # =================================
+
+    async def _execute_workflow(
+        self,
+        plan: dict,
+        user_id: int,
+        db: Session
+    ) -> dict:
+
+        try:
+
+            workflow_result = (
+                await self.workflow_engine.create_workflow(
+                    plan=plan,
+                    user_id=user_id,
+                    db=db
+                )
+            )
+
+            if not isinstance(
+                workflow_result,
+                dict
+            ):
+
+                return {
+                    "success": False,
+                    "message": (
+                        "Workflow engine returned "
+                        "an invalid result."
+                    )
+                }
+
+            return workflow_result
+
+        except Exception as error:
+
+            return {
+                "success": False,
+                "message": (
+                    f"Workflow execution failed: {str(error)}"
+                )
+            }
+
+    # =================================
+    # GENERAL AI RESPONSE
+    # =================================
 
     def _generate_general_response(
         self,
@@ -309,9 +887,11 @@ class AIBrain:
 
         try:
 
-            response = self.client.models.generate_content(
-                model="gemini-3.6-flash",
-                contents=message
+            response = (
+                self.client.models.generate_content(
+                    model="gemini-3.6-flash",
+                    contents=message
+                )
             )
 
             if response is None:
@@ -330,7 +910,10 @@ class AIBrain:
             )
 
             if (
-                isinstance(response_text, str)
+                isinstance(
+                    response_text,
+                    str
+                )
                 and response_text.strip()
             ):
 
@@ -347,9 +930,15 @@ class AIBrain:
                 "Gemini response generation failed:"
             )
 
-            print(repr(error))
+            print(
+                repr(error)
+            )
 
         return fallback_message
+
+    # =================================
+    # ACTION MESSAGE
+    # =================================
 
     def _build_action_message(
         self,
@@ -377,6 +966,10 @@ class AIBrain:
             "The action could not be completed."
         )
 
+    # =================================
+    # CONTEXT STORAGE
+    # =================================
+
     def _store_context(
         self,
         message: str,
@@ -395,6 +988,10 @@ class AIBrain:
             print(
                 f"Context storage failed: {error}"
             )
+
+    # =================================
+    # PREPARE REASONING PLAN
+    # =================================
 
     def _prepare_reasoning_plan(
         self,
@@ -453,6 +1050,10 @@ class AIBrain:
             "parameters": parameters
         }
 
+    # =================================
+    # INTENT NAME
+    # =================================
+
     def _get_intent_name(
         self,
         intent
@@ -488,12 +1089,21 @@ class AIBrain:
 
         return value.strip().upper()
 
-    def respond(
+    # =================================
+    # MAIN RESPONSE
+    # =================================
+
+    async def respond(
         self,
         message: str,
         user_id: int,
-        db: Session
+        db: Session,
+        approval_id: str | None = None
     ) -> dict:
+
+        # =================================
+        # BASIC VALIDATION
+        # =================================
 
         if (
             not isinstance(
@@ -510,6 +1120,8 @@ class AIBrain:
                 "reasoning": None,
                 "message": "Message cannot be empty.",
                 "action_result": None,
+                "approval_required": False,
+                "approval_id": None,
                 "context": []
             }
 
@@ -525,6 +1137,8 @@ class AIBrain:
                 "reasoning": None,
                 "message": "User ID must be an integer.",
                 "action_result": None,
+                "approval_required": False,
+                "approval_id": None,
                 "context": []
             }
 
@@ -539,6 +1153,8 @@ class AIBrain:
                     "User ID must be greater than zero."
                 ),
                 "action_result": None,
+                "approval_required": False,
+                "approval_id": None,
                 "context": []
             }
 
@@ -553,12 +1169,131 @@ class AIBrain:
                     "Database session is required."
                 ),
                 "action_result": None,
+                "approval_required": False,
+                "approval_id": None,
                 "context": []
             }
 
         message = message.strip()
 
         action_result = None
+
+        approval_required = False
+        current_approval_id = None
+
+        security_user_id = (
+            f"user-{user_id}"
+        )
+
+        # =================================
+        # SECURITY — REQUEST VALIDATION
+        # =================================
+
+        try:
+
+            security_validation = (
+                self.security_manager.validate_request(
+                    user_id=security_user_id,
+                    message=message
+                )
+            )
+
+            if not security_validation.get(
+                "success",
+                False
+            ):
+
+                security_message = (
+                    security_validation.get(
+                        "message",
+                        "Request blocked by security."
+                    )
+                )
+
+                self._record_security_event(
+                    user_id=user_id,
+                    event_type="request_blocked",
+                    action="request_validation",
+                    success=False,
+                    details={
+                        "message": security_message
+                    }
+                )
+
+                self._record_audit(
+                    user_id=user_id,
+                    action="request.validation",
+                    success=False,
+                    details={
+                        "stage": "request_validation",
+                        "message": security_message
+                    }
+                )
+
+                return {
+                    "success": False,
+                    "intent": None,
+                    "plan": None,
+                    "reasoning": None,
+                    "message": security_message,
+                    "action_result": {
+                        "success": False,
+                        "security_blocked": True,
+                        "stage": "request_validation",
+                        "message": security_message
+                    },
+                    "approval_required": False,
+                    "approval_id": None,
+                    "context": []
+                }
+
+        except Exception as error:
+
+            self._record_security_event(
+                user_id=user_id,
+                event_type="security_failure",
+                action="request_validation",
+                success=False,
+                details={
+                    "error": str(error)
+                }
+            )
+
+            self._record_audit(
+                user_id=user_id,
+                action="request.validation",
+                success=False,
+                details={
+                    "stage": "security_validation",
+                    "error": str(error)
+                }
+            )
+
+            return {
+                "success": False,
+                "intent": None,
+                "plan": None,
+                "reasoning": None,
+                "message": (
+                    "Security validation failed. "
+                    "Request was blocked."
+                ),
+                "action_result": {
+                    "success": False,
+                    "security_blocked": True,
+                    "stage": "security_validation",
+                    "message": (
+                        "Security validation failed."
+                    )
+                },
+                "approval_required": False,
+                "approval_id": None,
+                "context": []
+            }
+
+        # =================================
+        # INTENT DETECTION
+        # =================================
 
         try:
 
@@ -567,6 +1302,16 @@ class AIBrain:
             )
 
         except Exception as error:
+
+            self._record_security_event(
+                user_id=user_id,
+                event_type="intent_detection_failed",
+                action="intent.detect",
+                success=False,
+                details={
+                    "error": str(error)
+                }
+            )
 
             return {
                 "success": False,
@@ -577,12 +1322,18 @@ class AIBrain:
                     f"Intent detection failed: {str(error)}"
                 ),
                 "action_result": None,
+                "approval_required": False,
+                "approval_id": None,
                 "context": []
             }
 
         intent_name = self._get_intent_name(
             intent
         )
+
+        # =================================
+        # GENERAL QUERY
+        # =================================
 
         if intent_name == "GENERAL_QUERY":
 
@@ -595,6 +1346,15 @@ class AIBrain:
             self._store_context(
                 message,
                 response_message
+            )
+
+            self._record_audit(
+                user_id=user_id,
+                action="general.query",
+                success=True,
+                details={
+                    "intent": intent_name
+                }
             )
 
             try:
@@ -618,8 +1378,14 @@ class AIBrain:
                 "reasoning": None,
                 "message": response_message,
                 "action_result": None,
+                "approval_required": False,
+                "approval_id": None,
                 "context": context
             }
+
+        # =================================
+        # PLANNING
+        # =================================
 
         try:
 
@@ -638,6 +1404,8 @@ class AIBrain:
                     f"Planning failed: {str(error)}"
                 ),
                 "action_result": None,
+                "approval_required": False,
+                "approval_id": None,
                 "context": []
             }
 
@@ -659,6 +1427,10 @@ class AIBrain:
             )
         )
 
+        # =================================
+        # REASONING
+        # =================================
+
         try:
 
             reasoning = (
@@ -679,8 +1451,14 @@ class AIBrain:
                     f"Reasoning failed: {str(error)}"
                 ),
                 "action_result": None,
+                "approval_required": False,
+                "approval_id": None,
                 "context": []
             }
+
+        # =================================
+        # PLAN / REASONING VALIDATION
+        # =================================
 
         if not plan.get(
             "success",
@@ -763,10 +1541,67 @@ class AIBrain:
 
                         parameters = {}
 
+                    # =================================
+                    # BROWSER ACTION
+                    # =================================
+
+                    browser_action = None
+
+                    if tool_name == "browser":
+
+                        browser_action = parameters.get(
+                            "action"
+                        )
+
+                        if isinstance(
+                            browser_action,
+                            str
+                        ):
+
+                            browser_action = (
+                                browser_action
+                                .strip()
+                                .lower()
+                            )
+
+                    # =================================
+                    # APPROVAL VERIFICATION
+                    # =================================
+
+                    approval_granted = False
+
+                    if approval_id:
+
+                        approval_check = (
+                            self._get_approved_request(
+                                user_id=user_id,
+                                approval_id=approval_id,
+                                tool_name=tool_name,
+                                action=browser_action
+                            )
+                        )
+
+                        if approval_check.get(
+                            "approved",
+                            False
+                        ):
+
+                            approval_granted = True
+
+                            current_approval_id = (
+                                approval_id
+                            )
+
+                    # =================================
+                    # SECURITY CHECK
+                    # =================================
+
                     security_result = (
                         self._check_security_access(
-                            user_id,
-                            tool_name
+                            user_id=user_id,
+                            tool_name=tool_name,
+                            action=browser_action,
+                            approval_granted=approval_granted
                         )
                     )
 
@@ -775,39 +1610,277 @@ class AIBrain:
                         False
                     ):
 
-                        response_message = (
-                            security_result.get(
-                                "message",
-                                "Action blocked by security."
-                            )
-                        )
+                        # =================================
+                        # APPROVAL REQUIRED
+                        # =================================
 
-                        action_result = {
-                            "success": False,
-                            "security_blocked": True,
-                            "stage": security_result.get(
-                                "stage",
-                                "security"
-                            ),
-                            "message": response_message
-                        }
+                        if security_result.get(
+                            "requires_approval",
+                            False
+                        ):
+
+                            approval_request = (
+                                self._create_approval_request(
+                                    user_id=user_id,
+                                    tool_name=tool_name,
+                                    action=browser_action,
+                                    parameters=parameters
+                                )
+                            )
+
+                            if approval_request.get(
+                                "success",
+                                False
+                            ):
+
+                                approval_required = True
+
+                                current_approval_id = (
+                                    approval_request.get(
+                                        "approval_id"
+                                    )
+                                )
+
+                                response_message = (
+                                    "User approval is required "
+                                    "before this action can be executed."
+                                )
+
+                                action_result = {
+                                    "success": False,
+                                    "security_blocked": True,
+                                    "requires_approval": True,
+                                    "approval_required": True,
+                                    "approval_id": current_approval_id,
+                                    "stage": security_result.get(
+                                        "stage",
+                                        "security"
+                                    ),
+                                    "risk": security_result.get(
+                                        "risk",
+                                        "unknown"
+                                    ),
+                                    "message": response_message
+                                }
+
+                                self._record_security_event(
+                                    user_id=user_id,
+                                    event_type="approval_required",
+                                    action=(
+                                        f"{tool_name}"
+                                        + (
+                                            f".{browser_action}"
+                                            if browser_action
+                                            else ""
+                                        )
+                                    ),
+                                    success=True,
+                                    details={
+                                        "approval_id": current_approval_id,
+                                        "risk": security_result.get(
+                                            "risk",
+                                            "unknown"
+                                        )
+                                    }
+                                )
+
+                            else:
+
+                                response_message = (
+                                    approval_request.get(
+                                        "message",
+                                        "Unable to create approval request."
+                                    )
+                                )
+
+                                action_result = {
+                                    "success": False,
+                                    "security_blocked": True,
+                                    "requires_approval": True,
+                                    "approval_required": True,
+                                    "stage": "approval",
+                                    "message": response_message
+                                }
+
+                        else:
+
+                            response_message = (
+                                security_result.get(
+                                    "message",
+                                    "Action blocked by security."
+                                )
+                            )
+
+                            action_result = {
+                                "success": False,
+                                "security_blocked": True,
+                                "stage": security_result.get(
+                                    "stage",
+                                    "security"
+                                ),
+                                "permission_granted": security_result.get(
+                                    "permission_granted",
+                                    False
+                                ),
+                                "message": response_message
+                            }
+
+                            self._record_security_event(
+                                user_id=user_id,
+                                event_type="execution_blocked",
+                                action=(
+                                    f"{tool_name}"
+                                    + (
+                                        f".{browser_action}"
+                                        if browser_action
+                                        else ""
+                                    )
+                                ),
+                                success=False,
+                                details={
+                                    "stage": security_result.get(
+                                        "stage",
+                                        "security"
+                                    ),
+                                    "message": response_message
+                                }
+                            )
 
                     else:
 
-                        action_result = (
-                            self._execute_tool(
-                                tool_name,
-                                parameters,
-                                user_id,
-                                db
+                        # =================================
+                        # BROWSER → WORKFLOW
+                        # =================================
+
+                        if tool_name == "browser":
+
+                            workflow_result = (
+                                await self._execute_workflow(
+                                    plan=plan,
+                                    user_id=user_id,
+                                    db=db
+                                )
                             )
+
+                            action_result = (
+                                workflow_result
+                            )
+
+                            if workflow_result.get(
+                                "success",
+                                False
+                            ):
+
+                                response_message = (
+                                    "Browser workflow "
+                                    "executed successfully."
+                                )
+
+                                # =================================
+                                # CONSUME APPROVAL
+                                # =================================
+
+                                if current_approval_id:
+
+                                    try:
+
+                                        approval_manager.consume(
+                                            current_approval_id
+                                        )
+
+                                    except Exception as error:
+
+                                        print(
+                                            "Approval consumption failed:"
+                                        )
+
+                                        print(
+                                            repr(error)
+                                        )
+
+                            else:
+
+                                response_message = (
+                                    workflow_result.get(
+                                        "message",
+                                        "Browser workflow "
+                                        "execution failed."
+                                    )
+                                )
+
+                        # =================================
+                        # OTHER TOOLS
+                        # =================================
+
+                        else:
+
+                            action_result = (
+                                self._execute_tool(
+                                    tool_name,
+                                    parameters,
+                                    user_id,
+                                    db
+                                )
+                            )
+
+                            response_message = (
+                                self._build_action_message(
+                                    action_result
+                                )
+                            )
+
+                    # =================================
+                    # EXECUTION AUDIT
+                    # =================================
+
+                    execution_success = bool(
+                        action_result
+                        and action_result.get(
+                            "success",
+                            False
+                        )
+                    )
+
+                    action_name = tool_name
+
+                    if (
+                        tool_name == "browser"
+                        and browser_action
+                    ):
+
+                        action_name = (
+                            f"browser.{browser_action}"
                         )
 
-                        response_message = (
-                            self._build_action_message(
-                                action_result
-                            )
-                        )
+                    self._record_audit(
+                        user_id=user_id,
+                        action=action_name,
+                        success=execution_success,
+                        details={
+                            "intent": intent_name,
+                            "parameters": parameters,
+                            "security": security_result
+                        }
+                    )
+
+                    self._record_security_event(
+                        user_id=user_id,
+                        event_type=(
+                            "execution_success"
+                            if execution_success
+                            else "execution_failed"
+                        ),
+                        action=action_name,
+                        success=execution_success,
+                        details={
+                            "intent": intent_name,
+                            "security": security_result
+                        }
+                    )
+
+        # =================================
+        # STORE CONTEXT
+        # =================================
 
         self._store_context(
             message,
@@ -828,6 +1901,10 @@ class AIBrain:
 
             context = []
 
+        # =================================
+        # FINAL RESPONSE
+        # =================================
+
         return {
             "success": True,
             "intent": intent,
@@ -835,5 +1912,7 @@ class AIBrain:
             "reasoning": reasoning,
             "message": response_message,
             "action_result": action_result,
+            "approval_required": approval_required,
+            "approval_id": current_approval_id,
             "context": context
         }

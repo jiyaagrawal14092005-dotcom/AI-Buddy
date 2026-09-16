@@ -3,18 +3,19 @@ from datetime import datetime
 
 
 class ApprovalManager:
-
     def __init__(self):
-
         self.requests = {}
+
+    # ============================================================
+    # CREATE APPROVAL REQUEST
+    # ============================================================
 
     def create_request(
         self,
-        username: str,
-        action: str,
-        details: dict | None = None
-    ) -> dict:
-
+        username,
+        action,
+        details=None
+    ):
         if not username:
             return {
                 "success": False,
@@ -28,15 +29,20 @@ class ApprovalManager:
             }
 
         approval_id = str(uuid.uuid4())
+        now = datetime.utcnow().isoformat()
 
         request = {
             "approval_id": approval_id,
-            "username": username,
-            "action": action,
-            "details": details or {},
+            "username": str(username),
+            "action": str(action),
+            "details": (
+                details
+                if isinstance(details, dict)
+                else {}
+            ),
             "status": "PENDING",
-            "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
+            "created_at": now,
+            "updated_at": now
         }
 
         self.requests[approval_id] = request
@@ -45,14 +51,17 @@ class ApprovalManager:
             "success": True,
             "approval_id": approval_id,
             "status": "PENDING",
-            "message": "Approval request created."
+            "message": "Approval request created successfully."
         }
+
+    # ============================================================
+    # APPROVE
+    # ============================================================
 
     def approve(
         self,
-        approval_id: str
-    ) -> dict:
-
+        approval_id
+    ):
         request = self.requests.get(
             approval_id
         )
@@ -67,13 +76,13 @@ class ApprovalManager:
             return {
                 "success": False,
                 "message": (
-                    "Only pending requests "
-                    "can be approved."
+                    "Approval request is already "
+                    f"{request['status']}."
                 )
             }
 
         request["status"] = "APPROVED"
-        request["updated_at"] = datetime.now().isoformat()
+        request["updated_at"] = datetime.utcnow().isoformat()
 
         return {
             "success": True,
@@ -82,11 +91,14 @@ class ApprovalManager:
             "message": "Action approved successfully."
         }
 
+    # ============================================================
+    # REJECT
+    # ============================================================
+
     def reject(
         self,
-        approval_id: str
-    ) -> dict:
-
+        approval_id
+    ):
         request = self.requests.get(
             approval_id
         )
@@ -101,26 +113,86 @@ class ApprovalManager:
             return {
                 "success": False,
                 "message": (
-                    "Only pending requests "
-                    "can be rejected."
+                    "Approval request is already "
+                    f"{request['status']}."
                 )
             }
 
         request["status"] = "REJECTED"
-        request["updated_at"] = datetime.now().isoformat()
+        request["updated_at"] = datetime.utcnow().isoformat()
 
         return {
             "success": True,
             "approval_id": approval_id,
             "status": "REJECTED",
-            "message": "Action rejected successfully."
+            "message": "Approval request rejected successfully."
         }
+
+    # ============================================================
+    # GET SINGLE REQUEST
+    #
+    # IMPORTANT:
+    # Brain expects:
+    # {
+    #     "success": True,
+    #     "request": {...}
+    # }
+    # ============================================================
 
     def get_request(
         self,
-        approval_id: str
-    ) -> dict:
+        approval_id
+    ):
+        request = self.requests.get(
+            approval_id
+        )
 
+        if not request:
+            return {
+                "success": False,
+                "request": None,
+                "message": "Approval request not found."
+            }
+
+        return {
+            "success": True,
+            "request": dict(request),
+            "message": "Approval request found."
+        }
+
+    # ============================================================
+    # GET PENDING REQUESTS
+    # ============================================================
+
+    def get_pending_requests(
+        self
+    ):
+        return [
+            dict(request)
+            for request in self.requests.values()
+            if request["status"] == "PENDING"
+        ]
+
+    # ============================================================
+    # GET ALL REQUESTS
+    # ============================================================
+
+    def get_all_requests(
+        self
+    ):
+        return [
+            dict(request)
+            for request in self.requests.values()
+        ]
+
+    # ============================================================
+    # CONSUME APPROVED REQUEST
+    # ============================================================
+
+    def consume(
+        self,
+        approval_id
+    ):
         request = self.requests.get(
             approval_id
         )
@@ -131,22 +203,28 @@ class ApprovalManager:
                 "message": "Approval request not found."
             }
 
+        if request["status"] != "APPROVED":
+            return {
+                "success": False,
+                "message": (
+                    "Approval request cannot be consumed "
+                    f"because its status is {request['status']}."
+                )
+            }
+
+        request["status"] = "CONSUMED"
+        request["updated_at"] = datetime.utcnow().isoformat()
+
         return {
             "success": True,
-            "request": request.copy()
+            "approval_id": approval_id,
+            "status": "CONSUMED",
+            "message": "Approval request consumed successfully."
         }
 
-    def get_pending_requests(self) -> list:
 
-        return [
-            request.copy()
-            for request in self.requests.values()
-            if request["status"] == "PENDING"
-        ]
+# ================================================================
+# SHARED APPROVAL MANAGER
+# ================================================================
 
-    def get_all_requests(self) -> list:
-
-        return [
-            request.copy()
-            for request in self.requests.values()
-        ]
+approval_manager = ApprovalManager()

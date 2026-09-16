@@ -1,4 +1,5 @@
 from app.integrations.base import BaseIntegration
+from app.integrations.email.gmail_service import GmailService
 
 
 class EmailProvider(BaseIntegration):
@@ -14,29 +15,85 @@ class EmailProvider(BaseIntegration):
         )
 
         self.connected = False
+        self.gmail_service = GmailService()
 
     def get_status(self) -> dict:
+
+        gmail_status = self.gmail_service.get_status()
 
         return {
             "name": self.name,
             "description": self.description,
             "connected": self.connected,
-            "available": self.is_available(),
+            "available": (
+                self.is_available()
+                and gmail_status.get("available", False)
+            ),
             "status": (
                 "connected"
                 if self.connected
                 else "disconnected"
-            )
+            ),
+            "gmail_service": gmail_status
         }
 
-    def connect(self) -> dict:
+    def connect(
+        self,
+        user_id: int | None = None
+    ) -> dict:
+
+        if user_id is None:
+            return {
+                "success": False,
+                "connected": False,
+                "message": "User ID is required."
+            }
+
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            return {
+                "success": False,
+                "connected": False,
+                "message": "User ID must be a valid integer."
+            }
+
+        if user_id <= 0:
+            return {
+                "success": False,
+                "connected": False,
+                "message": "User ID must be greater than zero."
+            }
+
+        profile_result = self.gmail_service.get_profile(
+            user_id=user_id
+        )
+
+        if not profile_result.get("success"):
+            return {
+                "success": False,
+                "connected": False,
+                "message": (
+                    profile_result.get(
+                        "message",
+                        "Gmail connection failed."
+                    )
+                )
+            }
 
         self.connected = True
 
         return {
             "success": True,
             "connected": True,
-            "message": "Email provider connected successfully."
+            "provider": "gmail",
+            "user_id": user_id,
+            "email_address": profile_result.get(
+                "email_address"
+            ),
+            "message": (
+                "Gmail provider connected successfully."
+            )
         }
 
     def disconnect(self) -> dict:
@@ -46,7 +103,9 @@ class EmailProvider(BaseIntegration):
         return {
             "success": True,
             "connected": False,
-            "message": "Email provider disconnected successfully."
+            "message": (
+                "Email provider disconnected successfully."
+            )
         }
 
     def is_available(self) -> bool:
@@ -98,6 +157,28 @@ class EmailProvider(BaseIntegration):
                 )
             }
 
+        user_id = parameters.get("user_id")
+
+        if user_id is None:
+            return {
+                "success": False,
+                "message": "User ID is required."
+            }
+
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            return {
+                "success": False,
+                "message": "User ID must be a valid integer."
+            }
+
+        if user_id <= 0:
+            return {
+                "success": False,
+                "message": "User ID must be greater than zero."
+            }
+
         if action == "send":
 
             recipient = parameters.get(
@@ -133,19 +214,35 @@ class EmailProvider(BaseIntegration):
                     "message": "Message is required."
                 }
 
-            return {
-                "success": True,
-                "status": "prepared",
-                "action": "send",
-                "email": {
-                    "recipient": recipient,
-                    "subject": subject,
-                    "message": message
-                },
-                "message": (
-                    "Email send action prepared successfully."
-                )
-            }
+            return self.gmail_service.send_email(
+                user_id=user_id,
+                recipient=recipient,
+                subject=subject,
+                message=message
+            )
+
+        if action == "list_messages":
+
+            max_results = parameters.get(
+                "max_results",
+                10
+            )
+
+            try:
+                max_results = int(max_results)
+            except (TypeError, ValueError):
+                max_results = 10
+
+            return self.gmail_service.list_messages(
+                user_id=user_id,
+                max_results=max_results
+            )
+
+        if action == "profile":
+
+            return self.gmail_service.get_profile(
+                user_id=user_id
+            )
 
         if action == "draft":
 

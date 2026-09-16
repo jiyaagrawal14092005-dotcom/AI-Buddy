@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Buddy Browser Test</title>
+</head>
+
+<body>
+
+    <h1>AI Buddy Browser Interaction Test</h1>
+
+    <label for="name">Enter your name:</label>
+
+    <input
+        id="name"
+        type="text"
+        placeholder="Type your name"
+    >
+
+    <button id="submitBtn">
+        Submit
+    </button>
+
+    <p id="result"></p>
+
+    <script>
+        document
+            .getElementById("submitBtn")
+            .addEventListener("click", function () {
+
+                const name =
+                    document.getElementById("name").value;
+
+                document.getElementById("result").innerText =
+                    "Hello " + name + "!";
+            });
+    </script>
+
+</body>
+</html>
