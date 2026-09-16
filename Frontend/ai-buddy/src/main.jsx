@@ -17,6 +17,7 @@ import "./styles/security.css";
 import "./styles/settings.css";
 import "./styles/workflows.css";
 import "./styles/schedule.css";
+import "./styles/navbar.css";
 ReactDOM.createRoot(
   document.getElementById("root")
 ).render(

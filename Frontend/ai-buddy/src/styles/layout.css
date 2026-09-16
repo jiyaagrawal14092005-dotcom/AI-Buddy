@@ -832,3 +832,783 @@
 .tiny-star {
     opacity: 0.7 !important;
 }
+.dashboard-hero {
+    background:
+        radial-gradient(
+            ellipse at 78% 38%,
+            rgba(139, 92, 246, 0.30),
+            transparent 32%
+        ),
+        radial-gradient(
+            ellipse at 92% 62%,
+            rgba(125, 65, 220, 0.24),
+            transparent 30%
+        ),
+        radial-gradient(
+            ellipse at 60% 85%,
+            rgba(92, 45, 180, 0.18),
+            transparent 34%
+        ),
+        radial-gradient(
+            ellipse at 48% 15%,
+            rgba(139, 92, 246, 0.12),
+            transparent 28%
+        ),
+        #05051c !important;
+}
+
+.robot-cosmos {
+    background:
+        radial-gradient(
+            ellipse at 70% 42%,
+            rgba(139, 92, 246, 0.32),
+            transparent 38%
+        ),
+        radial-gradient(
+            ellipse at 88% 70%,
+            rgba(112, 55, 220, 0.25),
+            transparent 34%
+        ),
+        radial-gradient(
+            ellipse at 55% 85%,
+            rgba(91, 55, 190, 0.18),
+            transparent 38%
+        ),
+        transparent !important;
+}
+
+.cosmic-nebula.nebula-purple {
+    opacity: 1 !important;
+}
+
+.cosmic-nebula.nebula-blue {
+    opacity: 0.20 !important;
+}
+
+.cosmic-nebula.nebula-center {
+    opacity: 0.75 !important;
+}
+
+.galaxy-streak {
+    opacity: 0.9 !important;
+}
+
+.cosmic-star {
+    opacity: 0.9 !important;
+}
+
+.tiny-star {
+    opacity: 0.75 !important;
+}
+.cosmic-planet {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.planet-main {
+    width: 105px;
+    height: 105px;
+    top: 8%;
+    left: 57%;
+    background:
+        radial-gradient(
+            circle at 35% 30%,
+            rgba(210, 170, 255, 0.75),
+            rgba(111, 45, 190, 0.55) 45%,
+            rgba(30, 10, 75, 0.95) 100%
+        );
+    box-shadow:
+        0 0 25px rgba(139, 92, 246, 0.28),
+        inset -18px -15px 25px rgba(20, 5, 55, 0.55);
+    opacity: 0.72;
+}
+
+.planet-right {
+    width: 48px;
+    height: 48px;
+    top: 34%;
+    right: 2%;
+    background:
+        radial-gradient(
+            circle at 35% 30%,
+            rgba(190, 150, 255, 0.65),
+            rgba(91, 45, 170, 0.55) 55%,
+            rgba(24, 8, 60, 0.9)
+        );
+    box-shadow: 0 0 18px rgba(139, 92, 246, 0.25);
+    opacity: 0.65;
+}
+
+.planet-bottom {
+    width: 115px;
+    height: 115px;
+    bottom: -45px;
+    right: 2%;
+    background:
+        radial-gradient(
+            circle at 35% 28%,
+            rgba(175, 135, 245, 0.58),
+            rgba(75, 35, 145, 0.58) 55%,
+            rgba(18, 6, 48, 0.95)
+        );
+    box-shadow:
+        0 0 28px rgba(139, 92, 246, 0.22),
+        inset -20px -18px 30px rgba(15, 4, 40, 0.65);
+    opacity: 0.7;
+}
+
+@media (max-width: 900px) {
+    .planet-main {
+        width: 75px;
+        height: 75px;
+    }
+
+    .planet-right {
+        width: 35px;
+        height: 35px;
+    }
+
+    .planet-bottom {
+        width: 80px;
+        height: 80px;
+        bottom: -30px;
+    }
+}
+.dashboard-hero {
+    background:
+        radial-gradient(
+            ellipse at 68% 18%,
+            rgba(145, 78, 245, 0.22),
+            transparent 30%
+        ),
+        radial-gradient(
+            ellipse at 82% 48%,
+            rgba(139, 92, 246, 0.30),
+            transparent 34%
+        ),
+        radial-gradient(
+            ellipse at 48% 58%,
+            rgba(91, 45, 175, 0.16),
+            transparent 38%
+        ),
+        radial-gradient(
+            ellipse at 20% 82%,
+            rgba(95, 45, 180, 0.12),
+            transparent 32%
+        ),
+        radial-gradient(
+            ellipse at 92% 88%,
+            rgba(139, 92, 246, 0.18),
+            transparent 28%
+        ),
+        #05051c !important;
+}
+
+.robot-cosmos {
+    background:
+        radial-gradient(
+            ellipse at 52% 20%,
+            rgba(126, 58, 225, 0.18),
+            transparent 35%
+        ),
+        radial-gradient(
+            ellipse at 75% 48%,
+            rgba(139, 92, 246, 0.30),
+            transparent 38%
+        ),
+        radial-gradient(
+            ellipse at 90% 80%,
+            rgba(112, 55, 220, 0.22),
+            transparent 32%
+        ),
+        transparent !important;
+}
+
+.galaxy-streak {
+    opacity: 0.95 !important;
+    filter: blur(0.2px);
+}
+.cosmic-star {
+    text-shadow:
+        0 0 4px rgba(255, 255, 255, 0.9),
+        0 0 10px rgba(185, 140, 255, 0.75),
+        0 0 18px rgba(139, 92, 246, 0.45) !important;
+}
+
+.tiny-star {
+    box-shadow:
+        0 0 4px rgba(255, 255, 255, 0.85),
+        0 0 9px rgba(174, 125, 255, 0.65) !important;
+}
+
+.nebula-purple {
+    filter: blur(45px) !important;
+    opacity: 0.95 !important;
+}
+
+.nebula-center {
+    filter: blur(55px) !important;
+    opacity: 0.70 !important;
+}
+
+.nebula-blue {
+    filter: blur(60px) !important;
+    opacity: 0.18 !important;
+}
+.robot-cosmos::after {
+    content: "";
+    position: absolute;
+    width: 75%;
+    height: 38%;
+    top: 25%;
+    right: -12%;
+    border-radius: 50%;
+    background:
+        radial-gradient(
+            ellipse at center,
+            rgba(184, 130, 255, 0.16),
+            rgba(139, 92, 246, 0.08) 38%,
+            transparent 72%
+        );
+    transform: rotate(-18deg);
+    filter: blur(28px);
+    opacity: 0.9;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.robot-cosmos::before {
+    content: "";
+    position: absolute;
+    width: 62%;
+    height: 20%;
+    top: 43%;
+    right: -8%;
+    border-radius: 50%;
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(190, 145, 255, 0.12),
+            rgba(139, 92, 246, 0.18),
+            transparent
+        );
+    transform: rotate(-18deg);
+    filter: blur(18px);
+    opacity: 0.75;
+    pointer-events: none;
+    z-index: 0;
+}
+.main-content {
+    position: relative !important;
+    z-index: 10 !important;
+}
+
+.zarvis-navbar {
+    position: relative !important;
+    z-index: 9999 !important;
+}
+
+.zarvis-navbar-actions {
+    position: relative !important;
+    z-index: 10000 !important;
+}
+
+.zarvis-notification-wrapper,
+.zarvis-account-wrapper {
+    position: relative !important;
+    z-index: 10001 !important;
+}
+
+.zarvis-notification-button,
+.zarvis-account-button {
+    position: relative !important;
+    z-index: 10002 !important;
+}
+
+.zarvis-notification-panel,
+.zarvis-account-menu {
+    z-index: 10003 !important;
+}
+.main-content {
+    position: relative !important;
+    z-index: 10 !important;
+}
+
+.zarvis-navbar {
+    position: relative !important;
+    z-index: 9999 !important;
+}
+
+.zarvis-navbar-actions {
+    position: relative !important;
+    z-index: 10000 !important;
+}
+
+.zarvis-notification-wrapper,
+.zarvis-account-wrapper {
+    position: relative !important;
+    z-index: 10001 !important;
+}
+
+.zarvis-notification-button,
+.zarvis-account-button {
+    position: relative !important;
+    z-index: 10002 !important;
+}
+
+.zarvis-notification-panel,
+.zarvis-account-menu {
+    z-index: 10003 !important;
+}
+/* =========================
+   REFERENCE HERO COMPOSITION
+========================= */
+
+.dashboard-hero {
+    min-height: 580px !important;
+    height: 580px !important;
+    overflow: hidden !important;
+}
+
+.zarvis-robot-area {
+    height: 580px !important;
+}
+
+.robot-visual {
+    top: 40% !important;
+}
+
+.hero-search-bar {
+    bottom: 24px !important;
+}
+
+@media (max-width: 1200px) {
+    .dashboard-hero {
+        min-height: 620px !important;
+        height: 620px !important;
+    }
+
+    .zarvis-robot-area {
+        height: 620px !important;
+    }
+}
+
+@media (max-width: 900px) {
+    .dashboard-hero {
+        min-height: 720px !important;
+        height: 720px !important;
+    }
+
+    .zarvis-robot-area {
+        height: 430px !important;
+    }
+}
+/* =========================
+   STEP 3 - HERO LEFT CONTENT
+========================= */
+
+.dashboard-welcome {
+    position: relative !important;
+    z-index: 5 !important;
+    max-width: 560px !important;
+    padding-top: 42px !important;
+}
+
+.dashboard-welcome h1 {
+    margin-bottom: 18px !important;
+}
+
+.dashboard-welcome p {
+    max-width: 520px !important;
+    line-height: 1.65 !important;
+}
+
+.quick-actions {
+    margin-top: 24px !important;
+}
+
+@media (max-width: 900px) {
+    .dashboard-welcome {
+        max-width: 100% !important;
+        padding-top: 30px !important;
+    }
+
+    .dashboard-welcome p {
+        max-width: 100% !important;
+    }
+}
+/* =========================
+   STEP 4 - STATUS CARDS
+========================= */
+
+.hero-status-cards {
+    display: flex !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+    width: 560px !important;
+    max-width: 100% !important;
+    margin-top: 26px !important;
+}
+
+.hero-status-cards > * {
+    flex: 1 !important;
+    min-width: 0 !important;
+}
+
+@media (max-width: 900px) {
+    .hero-status-cards {
+        width: 100% !important;
+        gap: 12px !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .hero-status-cards {
+        flex-direction: column !important;
+    }
+}
+/* =========================
+   STEP 5 - COMMAND BAR
+========================= */
+
+.hero-search-bar {
+    position: absolute !important;
+
+    left: 18% !important;
+    bottom: 24px !important;
+
+    width: 64% !important;
+    max-width: 760px !important;
+
+    z-index: 20 !important;
+}
+
+.hero-search-bar input {
+    height: 58px !important;
+}
+
+@media (max-width: 1200px) {
+    .hero-search-bar {
+        left: 12% !important;
+        width: 76% !important;
+    }
+}
+
+@media (max-width: 900px) {
+    .hero-search-bar {
+        left: 5% !important;
+        width: 90% !important;
+        bottom: 20px !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .hero-search-bar {
+        left: 3% !important;
+        width: 94% !important;
+    }
+
+    .hero-search-bar input {
+        height: 54px !important;
+    }
+}
+/* =========================
+   STEP 6 - LOWER DASHBOARD SPACING
+========================= */
+
+.stats-grid {
+    margin-top: 0 !important;
+    margin-bottom: 22px !important;
+}
+
+.quick-section {
+    margin-top: 0 !important;
+    margin-bottom: 22px !important;
+}
+
+.dashboard-cards-grid {
+    margin-top: 16px !important;
+}
+
+.dashboard-cards-grid + .dashboard-cards-grid {
+    margin-top: 16px !important;
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        margin-bottom: 16px !important;
+    }
+
+    .quick-section {
+        margin-bottom: 16px !important;
+    }
+
+    .dashboard-cards-grid,
+    .dashboard-cards-grid + .dashboard-cards-grid {
+        margin-top: 12px !important;
+    }
+}
+/* =========================
+   STEP 7 - CARD ALIGNMENT
+========================= */
+
+.dashboard-cards-grid {
+    align-items: stretch !important;
+}
+
+.dashboard-cards-grid > * {
+    min-height: 170px !important;
+}
+
+.dashboard-cards-grid + .dashboard-cards-grid > * {
+    min-height: 210px !important;
+}
+
+.timer-card,
+.upcoming-tasks-card {
+    height: 100% !important;
+    min-height: 100% !important;
+}
+
+@media (max-width: 1200px) {
+    .dashboard-cards-grid > * {
+        min-height: 165px !important;
+    }
+
+    .dashboard-cards-grid + .dashboard-cards-grid > * {
+        min-height: 200px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-cards-grid > *,
+    .dashboard-cards-grid + .dashboard-cards-grid > * {
+        min-height: 160px !important;
+    }
+}
+/* =========================
+   STEP 8 - CARD VISUAL POLISH
+========================= */
+
+.dashboard-cards-grid > *,
+.stats-grid > *,
+.quick-section > * {
+    background:
+        linear-gradient(
+            145deg,
+            rgba(20, 13, 55, 0.82),
+            rgba(7, 7, 28, 0.88)
+        ) !important;
+
+    border: 1px solid rgba(139, 92, 246, 0.20) !important;
+
+    box-shadow:
+        inset 0 0 20px rgba(139, 92, 246, 0.035),
+        0 8px 28px rgba(0, 0, 0, 0.18) !important;
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    transition:
+        border-color 0.25s ease,
+        box-shadow 0.25s ease,
+        transform 0.25s ease;
+}
+
+.dashboard-cards-grid > *:hover,
+.stats-grid > *:hover,
+.quick-section > *:hover {
+    border-color: rgba(155, 108, 255, 0.34) !important;
+
+    box-shadow:
+        inset 0 0 22px rgba(139, 92, 246, 0.05),
+        0 10px 32px rgba(0, 0, 0, 0.22),
+        0 0 18px rgba(139, 92, 246, 0.08) !important;
+}
+
+@media (max-width: 768px) {
+    .dashboard-cards-grid > *,
+    .stats-grid > *,
+    .quick-section > * {
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+    }
+}
+/* =========================
+   STEP 9 - TYPOGRAPHY
+========================= */
+
+.dashboard-welcome h1 {
+    letter-spacing: -0.8px !important;
+    line-height: 1.08 !important;
+}
+
+.dashboard-welcome p {
+    color: rgba(190, 184, 225, 0.82) !important;
+    letter-spacing: 0.1px !important;
+}
+
+.quick-section h2,
+.stats-grid h2,
+.dashboard-cards-grid h2 {
+    letter-spacing: -0.2px !important;
+}
+
+.dashboard-cards-grid h3,
+.stats-grid h3 {
+    letter-spacing: -0.15px !important;
+}
+
+.dashboard-cards-grid span,
+.stats-grid span {
+    letter-spacing: 0.1px;
+}
+
+@media (max-width: 768px) {
+    .dashboard-welcome h1 {
+        letter-spacing: -0.5px !important;
+    }
+
+    .dashboard-welcome p {
+        line-height: 1.55 !important;
+    }
+}
+/* =========================
+   STEP 10 - RESPONSIVE POLISH
+========================= */
+
+@media (max-width: 900px) {
+    .dashboard-hero {
+        height: 720px !important;
+        min-height: 720px !important;
+    }
+
+    .dashboard-welcome {
+        width: 100% !important;
+    }
+
+    .zarvis-robot-area {
+        width: 100% !important;
+        height: 430px !important;
+        top: 250px !important;
+    }
+
+    .hero-search-bar {
+        left: 5% !important;
+        width: 90% !important;
+    }
+
+    .dashboard-cards-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+}
+
+@media (max-width: 650px) {
+    .dashboard-hero {
+        height: 760px !important;
+        min-height: 760px !important;
+    }
+
+    .dashboard-welcome {
+        padding-top: 28px !important;
+    }
+
+    .dashboard-welcome h1 {
+        font-size: 34px !important;
+    }
+
+    .zarvis-robot-area {
+        top: 260px !important;
+        height: 420px !important;
+    }
+
+    .hero-search-bar {
+        left: 3% !important;
+        width: 94% !important;
+        bottom: 18px !important;
+    }
+
+    .dashboard-cards-grid,
+    .dashboard-cards-grid + .dashboard-cards-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 420px) {
+    .dashboard-hero {
+        height: 780px !important;
+        min-height: 780px !important;
+    }
+
+    .dashboard-welcome h1 {
+        font-size: 30px !important;
+    }
+
+    .dashboard-welcome p {
+        font-size: 13px !important;
+    }
+
+    .zarvis-robot-area {
+        top: 275px !important;
+    }
+
+    .hero-search-bar {
+        bottom: 14px !important;
+    }
+}
+/* =========================
+   STEP 11 - FINAL COMPOSITION BALANCE
+========================= */
+
+.dashboard {
+    max-width: 1500px !important;
+}
+
+.dashboard-hero {
+    margin-bottom: 10px !important;
+}
+
+.stats-grid {
+    margin-bottom: 20px !important;
+}
+
+.quick-section {
+    margin-bottom: 18px !important;
+}
+
+.dashboard-cards-grid {
+    gap: 16px !important;
+}
+
+.dashboard-cards-grid + .dashboard-cards-grid {
+    gap: 16px !important;
+}
+
+@media (max-width: 1200px) {
+    .dashboard {
+        max-width: 100% !important;
+    }
+
+    .dashboard-hero {
+        margin-bottom: 8px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-hero {
+        margin-bottom: 8px !important;
+    }
+
+    .stats-grid,
+    .quick-section {
+        margin-bottom: 14px !important;
+    }
+
+    .dashboard-cards-grid,
+    .dashboard-cards-grid + .dashboard-cards-grid {
+        gap: 12px !important;
+    }
+}

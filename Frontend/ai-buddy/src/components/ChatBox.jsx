@@ -75,6 +75,9 @@ function ChatBox() {
                 {/* Galaxy Streak */}
 
                 <div className="galaxy-streak"></div>
+                <div className="cosmic-planet planet-main"></div>
+<div className="cosmic-planet planet-right"></div>
+<div className="cosmic-planet planet-bottom"></div>
 
             </div>
 

@@ -1,45 +1,67 @@
 .zarvis-navbar {
     width: 100%;
     height: 70px;
+
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    padding: 0 0 0 20px;
-    position: relative;
-    z-index: 1000;
+
+    padding: 0;
+    margin: 0;
+
+    position: relative !important;
+
+    z-index: 10000 !important;
+
     background: transparent !important;
-    filter: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
+
+    pointer-events: auto !important;
 }
 
 .zarvis-navbar-actions {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
+
     gap: 10px;
+
     position: relative;
-    z-index: 1001;
+    z-index: 10001;
+}
+
+/* =========================
+   NOTIFICATION
+========================= */
+
+.zarvis-notification-wrapper {
+    position: relative;
+    z-index: 10002;
 }
 
 .zarvis-notification-button {
     width: 58px;
     height: 52px;
+
     display: flex;
     align-items: center;
     justify-content: center;
+
     position: relative;
-    flex-shrink: 0;
+
     border-radius: 16px;
+
     background: rgba(30, 16, 70, 0.96) !important;
+
     border: 1px solid rgba(139, 92, 246, 0.30);
+
     color: #d9c9ff;
+
     box-shadow:
         inset 0 0 18px rgba(139, 92, 246, 0.06),
         0 0 18px rgba(91, 70, 180, 0.10);
-    filter: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    opacity: 1 !important;
+
+    cursor: pointer;
+
     transition: all 0.25s ease;
 }
 
@@ -47,9 +69,6 @@
     background: rgba(40, 22, 88, 0.98) !important;
     border-color: rgba(164, 116, 255, 0.45);
     color: #ffffff;
-    box-shadow:
-        0 0 20px rgba(139, 92, 246, 0.16),
-        inset 0 0 18px rgba(139, 92, 246, 0.08);
 }
 
 .zarvis-notification-button svg {
@@ -60,122 +79,444 @@
 
 .zarvis-notification-dot {
     position: absolute;
+
     top: 10px;
     right: 11px;
+
     width: 7px;
     height: 7px;
+
     border-radius: 50%;
+
     background: #b982ff;
+
     box-shadow:
         0 0 6px rgba(185, 130, 255, 0.95),
         0 0 12px rgba(139, 92, 246, 0.65);
 }
 
+/* =========================
+   NOTIFICATION PANEL
+========================= */
+
+.zarvis-notification-panel {
+    position: absolute;
+
+    top: 62px;
+    right: 0;
+
+    width: 350px;
+
+    padding: 16px;
+
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(18, 10, 48, 0.99),
+            rgba(7, 5, 27, 0.99)
+        );
+
+    border: 1px solid rgba(139, 92, 246, 0.38);
+
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.60),
+        0 0 30px rgba(139, 92, 246, 0.16);
+
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+
+    z-index: 999999 !important;
+}
+
+.notification-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 2px 2px 14px;
+
+    border-bottom: 1px solid rgba(139, 92, 246, 0.13);
+}
+
+.notification-panel-header > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.notification-panel-header strong {
+    color: #f4efff;
+    font-size: 15px;
+}
+
+.notification-panel-header span {
+    color: #8178a6;
+    font-size: 11px;
+}
+
+.notification-panel-header button {
+    background: transparent;
+    color: #a984ff;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.notification-item {
+    display: flex;
+    align-items: center;
+
+    gap: 11px;
+
+    padding: 14px 2px;
+
+    border-bottom: 1px solid rgba(139, 92, 246, 0.10);
+}
+
+.notification-icon {
+    width: 36px;
+    height: 36px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 11px;
+
+    color: #b995ff;
+
+    background: rgba(139, 92, 246, 0.12);
+
+    border: 1px solid rgba(139, 92, 246, 0.20);
+}
+
+.notification-content {
+    min-width: 0;
+    flex: 1;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 4px;
+}
+
+.notification-content strong {
+    color: #eee9ff;
+    font-size: 12px;
+}
+
+.notification-content span {
+    color: #817b9f;
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+.notification-item small {
+    color: #625b80;
+    font-size: 9px;
+    white-space: nowrap;
+}
+
+.notification-view-all {
+    width: 100%;
+
+    margin-top: 12px;
+    padding: 10px;
+
+    border-radius: 10px;
+
+    background: rgba(139, 92, 246, 0.08);
+
+    border: 1px solid rgba(139, 92, 246, 0.16);
+
+    color: #ad8aff;
+
+    font-size: 11px;
+
+    cursor: pointer;
+}
+
+/* =========================
+   ACCOUNT
+========================= */
+
+.zarvis-account-wrapper {
+    position: relative;
+    z-index: 10002;
+}
+
 .zarvis-account-button {
     width: 250px;
     height: 58px;
+
     display: flex;
     align-items: center;
+
     gap: 11px;
+
     padding: 5px 12px 5px 7px;
+
     border-radius: 17px;
-    flex-shrink: 0;
+
     background: rgba(30, 16, 70, 0.96) !important;
+
     border: 1px solid rgba(139, 92, 246, 0.30);
+
     color: #aaa3ca;
+
     position: relative;
-    z-index: 1001;
-    filter: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    opacity: 1 !important;
+
+    cursor: pointer;
+
     box-shadow:
         inset 0 0 20px rgba(139, 92, 246, 0.06),
         0 0 20px rgba(91, 70, 180, 0.10);
+
     transition: all 0.25s ease;
 }
 
 .zarvis-account-button:hover {
     background: rgba(40, 22, 88, 0.98) !important;
     border-color: rgba(164, 116, 255, 0.42);
-    box-shadow:
-        0 0 22px rgba(139, 92, 246, 0.16),
-        inset 0 0 20px rgba(139, 92, 246, 0.08);
 }
 
 .zarvis-avatar {
     width: 45px;
     height: 45px;
+
     flex-shrink: 0;
+
     display: flex;
     align-items: center;
     justify-content: center;
+
     border-radius: 13px;
-    background: linear-gradient(
-        145deg,
-        rgba(94, 70, 205, 0.82),
-        rgba(67, 43, 153, 0.72)
-    ) !important;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(94, 70, 205, 0.82),
+            rgba(67, 43, 153, 0.72)
+        ) !important;
+
     border: 1px solid rgba(151, 115, 255, 0.38);
+
     color: #c8d9ff;
+
     font-size: 17px;
     font-weight: 600;
+
     box-shadow:
         inset 0 0 14px rgba(139, 92, 246, 0.16),
         0 0 14px rgba(91, 92, 246, 0.14);
-    filter: none !important;
-    opacity: 1 !important;
 }
 
 .zarvis-account-info {
     flex: 1;
     min-width: 0;
+
     display: flex;
     flex-direction: column;
+
     align-items: flex-start;
     justify-content: center;
+
     line-height: 1.15;
-    filter: none !important;
-    opacity: 1 !important;
 }
 
 .zarvis-account-info strong {
     color: #f5f0ff !important;
     font-size: 16px;
     font-weight: 650;
-    letter-spacing: -0.2px;
 }
 
 .zarvis-account-info span {
     margin-top: 5px;
+
     color: #8580a7 !important;
+
     font-size: 12px;
-    font-weight: 400;
 }
 
 .zarvis-account-button > svg {
     flex-shrink: 0;
+
     color: #8c86b0 !important;
+
     width: 17px;
     height: 17px;
+
+    transition: transform 0.2s ease;
 }
 
-.zarvis-navbar *,
-.zarvis-navbar-actions *,
-.zarvis-notification-button *,
-.zarvis-account-button * {
-    filter: none !important;
+.account-chevron-open {
+    transform: rotate(180deg);
 }
+
+/* =========================
+   ACCOUNT MENU
+========================= */
+
+.zarvis-account-menu {
+    position: absolute;
+
+    top: 66px;
+    right: 0;
+
+    width: 250px;
+
+    padding: 9px;
+
+    border-radius: 17px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(19, 10, 50, 0.99),
+            rgba(7, 5, 27, 0.99)
+        );
+
+    border: 1px solid rgba(139, 92, 246, 0.35);
+
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.60),
+        0 0 30px rgba(139, 92, 246, 0.15);
+
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+
+    z-index: 999999 !important;
+}
+
+.account-menu-profile {
+    display: flex;
+    align-items: center;
+
+    gap: 11px;
+
+    padding: 10px;
+    margin-bottom: 7px;
+
+    border-radius: 12px;
+
+    background: rgba(139, 92, 246, 0.09);
+
+    border: 1px solid rgba(139, 92, 246, 0.13);
+}
+
+.account-menu-avatar {
+    width: 40px;
+    height: 40px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    border-radius: 11px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(94, 70, 205, 0.85),
+            rgba(67, 43, 153, 0.75)
+        );
+
+    border: 1px solid rgba(151, 115, 255, 0.35);
+
+    color: #c8d9ff;
+
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.account-menu-profile > div:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.account-menu-profile strong {
+    color: #f3edff;
+    font-size: 13px;
+}
+
+.account-menu-profile span {
+    color: #817a9f;
+    font-size: 10px;
+}
+
+.zarvis-account-menu > button {
+    width: 100%;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 0 11px;
+
+    border-radius: 10px;
+
+    background: transparent;
+
+    color: #aaa2c8;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+.zarvis-account-menu > button svg {
+    color: #9180c5;
+    flex-shrink: 0;
+}
+
+.zarvis-account-menu > button:hover {
+    background: rgba(139, 92, 246, 0.10);
+    color: #f0eaff;
+}
+
+.account-menu-divider {
+    height: 1px;
+
+    margin: 7px 4px;
+
+    background: rgba(139, 92, 246, 0.13);
+}
+
+.account-logout {
+    color: #b9a8d7 !important;
+}
+
+/* =========================
+   MOBILE
+========================= */
 
 @media (max-width: 700px) {
+
     .zarvis-navbar {
         height: 60px;
+        padding-right: 0;
+    }
+
+    .zarvis-navbar-actions {
+        gap: 7px;
     }
 
     .zarvis-account-button {
         width: 58px;
         height: 52px;
+
         padding: 4px;
+
         justify-content: center;
     }
 
@@ -191,4 +532,64 @@
         width: 42px;
         height: 42px;
     }
+
+    .zarvis-notification-panel {
+        right: -65px;
+        width: 320px;
+    }
+
+    .zarvis-account-menu {
+        width: 235px;
+    }
+}
+
+@media (max-width: 400px) {
+
+    .zarvis-navbar {
+        padding-right: 0;
+    }
+
+    .zarvis-notification-button {
+        width: 52px;
+        height: 50px;
+    }
+
+    .zarvis-account-button {
+        width: 52px;
+        height: 50px;
+    }
+
+    .zarvis-notification-panel {
+        right: -55px;
+        width: calc(100vw - 24px);
+        max-width: 320px;
+    }
+}
+/* =========================
+   STEP 13 - DROPDOWN CLICK FIX
+========================= */
+
+.zarvis-notification-wrapper,
+.zarvis-account-wrapper {
+    pointer-events: auto !important;
+}
+
+.zarvis-notification-panel,
+.zarvis-account-menu {
+    pointer-events: auto !important;
+    position: absolute !important;
+    z-index: 9999999 !important;
+}
+
+.zarvis-notification-panel *,
+.zarvis-account-menu * {
+    pointer-events: auto !important;
+}
+
+.zarvis-notification-panel button,
+.zarvis-account-menu button {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 2;
+    cursor: pointer !important;
 }
