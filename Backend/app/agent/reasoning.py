@@ -9,6 +9,8 @@ class ReasoningEngine:
         "CREATE_TASK",
         "CREATE_REMINDER",
         "GET_WEATHER",
+        "GET_TIME",
+        "GET_DATE",
         "OPEN_APPLICATION",
         "SEARCH_INFORMATION",
         "SEND_EMAIL",
@@ -19,6 +21,7 @@ class ReasoningEngine:
         "SHOPPING_SEARCH",
         "SHOPPING_COMPARE",
         "SHOPPING_CART_ADD",
+        "SHOPPING_CART_REMOVE",
         "SHOPPING_CART_LIST",
         "SHOPPING_PURCHASE_PREPARE"
     }
@@ -43,6 +46,8 @@ class ReasoningEngine:
         "CREATE_TASK": "task",
         "CREATE_REMINDER": "reminder",
         "GET_WEATHER": "weather",
+        "GET_TIME": "time_tool",
+        "GET_DATE": "time_tool",
         "OPEN_APPLICATION": "application_launcher",
         "SEARCH_INFORMATION": "search",
         "SEND_EMAIL": "email",
@@ -53,6 +58,7 @@ class ReasoningEngine:
         "SHOPPING_SEARCH": "shopping",
         "SHOPPING_COMPARE": "shopping",
         "SHOPPING_CART_ADD": "shopping",
+        "SHOPPING_CART_REMOVE": "shopping",
         "SHOPPING_CART_LIST": "shopping",
         "SHOPPING_PURCHASE_PREPARE": "shopping"
     }
@@ -115,6 +121,10 @@ class ReasoningEngine:
         ],
 
         "SHOPPING_CART_ADD": [
+            "product_id"
+        ],
+
+        "SHOPPING_CART_REMOVE": [
             "product_id"
         ],
 
@@ -500,6 +510,38 @@ class ReasoningEngine:
             parameters[
                 "quantity"
             ] = quantity
+
+        # =========================================
+        # SHOPPING CART REMOVE VALIDATION
+        # =========================================
+
+        if intent == "SHOPPING_CART_REMOVE":
+
+            product_id = parameters.get(
+                "product_id"
+            )
+
+            if (
+                not isinstance(
+                    product_id,
+                    str
+                )
+                or not product_id.strip()
+            ):
+
+                return {
+                    "success": False,
+                    "intent": intent,
+                    "executable": False,
+                    "message": (
+                        "Product ID is required "
+                        "to remove a product from the cart."
+                    )
+                }
+
+            parameters[
+                "product_id"
+            ] = product_id.strip()
 
         # =========================================
         # SHOPPING CART LIST VALIDATION

@@ -17,6 +17,8 @@ class ToolGuard:
             "search",
             "browser",
             "shopping",
+            "application_launcher",
+            "time_tool",
         }
 
         # Tools that normally require explicit user approval.

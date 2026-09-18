@@ -14,22 +14,10 @@ router = APIRouter(
 )
 
 
-# ============================================================
-# VOICE COMPONENTS
-# ============================================================
+voice_conversation = VoiceConversation()
 
-voice_conversation = VoiceConversation(
-    wake_word="Zarvis"
-)
+jarvis_mode = JarvisMode()
 
-jarvis_mode = JarvisMode(
-    wake_word="Zarvis"
-)
-
-
-# ============================================================
-# VOICE STATUS
-# ============================================================
 
 @router.get("/status")
 def voice_status():
@@ -39,10 +27,6 @@ def voice_status():
         "jarvis": jarvis_mode.get_status()
     }
 
-
-# ============================================================
-# VOICE CONVERSATION
-# ============================================================
 
 @router.post("/start")
 def start_voice_conversation():
@@ -69,12 +53,10 @@ async def process_voice_text(
 
 @router.post("/response")
 def add_voice_response(response: str):
-    return voice_conversation.add_response(response)
+    return voice_conversation.add_response(
+        response
+    )
 
-
-# ============================================================
-# LISTENING
-# ============================================================
 
 @router.post("/listening/start")
 def start_listening():
@@ -86,10 +68,6 @@ def stop_listening():
     return voice_conversation.stop_listening()
 
 
-# ============================================================
-# RECORDING
-# ============================================================
-
 @router.post("/recording/start")
 def start_recording():
     return voice_conversation.start_recording()
@@ -99,44 +77,63 @@ def start_recording():
 def stop_recording():
     result = voice_conversation.stop_recording()
 
-    if not result.get("success", False):
+    if not result.get(
+        "success",
+        False
+    ):
         return result
 
-    audio_data = result.get("audio_data")
+    audio_data = result.get(
+        "audio_data"
+    )
 
-    if isinstance(audio_data, bytes):
+    if isinstance(
+        audio_data,
+        bytes
+    ):
+
         result["audio_data"] = (
-            base64.b64encode(audio_data)
-            .decode("utf-8")
+            base64.b64encode(
+                audio_data
+            ).decode("utf-8")
         )
 
     return result
 
-
-# ============================================================
-# SPEECH TO TEXT
-# ============================================================
 
 @router.post("/speech-to-text")
 async def speech_to_text(
     user_id: int,
     db: Session = Depends(get_db)
 ):
+    """
+    Stop the current recording and convert
+    the recorded audio into text.
+    """
+
     return await voice_conversation.process_recorded_audio(
         user_id,
         db
     )
 
 
-# ============================================================
+# ==========================================================
 # JARVIS MODE
-# ============================================================
+# ==========================================================
+
 
 @router.post("/jarvis/start")
 async def start_jarvis(
     user_id: int,
     db: Session = Depends(get_db)
 ):
+    """
+    Start continuous Jarvis mode.
+
+    Jarvis continuously listens for the configured
+    wake word and executes recognized commands.
+    """
+
     return await jarvis_mode.start(
         user_id,
         db
@@ -145,11 +142,19 @@ async def start_jarvis(
 
 @router.post("/jarvis/stop")
 async def stop_jarvis():
+    """
+    Stop continuous Jarvis mode.
+    """
+
     return await jarvis_mode.stop()
 
 
 @router.get("/jarvis/status")
 def jarvis_status():
+    """
+    Return the current Jarvis mode status.
+    """
+
     return {
         "success": True,
         "jarvis": jarvis_mode.get_status()
@@ -161,15 +166,15 @@ async def toggle_jarvis(
     user_id: int,
     db: Session = Depends(get_db)
 ):
+    """
+    Start Jarvis if inactive or stop it if active.
+    """
+
     return await jarvis_mode.toggle(
         user_id,
         db
     )
 
-
-# ============================================================
-# VOICE HISTORY
-# ============================================================
 
 @router.get("/history")
 def voice_history():
@@ -188,10 +193,6 @@ def clear_voice_history():
         "message": "Voice conversation history cleared."
     }
 
-
-# ============================================================
-# JARVIS HISTORY
-# ============================================================
 
 @router.get("/jarvis/history")
 def jarvis_history():

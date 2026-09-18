@@ -1,4 +1,4 @@
-﻿import json
+import json
 import re
 from datetime import date, timedelta
 
@@ -1191,61 +1191,6 @@ class IntentDetector:
             parameters["city"] = city
 
         # =====================================
-        # TIME AND DATE DETECTION
-        # =====================================
-
-        time_patterns = [
-            r"\bwhat\s+time\s+is\s+it\b",
-            r"\bwhat(?:\'s| is)\s+the\s+time\b",
-            r"\bcurrent\s+time\b",
-            r"\btime\s+right\s+now\b",
-            r"\btime\s+now\b",
-            r"\btell\s+me\s+the\s+time\b",
-            r"\bwhat\s+time\s+it\s+is\b"
-        ]
-
-        date_patterns = [
-            r"\bwhat\s+date\s+is\s+it\b",
-            r"\bwhat(?:\'s| is)\s+today(?:\'s)?\s+date\b",
-            r"\btoday(?:\'s)?\s+date\b",
-            r"\bcurrent\s+date\b",
-            r"\bwhat\s+day\s+is\s+it\b",
-            r"\bwhat\s+day\s+it\s+is\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in time_patterns
-        ):
-            return {
-                "intent": "GET_TIME",
-                "confidence": 0.98,
-                "parameters": {
-                    "action": "current_time",
-                    "timezone": "Asia/Kolkata"
-                }
-            }
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in date_patterns
-        ):
-            return {
-                "intent": "GET_DATE",
-                "confidence": 0.98,
-                "parameters": {
-                    "action": "current_date",
-                    "timezone": "Asia/Kolkata"
-                }
-            }
-
-        # =====================================
         # SEARCH INFORMATION
         # =====================================
 
@@ -1477,8 +1422,6 @@ class IntentDetector:
             "CREATE_REMINDER",
             "SET_TIMER",
             "GET_WEATHER",
-            "GET_TIME",
-            "GET_DATE",
             "SEARCH_INFORMATION",
             "SEND_EMAIL",
             "CHECK_CALENDAR",
@@ -3088,62 +3031,6 @@ class IntentDetector:
                 }
             }
 
-
-                # =====================================
-        # TIME AND DATE DETECTION
-        # =====================================
-
-        time_patterns = [
-            r"\bwhat\s+time\s+is\s+it\b",
-            r"\bwhat(?:'s| is)\s+the\s+time\b",
-            r"\bcurrent\s+time\b",
-            r"\btime\s+right\s+now\b",
-            r"\btime\s+now\b",
-            r"\btell\s+me\s+the\s+time\b",
-            r"\bwhat\s+time\s+it\s+is\b"
-        ]
-
-        date_patterns = [
-            r"\bwhat\s+date\s+is\s+it\b",
-            r"\bwhat(?:'s| is)\s+today(?:'s)?\s+date\b",
-            r"\btoday(?:'s)?\s+date\b",
-            r"\bcurrent\s+date\b",
-            r"\bwhat\s+day\s+is\s+it\b",
-            r"\bwhat\s+day\s+it\s+is\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in time_patterns
-        ):
-            return {
-                "intent": "GET_TIME",
-                "confidence": 0.98,
-                "parameters": {
-                    "action": "current_time",
-                    "timezone": "Asia/Kolkata"
-                }
-            }
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in date_patterns
-        ):
-            return {
-                "intent": "GET_DATE",
-                "confidence": 0.98,
-                "parameters": {
-                    "action": "current_date",
-                    "timezone": "Asia/Kolkata"
-                }
-            }
-        
         # =====================================
         # SEARCH INFORMATION
         # =====================================
@@ -3572,7 +3459,7 @@ User message:
 """
 
         response = self.client.models.generate_content(
-            model="gemini-3.6-flash",
+            model="gemini-3.7-flash",
             contents=prompt
         )
 
@@ -3650,89 +3537,6 @@ User message:
                 f"Error: {error}"
             )
 
-                # =====================================
-        # FAST LOCAL TIME AND DATE DETECTION
-        # =====================================
-
-        try:
-
-            lower_message = message.lower()
-
-            # -------------------------------
-            # Current Time
-            # -------------------------------
-
-            time_patterns = [
-                r"\bwhat\s+time\s+is\s+it\b",
-                r"\bwhat(?:'s| is)\s+the\s+time\b",
-                r"\bcurrent\s+time\b",
-                r"\btime\s+right\s+now\b",
-                r"\btime\s+now\b",
-                r"\btell\s+me\s+the\s+time\b",
-                r"\bwhat\s+time\s+it\s+is\b"
-            ]
-
-            if any(
-                re.search(
-                    pattern,
-                    lower_message
-                )
-                for pattern in time_patterns
-            ):
-
-                return self._validate_result(
-                    {
-                        "intent": "GET_TIME",
-                        "confidence": 0.98,
-                        "parameters": {
-                            "action": "current_time",
-                            "timezone": "Asia/Kolkata"
-                        }
-                    }
-                )
-
-            # -------------------------------
-            # Current Date
-            # -------------------------------
-
-            date_patterns = [
-                r"\bwhat\s+date\s+is\s+it\b",
-                r"\bwhat(?:'s| is)\s+today(?:'s)?\s+date\b",
-                r"\btoday(?:'s)?\s+date\b",
-                r"\bcurrent\s+date\b",
-                r"\bwhat\s+day\s+is\s+it\b",
-                r"\bwhat\s+day\s+it\s+is\b"
-            ]
-
-            if any(
-                re.search(
-                    pattern,
-                    lower_message
-                )
-                for pattern in date_patterns
-            ):
-
-                return self._validate_result(
-                    {
-                        "intent": "GET_DATE",
-                        "confidence": 0.98,
-                        "parameters": {
-                            "action": "current_date",
-                            "timezone": "Asia/Kolkata"
-                        }
-                    }
-                )
-
-        except Exception as error:
-
-            print(
-                "Local time/date detection failed:"
-            )
-
-            print(
-                f"Error: {error}"
-            )
-            
         # =====================================
         # FAST LOCAL CALENDAR DETECTION
         # =====================================
@@ -4073,39 +3877,3 @@ User message:
                     message
                 )
             )
-
-        # =====================================
-        # FAST LOCAL APPLICATION DETECTION
-        # =====================================
-
-        try:
-
-            local_application_result = (
-                self._local_detect(
-                    message
-                )
-            )
-
-            if (
-                local_application_result is not None
-                and local_application_result.get(
-                    "intent"
-                ) == "OPEN_APPLICATION"
-            ):
-
-                return self._validate_result(
-                    local_application_result
-                )
-
-        except Exception as error:
-
-            print(
-                "Local application detection failed:"
-            )
-
-            print(
-                f"Error: {error}"
-            )
-
-
-

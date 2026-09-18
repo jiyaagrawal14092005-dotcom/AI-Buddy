@@ -1,0 +1,320 @@
+import os
+import subprocess
+import webbrowser
+
+
+class ApplicationLauncher:
+
+    APPLICATIONS = {
+        "chrome": "google_chrome",
+        "google chrome": "google_chrome",
+
+        "edge": "microsoft_edge",
+        "microsoft edge": "microsoft_edge",
+
+        "notepad": "notepad",
+
+        "file explorer": "explorer",
+        "explorer": "explorer",
+
+        "calculator": "calc",
+        "calc": "calc",
+
+        "paint": "mspaint",
+
+        "vs code": "code",
+        "visual studio code": "code",
+        "vscode": "code",
+    }
+
+    # Windows application paths
+    WINDOWS_PATHS = {
+        "google_chrome": (
+            r"C:\Program Files\Google\Chrome"
+            r"\Application\chrome.exe"
+        ),
+
+        "microsoft_edge": (
+            r"C:\Program Files (x86)\Microsoft\Edge"
+            r"\Application\msedge.exe"
+        ),
+    }
+
+    def __init__(self):
+        self.name = "application_launcher"
+
+    def _validate_name(
+        self,
+        application: str
+    ) -> str:
+
+        if not isinstance(
+            application,
+            str
+        ):
+            raise TypeError(
+                "Application name must be a string."
+            )
+
+        application = (
+            application
+            .strip()
+            .lower()
+        )
+
+        if not application:
+            raise ValueError(
+                "Application name cannot be empty."
+            )
+
+        return application
+
+    def _get_application_command(
+        self,
+        application: str
+    ) -> str | None:
+
+        command = self.APPLICATIONS.get(
+            application
+        )
+
+        if command is None:
+            return None
+
+        # If application has a known
+        # Windows executable path, use it.
+        if command in self.WINDOWS_PATHS:
+
+            path = self.WINDOWS_PATHS[
+                command
+            ]
+
+            if os.path.exists(path):
+                return path
+
+            return None
+
+        return command
+
+    def open_application(
+        self,
+        application: str
+    ) -> dict:
+
+        try:
+
+            application = (
+                self._validate_name(
+                    application
+                )
+            )
+
+        except (
+            TypeError,
+            ValueError
+        ) as error:
+
+            return {
+                "success": False,
+                "message": str(error)
+            }
+
+        command = (
+            self._get_application_command(
+                application
+            )
+        )
+
+        if command is None:
+
+            mapped_command = (
+                self.APPLICATIONS.get(
+                    application
+                )
+            )
+
+            if mapped_command in self.WINDOWS_PATHS:
+
+                return {
+                    "success": False,
+                    "application": application,
+                    "message": (
+                        f"Could not find the "
+                        f"installed executable for "
+                        f"'{application}'."
+                    )
+                }
+
+            return {
+                "success": False,
+                "application": application,
+                "message": (
+                    f"Application '{application}' "
+                    "is not supported."
+                )
+            }
+
+        try:
+
+            # Known Windows executable path
+            if command in self.WINDOWS_PATHS.values():
+
+                subprocess.Popen(
+                    [command],
+                    shell=False
+                )
+
+            else:
+
+                subprocess.Popen(
+                    command,
+                    shell=True
+                )
+
+            return {
+                "success": True,
+                "application": application,
+                "command": command,
+                "status": "opened",
+                "message": (
+                    f"Application '{application}' "
+                    "opened successfully."
+                )
+            }
+
+        except Exception as error:
+
+            return {
+                "success": False,
+                "application": application,
+                "command": command,
+                "message": (
+                    f"Could not open "
+                    f"application '{application}'."
+                ),
+                "error": str(error)
+            }
+
+    def open_website(
+        self,
+        url: str
+    ) -> dict:
+
+        if not isinstance(
+            url,
+            str
+        ):
+            return {
+                "success": False,
+                "message": (
+                    "URL must be a string."
+                )
+            }
+
+        url = url.strip()
+
+        if not url:
+            return {
+                "success": False,
+                "message": (
+                    "URL cannot be empty."
+                )
+            }
+
+        if not (
+            url.startswith("http://")
+            or url.startswith("https://")
+        ):
+            return {
+                "success": False,
+                "message": (
+                    "URL must start with "
+                    "http:// or https://."
+                )
+            }
+
+        try:
+
+            webbrowser.open(url)
+
+            return {
+                "success": True,
+                "url": url,
+                "status": "opened",
+                "message": (
+                    "Website opened successfully."
+                )
+            }
+
+        except Exception as error:
+
+            return {
+                "success": False,
+                "url": url,
+                "message": (
+                    "Could not open website."
+                ),
+                "error": str(error)
+            }
+
+    def execute(
+        self,
+        parameters: dict | None = None
+    ) -> dict:
+
+        if parameters is None:
+            parameters = {}
+
+        if not isinstance(
+            parameters,
+            dict
+        ):
+            return {
+                "success": False,
+                "message": (
+                    "Launcher parameters "
+                    "must be a dictionary."
+                )
+            }
+
+        action = parameters.get(
+            "action",
+            "open_application"
+        )
+
+        if action == "open_application":
+
+            application = parameters.get(
+                "application",
+                parameters.get(
+                    "app",
+                    ""
+                )
+            )
+
+            return self.open_application(
+                application
+            )
+
+        if action == "open_website":
+
+            url = parameters.get(
+                "url",
+                ""
+            )
+
+            return self.open_website(
+                url
+            )
+
+        return {
+            "success": False,
+            "message": (
+                "Unsupported launcher action. "
+                "Use open_application or "
+                "open_website."
+            )
+        }
+
+    def is_available(self) -> bool:
+        return True

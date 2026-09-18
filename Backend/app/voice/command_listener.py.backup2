@@ -1,6 +1,6 @@
+
 import threading
 import time
-from typing import Callable
 
 import speech_recognition as sr
 
@@ -8,25 +8,10 @@ from app.voice.speech_to_text import SpeechToText
 
 
 class CommandListener:
-    """
-    Continuous microphone command listener for AI Buddy.
 
-    The listener:
-    1. Captures microphone audio locally.
-    2. Converts speech to text.
-    3. Stores the latest recognized text.
-    4. Optionally sends recognized text to a callback.
+    def __init__(self):
 
-    The callback allows VoiceConversation/Jarvis mode to
-    receive commands automatically.
-    """
-
-    def __init__(
-        self,
-        command_callback: Callable[[str], None] | None = None
-    ):
         self.speech_to_text = SpeechToText()
-
         self.listening = False
 
         self._listener_thread = None
@@ -35,80 +20,18 @@ class CommandListener:
         self.last_text = ""
         self.last_error = ""
 
-        self.command_callback = command_callback
-
-    def set_command_callback(
-        self,
-        command_callback: Callable[[str], None] | None
-    ) -> dict:
-        """
-        Set or clear the callback used for recognized speech.
-        """
-
-        if (
-            command_callback is not None
-            and not callable(command_callback)
-        ):
-            return {
-                "success": False,
-                "message": (
-                    "Command callback must be callable "
-                    "or None."
-                )
-            }
-
-        self.command_callback = command_callback
-
-        return {
-            "success": True,
-            "message": "Command callback updated successfully."
-        }
-
-    def _send_command_callback(
-        self,
-        text: str
-    ) -> None:
-        """
-        Send recognized text to the callback safely.
-        """
-
-        if not self.command_callback:
-            return
-
-        if not isinstance(text, str):
-            return
-
-        text = text.strip()
-
-        if not text:
-            return
-
-        try:
-            self.command_callback(text)
-
-        except Exception as error:
-            self.last_error = (
-                f"Command callback error: {error}"
-            )
-
     def start_listening(self) -> dict:
-        """
-        Start continuous microphone listening
-        in a background daemon thread.
-        """
 
         if self.listening:
             return {
-                "success": True,
+                "success": False,
                 "listening": True,
-                "message": (
-                    "Command listener is already listening."
-                )
+                "message": "Command listener is already active."
             }
 
+        self.listening = True
         self.last_error = ""
         self._stop_event.clear()
-        self.listening = True
 
         self._listener_thread = threading.Thread(
             target=self._continuous_listen_loop,
@@ -124,23 +47,23 @@ class CommandListener:
         }
 
     def stop_listening(self) -> dict:
-        """
-        Stop continuous microphone listening.
-        """
 
         if not self.listening:
             return {
-                "success": True,
+                "success": False,
                 "listening": False,
-                "message": (
-                    "Command listener is already stopped."
-                )
+                "message": "Command listener is not active."
             }
 
         self.listening = False
         self._stop_event.set()
 
-        if self._listener_thread is not None:
+        if (
+            self._listener_thread is not None
+            and self._listener_thread.is_alive()
+            and threading.current_thread()
+            is not self._listener_thread
+        ):
             self._listener_thread.join(
                 timeout=2
             )
@@ -153,27 +76,17 @@ class CommandListener:
             "message": "Command listener stopped."
         }
 
-    def is_listening(self) -> bool:
-        """
-        Return whether continuous listening is active.
-        """
-
-        return self.listening
-
     def listen(
         self,
         audio_data
     ) -> dict:
-        """
-        Convert supplied audio data into text.
-        """
 
         if not self.listening:
             return {
                 "success": False,
                 "text": "",
                 "message": (
-                    "Command listener is not listening."
+                    "Command listener is not active."
                 )
             }
 
@@ -181,22 +94,34 @@ class CommandListener:
             audio_data
         )
 
+        text = result.get(
+            "text",
+            ""
+        )
+
         if result.get(
             "success",
             False
         ):
-            text = result.get(
-                "text",
-                ""
-            )
-
             self.last_text = text
-
-            self._send_command_callback(
-                text
+            self.last_error = ""
+        else:
+            self.last_error = result.get(
+                "message",
+                "Unable to process audio."
             )
 
-        return result
+        return {
+            "success": result.get(
+                "success",
+                False
+            ),
+            "text": text,
+            "message": result.get(
+                "message",
+                "Unable to process audio."
+            )
+        }
 
     def _continuous_listen_loop(self):
 
@@ -282,27 +207,18 @@ class CommandListener:
             self.listening = False
             self._stop_event.set()
 
+    def is_listening(self) -> bool:
+
+        return self.listening
+
     def get_status(self) -> dict:
-        """
-        Return current listener status.
-        """
 
         return {
             "listening": self.listening,
             "last_text": self.last_text,
             "last_error": self.last_error,
-            "callback_configured": (
-                self.command_callback is not None
-            ),
             "speech_to_text": (
                 self.speech_to_text.get_status()
-                if hasattr(
-                    self.speech_to_text,
-                    "get_status"
-                )
-                else {
-                    "name": "speech_to_text",
-                    "available": True
-                }
             )
         }
+

@@ -14,7 +14,7 @@ class JarvisMode:
 
     def __init__(
         self,
-        wake_word: str = "Zarvis",
+        wake_word: str = "ai buddy",
         user_id: int | None = None,
         chunk_seconds: int = 4
     ):
@@ -23,6 +23,7 @@ class JarvisMode:
             wake_word,
             str
         ):
+
             raise TypeError(
                 "Wake word must be a string."
             )
@@ -30,6 +31,7 @@ class JarvisMode:
         wake_word = wake_word.strip()
 
         if not wake_word:
+
             raise ValueError(
                 "Wake word cannot be empty."
             )
@@ -44,17 +46,16 @@ class JarvisMode:
                 or user_id <= 0
             )
         ):
+
             raise ValueError(
                 "User ID must be a positive integer."
             )
 
-        if (
-            not isinstance(
-                chunk_seconds,
-                int
-            )
-            or chunk_seconds <= 0
-        ):
+        if not isinstance(
+            chunk_seconds,
+            int
+        ) or chunk_seconds <= 0:
+
             raise ValueError(
                 "Chunk duration must be a positive integer."
             )
@@ -86,13 +87,11 @@ class JarvisMode:
         user_id: int
     ) -> None:
 
-        if (
-            not isinstance(
-                user_id,
-                int
-            )
-            or user_id <= 0
-        ):
+        if not isinstance(
+            user_id,
+            int
+        ) or user_id <= 0:
+
             raise ValueError(
                 "User ID must be a positive integer."
             )
@@ -100,6 +99,25 @@ class JarvisMode:
         self.user_id = user_id
 
     def _record_chunk(self) -> bytes:
+
+        frames = []
+
+        def callback(
+            indata,
+            frames_count,
+            time,
+            status
+        ):
+
+            if status:
+
+                print(
+                    f"Jarvis audio status: {status}"
+                )
+
+            frames.append(
+                indata.copy()
+            )
 
         recording = sd.rec(
             int(
@@ -114,15 +132,25 @@ class JarvisMode:
         sd.wait()
 
         if recording is None:
+
             return b""
 
-        audio_array = np.asarray(
-            recording
+        frames.append(
+            np.asarray(
+                recording
+            )
+        )
+
+        audio_array = np.concatenate(
+            frames,
+            axis=0
         )
 
         audio_bytes = (
             audio_array
-            .astype(np.int16)
+            .astype(
+                np.int16
+            )
             .tobytes()
         )
 
@@ -160,19 +188,8 @@ class JarvisMode:
 
             return {
                 "success": False,
-                "executed": False,
                 "message": (
                     "User ID is required for Jarvis mode."
-                )
-            }
-
-        if db is None:
-
-            return {
-                "success": False,
-                "executed": False,
-                "message": (
-                    "Database session is required."
                 )
             }
 
@@ -180,64 +197,25 @@ class JarvisMode:
 
         try:
 
-            # ---------------------------------
-            # RECORD AUDIO
-            # ---------------------------------
-
             audio_data = await asyncio.to_thread(
                 self._record_chunk
             )
-
-            # ---------------------------------
-            # STOP CHECK
-            # ---------------------------------
-
-            if self._stop_event.is_set():
-                return {
-                    "success": True,
-                    "executed": False,
-                    "stopped": True,
-                    "message": (
-                        "Jarvis recording stopped."
-                    )
-                }
 
             if not audio_data:
 
                 return {
                     "success": False,
-                    "executed": False,
                     "text": "",
                     "message": (
                         "No audio data was recorded."
                     )
                 }
 
-            # ---------------------------------
-            # AUDIO → STT
-            # ---------------------------------
-
             speech_result = (
-                self.voice_manager
-                .speech_to_text
-                .transcribe(
+                self.voice_manager.speech_to_text.transcribe(
                     audio_data
                 )
             )
-
-            # ---------------------------------
-            # STOP CHECK
-            # ---------------------------------
-
-            if self._stop_event.is_set():
-                return {
-                    "success": True,
-                    "executed": False,
-                    "stopped": True,
-                    "message": (
-                        "Jarvis stopped after recording."
-                    )
-                }
 
             if not speech_result.get(
                 "success",
@@ -246,7 +224,6 @@ class JarvisMode:
 
                 return {
                     "success": False,
-                    "executed": False,
                     "text": "",
                     "message": (
                         speech_result.get(
@@ -264,17 +241,12 @@ class JarvisMode:
             if not text:
 
                 return {
-                    "success": True,
-                    "executed": False,
+                    "success": False,
                     "text": "",
                     "message": (
                         "No speech was detected."
                     )
                 }
-
-            # ---------------------------------
-            # LOCAL WAKE-WORD GATE
-            # ---------------------------------
 
             voice_result = (
                 self.voice_manager.process_text(
@@ -289,8 +261,7 @@ class JarvisMode:
 
                 return {
                     **voice_result,
-                    "text": text,
-                    "executed": False
+                    "text": text
                 }
 
             wake_word_detected = (
@@ -306,10 +277,6 @@ class JarvisMode:
                 )
             )
 
-            # ---------------------------------
-            # PRIVACY BLOCK
-            # ---------------------------------
-
             if not wake_word_detected:
 
                 return {
@@ -318,16 +285,11 @@ class JarvisMode:
                     "wake_word_detected": False,
                     "text": text,
                     "command": None,
-                    "brain_input": "",
                     "message": (
                         "Wake word not detected. "
-                        "Command ignored before AI Brain."
+                        "Command ignored."
                     )
                 }
-
-            # ---------------------------------
-            # COMMAND VALIDATION
-            # ---------------------------------
 
             if not isinstance(
                 command_data,
@@ -340,7 +302,6 @@ class JarvisMode:
                     "wake_word_detected": True,
                     "text": text,
                     "command": None,
-                    "brain_input": "",
                     "message": (
                         "Wake word detected but "
                         "no command was provided."
@@ -362,56 +323,22 @@ class JarvisMode:
                     "wake_word_detected": True,
                     "text": text,
                     "command": command_data,
-                    "brain_input": "",
                     "message": (
                         "Wake word detected but "
                         "no command was provided."
                     )
                 }
 
-            # ---------------------------------
-            # AI BRAIN
-            # ---------------------------------
-
-            if self._stop_event.is_set():
-                return {
-                    "success": True,
-                    "executed": False,
-                    "stopped": True,
-                    "message": (
-                        "Jarvis stopped before command execution."
-                    )
-                }
-
-            # AIBrain.respond() is synchronous.
-            # DO NOT use await here.
-
-            brain_result = self.ai_brain.respond(
+            brain_result = await self.ai_brain.respond(
                 command_text,
                 self.user_id,
                 db
             )
 
-            if not isinstance(
-                brain_result,
-                dict
-            ):
-
-                brain_result = {
-                    "success": False,
-                    "message": (
-                        "AI Brain returned an invalid response."
-                    )
-                }
-
             response_text = brain_result.get(
                 "message",
                 ""
             )
-
-            # ---------------------------------
-            # TEXT → SPEECH
-            # ---------------------------------
 
             voice_response = None
 
@@ -425,7 +352,6 @@ class JarvisMode:
                     str
                 )
                 and response_text.strip()
-                and not self._stop_event.is_set()
             ):
 
                 voice_response = (
@@ -433,10 +359,6 @@ class JarvisMode:
                         response_text
                     )
                 )
-
-            # ---------------------------------
-            # HISTORY
-            # ---------------------------------
 
             history_item = {
                 "text": text,
@@ -451,10 +373,6 @@ class JarvisMode:
             self.history.append(
                 history_item
             )
-
-            # ---------------------------------
-            # RESPONSE
-            # ---------------------------------
 
             return {
                 "success": brain_result.get(
@@ -482,17 +400,6 @@ class JarvisMode:
                 )
             }
 
-        except asyncio.CancelledError:
-
-            return {
-                "success": True,
-                "executed": False,
-                "stopped": True,
-                "message": (
-                    "Jarvis listening task cancelled safely."
-                )
-            }
-
         except Exception as error:
 
             return {
@@ -512,19 +419,18 @@ class JarvisMode:
         db: Session
     ) -> None:
 
-        while (
-            self.active
-            and not self._stop_event.is_set()
-        ):
+        while self.active:
+
+            if self._stop_event.is_set():
+
+                break
 
             result = await self._listen_once(
                 db
             )
 
-            if (
-                not self.active
-                or self._stop_event.is_set()
-            ):
+            if not self.active:
+
                 break
 
             if (
@@ -542,8 +448,6 @@ class JarvisMode:
                     f"Jarvis: {result['message']}"
                 )
 
-            await asyncio.sleep(0)
-
     async def start(
         self,
         user_id: int,
@@ -560,13 +464,10 @@ class JarvisMode:
                 )
             }
 
-        if (
-            not isinstance(
-                user_id,
-                int
-            )
-            or user_id <= 0
-        ):
+        if not isinstance(
+            user_id,
+            int
+        ) or user_id <= 0:
 
             return {
                 "success": False,
@@ -589,6 +490,7 @@ class JarvisMode:
         self.user_id = user_id
 
         self.active = True
+
         self.listening = False
 
         self._stop_event = asyncio.Event()
@@ -626,39 +528,18 @@ class JarvisMode:
 
         self._stop_event.set()
 
-        # ---------------------------------
-        # STOP ACTIVE SOUNDDEVICE RECORDING
-        # ---------------------------------
-
-        try:
-            sd.stop()
-        except Exception:
-            pass
-
-        # ---------------------------------
-        # WAIT FOR LOOP TASK
-        # ---------------------------------
-
         if self._loop_task is not None:
 
             try:
 
                 await asyncio.wait_for(
-                    asyncio.shield(
-                        self._loop_task
-                    ),
-                    timeout=2
+                    self._loop_task,
+                    timeout=6
                 )
 
             except asyncio.TimeoutError:
 
-                # The recording should normally
-                # have stopped because sd.stop()
-                # was called above.
-
-                if not self._loop_task.done():
-
-                    self._loop_task.cancel()
+                self._loop_task.cancel()
 
                 try:
 
@@ -667,10 +548,6 @@ class JarvisMode:
                 except asyncio.CancelledError:
 
                     pass
-
-            except asyncio.CancelledError:
-
-                pass
 
             except Exception:
 
@@ -695,6 +572,7 @@ class JarvisMode:
     ) -> dict:
 
         if self.active:
+
             return await self.stop()
 
         return await self.start(

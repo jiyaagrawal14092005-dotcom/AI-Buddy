@@ -11,7 +11,7 @@ class VoiceManager:
 
     def __init__(
         self,
-        wake_word: str = "ai buddy"
+        wake_word: str | None = None
     ):
 
         self.speech_to_text = SpeechToText()
@@ -78,9 +78,9 @@ class VoiceManager:
                 )
             }
 
-        # ---------------------------------
-        # WAKE WORD PROCESSING
-        # ---------------------------------
+        # =========================================
+        # LOCAL WAKE-WORD GATE
+        # =========================================
 
         wake_word_result = (
             self.wake_word_detector.process(
@@ -120,51 +120,85 @@ class VoiceManager:
             )
         )
 
-        # ---------------------------------
-        # CREATE VOICE COMMAND
-        # ---------------------------------
+        # =========================================
+        # PRIVACY BLOCK
+        # =========================================
+
+        # Without the wake word, the spoken input
+        # must NEVER become an executable command.
+        if not wake_word_detected:
+
+            return {
+                "success": True,
+                "wake_word_detected": False,
+                "text": text,
+                "command": None,
+                "message": (
+                    "Wake word not detected. "
+                    "Voice command blocked."
+                )
+            }
+
+        # =========================================
+        # WAKE WORD DETECTED BUT NO COMMAND
+        # =========================================
 
         if not command_text:
 
             return {
                 "success": True,
-                "wake_word_detected": (
-                    wake_word_detected
-                ),
+                "wake_word_detected": True,
                 "text": text,
                 "command": None,
                 "message": (
-                    "Wake word detected but no command was provided."
-                    if wake_word_detected
-                    else "No command was provided."
+                    "Wake word detected but "
+                    "no command was provided."
                 )
             }
 
+        # =========================================
+        # CREATE VOICE COMMAND
+        # =========================================
+
         command = VoiceCommand()
 
-        command.set_text(
-            command_text
-        )
+        try:
 
-        command.set_command(
-            command_text
-        )
+            command.set_text(
+                command_text
+            )
 
-        # ---------------------------------
+            command.set_command(
+                command_text
+            )
+
+        except (
+            TypeError,
+            ValueError
+        ) as error:
+
+            return {
+                "success": False,
+                "wake_word_detected": True,
+                "text": text,
+                "command": None,
+                "message": (
+                    f"Invalid voice command: {error}"
+                )
+            }
+
+        # =========================================
         # RETURN PROCESSED COMMAND
-        # ---------------------------------
+        # =========================================
 
         return {
             "success": True,
-            "wake_word_detected": (
-                wake_word_detected
-            ),
+            "wake_word_detected": True,
             "text": text,
             "command": command.to_dict(),
             "message": (
-                "Wake word detected and command extracted."
-                if wake_word_detected
-                else "Voice command processed."
+                "Wake word detected and "
+                "command extracted."
             )
         }
 
@@ -282,6 +316,27 @@ class VoiceManager:
 
         return self.audio_manager.stop_playback()
 
+    def set_wake_word(
+        self,
+        wake_word: str
+    ) -> dict:
+
+        return self.wake_word_detector.set_wake_word(
+            wake_word
+        )
+
+    def get_wake_word(self) -> str:
+
+        return self.wake_word_detector.get_wake_word()
+
+    def enable_wake_word(self) -> dict:
+
+        return self.wake_word_detector.enable()
+
+    def disable_wake_word(self) -> dict:
+
+        return self.wake_word_detector.disable()
+
     def enable(self) -> None:
 
         self.enabled = True
@@ -305,6 +360,10 @@ class VoiceManager:
     def is_enabled(self) -> bool:
 
         return self.enabled
+
+    def is_wake_word_enabled(self) -> bool:
+
+        return self.wake_word_detector.is_enabled()
 
     def get_status(self) -> dict:
 

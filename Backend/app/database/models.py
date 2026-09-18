@@ -81,6 +81,11 @@ class User(Base):
         cascade="all, delete-orphan"
     )
 
+    oauth_connections: Mapped[list["OAuthConnection"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
 
 # ---------------------------------
 # TASK MODEL
@@ -406,4 +411,65 @@ class OAuthToken(Base):
 
     user: Mapped["User"] = relationship(
         back_populates="oauth_tokens"
+    )
+
+
+# ---------------------------------
+# OAUTH CONNECTION MODEL
+# ---------------------------------
+
+class OAuthConnection(Base):
+
+    __tablename__ = "oauth_connections"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
+
+    provider: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        index=True
+    )
+
+    connection_id: Mapped[str] = mapped_column(
+        String(255),
+        unique=True,
+        nullable=False,
+        index=True
+    )
+
+    scopes: Mapped[str] = mapped_column(
+        Text,
+        nullable=False
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    user: Mapped["User"] = relationship(
+        back_populates="oauth_connections"
     )

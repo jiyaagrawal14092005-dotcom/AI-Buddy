@@ -44,7 +44,31 @@ class ActionPolicy:
                 "approval_required": False
             },
 
+            "time_tool": {
+                "risk": "low",
+                "approval_required": False
+            },
+            
             "search": {
+                "risk": "low",
+                "approval_required": False
+            },
+
+            # =========================================
+            # APPLICATION LAUNCHER
+            # =========================================
+
+            "application_launcher": {
+                "risk": "low",
+                "approval_required": False
+            },
+
+            "application_launcher.open_application": {
+                "risk": "low",
+                "approval_required": False
+            },
+
+            "application_launcher.open_website": {
                 "risk": "low",
                 "approval_required": False
             },
@@ -183,7 +207,9 @@ class ActionPolicy:
         action: str
     ) -> dict | None:
 
-        normalized_action = self._normalize_action(action)
+        normalized_action = self._normalize_action(
+            action
+        )
 
         return self._policies.get(
             normalized_action

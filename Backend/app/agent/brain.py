@@ -1,3 +1,4 @@
+
 import os
 from datetime import datetime, timedelta
 
@@ -20,6 +21,7 @@ from app.tools.calendar_tool import CalendarTool
 from app.tools.file_tool import FileTool
 from app.tools.browser_tool import BrowserTool
 from app.tools.application_launcher import ApplicationLauncher
+from app.tools.time_tool import TimeTool
 
 from app.integrations.shopping.provider import ShoppingProvider
 
@@ -81,12 +83,17 @@ class AIBrain:
             "reminder": ReminderTool(),
             "timer": TimerTool(),
             "weather": WeatherTool(),
+            "time_tool": TimeTool(),
             "search": SearchTool(),
             "email": EmailTool(),
             "calendar": CalendarTool(),
             "file": FileTool(),
             "browser": BrowserTool(),
-            "application_launcher": ApplicationLauncher,
+
+            # ApplicationLauncher must be an instance
+            # because its methods require self.
+            "application_launcher": ApplicationLauncher(),
+
             "shopping": self.shopping_provider
         }
 
@@ -324,12 +331,36 @@ class AIBrain:
                     city
                 )
 
+            if tool_name == "time_tool":
+
+                action = parameters.get(
+                    "action",
+                    "current_time"
+                )
+
+                timezone = parameters.get(
+                    "timezone",
+                    "Asia/Kolkata"
+                )
+
+                return tool.execute(
+                    action=action,
+                    timezone=timezone
+                )
+
             if tool_name == "application_launcher":
 
                 action = parameters.get(
                     "action",
                     "open_application"
                 )
+
+                if isinstance(
+                    action,
+                    str
+                ):
+
+                    action = action.strip().lower()
 
                 if action == "open_application":
 
@@ -2026,3 +2057,4 @@ class AIBrain:
             "approval_id": current_approval_id,
             "context": context
         }
+

@@ -13,6 +13,8 @@ class Planner:
             "CREATE_TASK": "task",
             "CREATE_REMINDER": "reminder",
             "GET_WEATHER": "weather",
+            "GET_TIME": "time_tool",
+            "GET_DATE": "time_tool",
             "OPEN_APPLICATION": "application_launcher",
 
             # Information / communication tools
@@ -29,6 +31,7 @@ class Planner:
             "SHOPPING_SEARCH": "shopping",
             "SHOPPING_COMPARE": "shopping",
             "SHOPPING_CART_ADD": "shopping",
+            "SHOPPING_CART_REMOVE": "shopping",
             "SHOPPING_CART_LIST": "shopping",
             "SHOPPING_PURCHASE_PREPARE": "shopping"
         }
@@ -44,6 +47,8 @@ class Planner:
             "SHOPPING_COMPARE": "compare",
 
             "SHOPPING_CART_ADD": "cart_add",
+
+            "SHOPPING_CART_REMOVE": "cart_remove",
 
             "SHOPPING_CART_LIST": "cart_list",
 

@@ -1,109 +1,203 @@
+import os
 import subprocess
 import webbrowser
 
 
 class ApplicationLauncher:
+    """
+    Launches commonly used applications on Windows.
+
+    Supports:
+    - Chrome
+    - Microsoft Edge
+    - Notepad
+    - Calculator
+    - Paint
+    - VS Code
+    - File Explorer
+    """
 
     APPLICATIONS = {
-        "chrome": "chrome",
-        "google chrome": "chrome",
-        "edge": "msedge",
-        "microsoft edge": "msedge",
+        "chrome": "google_chrome",
+        "google chrome": "google_chrome",
+
+        "edge": "microsoft_edge",
+        "microsoft edge": "microsoft_edge",
+
         "notepad": "notepad",
+
         "calculator": "calc",
         "calc": "calc",
+
         "paint": "mspaint",
+
         "vs code": "code",
         "visual studio code": "code",
+        "vscode": "code",
+
+        "file explorer": "explorer",
+        "explorer": "explorer",
+    }
+
+    WINDOWS_PATHS = {
+        "google_chrome": (
+            r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+        ),
+
+        "microsoft_edge": (
+            r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+        ),
     }
 
     def __init__(self):
         self.name = "application_launcher"
 
-    def _validate_name(self, application: str) -> str:
-
+    def _normalize_application_name(
+        self,
+        application: str
+    ) -> str:
         if not isinstance(application, str):
-            raise TypeError(
-                "Application name must be a string."
+            return ""
+
+        return " ".join(
+            application.strip().lower().split()
+        )
+
+    def _get_application_command(
+        self,
+        application: str
+    ):
+        normalized_application = (
+            self._normalize_application_name(
+                application
             )
+        )
 
-        application = application.strip().lower()
+        if not normalized_application:
+            return None
 
-        if not application:
-            raise ValueError(
-                "Application name cannot be empty."
-            )
+        application_key = self.APPLICATIONS.get(
+            normalized_application
+        )
 
-        return application
+        if application_key is None:
+            return None
+
+        # Known Windows executable paths
+        if application_key in self.WINDOWS_PATHS:
+            executable_path = self.WINDOWS_PATHS[
+                application_key
+            ]
+
+            if os.path.exists(executable_path):
+                return executable_path
+
+        # Standard Windows commands
+        return application_key
 
     def open_application(
         self,
         application: str
     ) -> dict:
-
-        try:
-            application = self._validate_name(
+        normalized_application = (
+            self._normalize_application_name(
                 application
             )
+        )
 
-        except (
-            TypeError,
-            ValueError
-        ) as error:
-
+        if not normalized_application:
             return {
                 "success": False,
-                "message": str(error)
+                "application": application,
+                "message": (
+                    "Application name cannot be empty."
+                )
             }
 
-        command = self.APPLICATIONS.get(
-            application
+        command = self._get_application_command(
+            normalized_application
         )
 
         if command is None:
             return {
                 "success": False,
+                "application": normalized_application,
                 "message": (
-                    f"Application '{application}' "
-                    "is not supported."
+                    f"Application "
+                    f"'{normalized_application}' "
+                    f"is not supported."
                 )
             }
 
         try:
+            # Microsoft Edge and Chrome should be
+            # launched using Windows' native process
+            # launcher because their executable may
+            # immediately exit when started directly.
+            if normalized_application in {
+                "microsoft edge",
+                "edge",
+                "google chrome",
+                "chrome",
+            }:
+                subprocess.Popen(
+                    [
+                        "cmd",
+                        "/c",
+                        "start",
+                        "",
+                        command
+                    ],
+                    shell=False
+                )
 
-            subprocess.Popen(
-                command,
-                shell=True
-            )
+            elif command in {
+                "notepad",
+                "calc",
+                "mspaint",
+                "code",
+                "explorer",
+            }:
+                subprocess.Popen(
+                    command,
+                    shell=True
+                )
+
+            else:
+                subprocess.Popen(
+                    command,
+                    shell=True
+                )
 
             return {
                 "success": True,
-                "application": application,
+                "application": normalized_application,
                 "command": command,
                 "status": "opened",
                 "message": (
-                    f"Application '{application}' "
-                    "opened successfully."
+                    f"Application "
+                    f"'{normalized_application}' "
+                    f"opened successfully."
                 )
             }
 
         except Exception as error:
-
             return {
                 "success": False,
-                "application": application,
+                "application": normalized_application,
+                "command": command,
+                "status": "failed",
                 "message": (
-                    f"Could not open "
-                    f"application '{application}'."
-                ),
-                "error": str(error)
+                    f"Failed to open "
+                    f"'{normalized_application}': "
+                    f"{error}"
+                )
             }
 
-    def open_website(
+    def open_url(
         self,
         url: str
     ) -> dict:
-
         if not isinstance(url, str):
             return {
                 "success": False,
@@ -118,20 +212,7 @@ class ApplicationLauncher:
                 "message": "URL cannot be empty."
             }
 
-        if not (
-            url.startswith("http://")
-            or url.startswith("https://")
-        ):
-            return {
-                "success": False,
-                "message": (
-                    "URL must start with "
-                    "http:// or https://."
-                )
-            }
-
         try:
-
             webbrowser.open(url)
 
             return {
@@ -139,78 +220,44 @@ class ApplicationLauncher:
                 "url": url,
                 "status": "opened",
                 "message": (
-                    "Website opened successfully."
+                    "URL opened successfully."
                 )
             }
 
         except Exception as error:
-
             return {
                 "success": False,
                 "url": url,
+                "status": "failed",
                 "message": (
-                    "Could not open website."
-                ),
-                "error": str(error)
+                    f"Failed to open URL: {error}"
+                )
             }
 
     def execute(
         self,
-        parameters: dict | None = None
+        application: str
     ) -> dict:
-
-        if parameters is None:
-            parameters = {}
-
-        if not isinstance(
-            parameters,
-            dict
-        ):
-            return {
-                "success": False,
-                "message": (
-                    "Launcher parameters "
-                    "must be a dictionary."
-                )
-            }
-
-        action = parameters.get(
-            "action",
-            "open_application"
+        return self.open_application(
+            application
         )
 
-        if action == "open_application":
+    def get_supported_applications(self) -> list:
+        return list(
+            self.APPLICATIONS.keys()
+        )
 
-            application = parameters.get(
-                "application",
-                parameters.get(
-                    "app",
-                    ""
-                )
-            )
-
-            return self.open_application(
+    def is_supported(
+        self,
+        application: str
+    ) -> bool:
+        normalized_application = (
+            self._normalize_application_name(
                 application
             )
+        )
 
-        if action == "open_website":
-
-            url = parameters.get(
-                "url",
-                ""
-            )
-
-            return self.open_website(
-                url
-            )
-
-        return {
-            "success": False,
-            "message": (
-                "Unsupported launcher action. "
-                "Use open_application or open_website."
-            )
-        }
-
-    def is_available(self) -> bool:
-        return True
+        return (
+            normalized_application
+            in self.APPLICATIONS
+        )

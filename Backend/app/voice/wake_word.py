@@ -1,11 +1,36 @@
+import os
 import re
 
 
 class WakeWordDetector:
+    """
+    Local wake-word gate for AI Buddy.
 
-    def __init__(self, wake_word: str = "ai buddy"):
+    The wake word is configurable through:
+    1. Constructor argument
+    2. AI_BUDDY_WAKE_WORD environment variable
+    3. Default value: "Zarvis"
 
-        if not isinstance(wake_word, str):
+    The detector only decides whether the wake word is present
+    in already available text. It does not send audio anywhere.
+    """
+
+    DEFAULT_WAKE_WORD = "Zarvis"
+
+    def __init__(
+        self,
+        wake_word: str | None = None
+    ):
+        if wake_word is None:
+            wake_word = os.getenv(
+                "AI_BUDDY_WAKE_WORD",
+                self.DEFAULT_WAKE_WORD
+            )
+
+        if not isinstance(
+            wake_word,
+            str
+        ):
             raise ValueError(
                 "Wake word must be a string."
             )
@@ -21,7 +46,16 @@ class WakeWordDetector:
         self.wake_word = wake_word
         self.enabled = True
 
-    def _normalize_text(self, text: str) -> str:
+    def _normalize_text(
+        self,
+        text: str
+    ) -> str:
+
+        if not isinstance(
+            text,
+            str
+        ):
+            return ""
 
         text = text.lower().strip()
 
@@ -39,36 +73,38 @@ class WakeWordDetector:
 
         return text.strip()
 
-    def _get_wake_word_variations(self) -> list[str]:
+    def _get_wake_word_variations(
+        self
+    ) -> list[str]:
 
-        if self.wake_word == "ai buddy":
+        # Temporary Zarvis pronunciation variations.
+        # These can be changed later without changing the
+        # main Jarvis pipeline.
+        if self.wake_word == "zarvis":
 
             return [
-                "ai buddy",
-                "a buddy",
-                "hey buddy",
-                "hi buddy",
-                "hey ai buddy",
-                "hi ai buddy",
-                "ai body",
-                "a body",
-                "i buddy",
-                "eye buddy",
-                "ay buddy",
-                "ai buddies",
-                "aibuddy"
+                "zarvis",
+                "zarvis",
+                "jarvis",
+                "jarvis"
             ]
 
         return [
             self.wake_word
         ]
 
-    def detect(self, text: str) -> bool:
+    def detect(
+        self,
+        text: str
+    ) -> bool:
 
         if not self.enabled:
             return False
 
-        if not isinstance(text, str):
+        if not isinstance(
+            text,
+            str
+        ):
             return False
 
         normalized_text = self._normalize_text(
@@ -83,11 +119,27 @@ class WakeWordDetector:
         for variation in variations:
 
             normalized_variation = (
-                self._normalize_text(variation)
+                self._normalize_text(
+                    variation
+                )
             )
 
-            if (
-                normalized_variation in normalized_text
+            if not normalized_variation:
+                continue
+
+            # Word-boundary based matching prevents
+            # accidental partial matches.
+            pattern = (
+                r"(?<!\w)"
+                + re.escape(
+                    normalized_variation
+                )
+                + r"(?!\w)"
+            )
+
+            if re.search(
+                pattern,
+                normalized_text
             ):
                 return True
 
@@ -98,7 +150,10 @@ class WakeWordDetector:
         text: str
     ) -> str:
 
-        if not isinstance(text, str):
+        if not isinstance(
+            text,
+            str
+        ):
             return ""
 
         normalized_text = self._normalize_text(
@@ -113,34 +168,58 @@ class WakeWordDetector:
         for variation in variations:
 
             normalized_variation = (
-                self._normalize_text(variation)
+                self._normalize_text(
+                    variation
+                )
             )
 
-            if normalized_variation in normalized_text:
+            if not normalized_variation:
+                continue
 
-                command = normalized_text.replace(
-                    normalized_variation,
-                    "",
-                    1
-                ).strip()
+            pattern = (
+                r"(?<!\w)"
+                + re.escape(
+                    normalized_variation
+                )
+                + r"(?!\w)"
+            )
+
+            match = re.search(
+                pattern,
+                normalized_text
+            )
+
+            if match:
+
+                command = (
+                    normalized_text[
+                        match.end():
+                    ]
+                    .strip()
+                )
 
                 return command
 
-        return normalized_text
+        return ""
 
     def process(
         self,
         text: str
     ) -> dict:
 
-        if not isinstance(text, str):
+        if not isinstance(
+            text,
+            str
+        ):
 
             return {
                 "success": False,
                 "wake_word_detected": False,
                 "wake_word": self.wake_word,
                 "command": "",
-                "message": "Text must be a string."
+                "message": (
+                    "Text must be a string."
+                )
             }
 
         if not self.enabled:
@@ -149,23 +228,51 @@ class WakeWordDetector:
                 "success": False,
                 "wake_word_detected": False,
                 "wake_word": self.wake_word,
-                "command": text.strip(),
-                "message": "Wake word detection is disabled."
+                "command": "",
+                "message": (
+                    "Wake word detection is disabled."
+                )
             }
 
-        detected = self.detect(text)
+        normalized_text = self._normalize_text(
+            text
+        )
 
-        if not detected:
+        if not normalized_text:
 
             return {
                 "success": True,
                 "wake_word_detected": False,
                 "wake_word": self.wake_word,
-                "command": text.strip(),
-                "message": "Wake word not detected."
+                "command": "",
+                "message": (
+                    "No speech text was provided."
+                )
             }
 
-        command = self.extract_command(text)
+        detected = self.detect(
+            normalized_text
+        )
+
+        if not detected:
+
+            # IMPORTANT PRIVACY GATE:
+            # Do not return the original text as
+            # an executable command.
+            return {
+                "success": True,
+                "wake_word_detected": False,
+                "wake_word": self.wake_word,
+                "command": "",
+                "message": (
+                    "Wake word not detected. "
+                    "Input blocked by local wake-word gate."
+                )
+            }
+
+        command = self.extract_command(
+            normalized_text
+        )
 
         if not command:
 
@@ -174,7 +281,10 @@ class WakeWordDetector:
                 "wake_word_detected": True,
                 "wake_word": self.wake_word,
                 "command": "",
-                "message": "Wake word detected. No command provided."
+                "message": (
+                    "Wake word detected. "
+                    "No command provided."
+                )
             }
 
         return {
@@ -182,7 +292,10 @@ class WakeWordDetector:
             "wake_word_detected": True,
             "wake_word": self.wake_word,
             "command": command,
-            "message": "Wake word detected and command extracted."
+            "message": (
+                "Wake word detected and "
+                "command extracted."
+            )
         }
 
     def set_wake_word(
@@ -190,11 +303,16 @@ class WakeWordDetector:
         wake_word: str
     ) -> dict:
 
-        if not isinstance(wake_word, str):
+        if not isinstance(
+            wake_word,
+            str
+        ):
 
             return {
                 "success": False,
-                "message": "Wake word must be a string."
+                "message": (
+                    "Wake word must be a string."
+                )
             }
 
         wake_word = wake_word.strip().lower()
@@ -203,7 +321,9 @@ class WakeWordDetector:
 
             return {
                 "success": False,
-                "message": "Wake word cannot be empty."
+                "message": (
+                    "Wake word cannot be empty."
+                )
             }
 
         self.wake_word = wake_word
@@ -211,7 +331,9 @@ class WakeWordDetector:
         return {
             "success": True,
             "wake_word": self.wake_word,
-            "message": "Wake word updated successfully."
+            "message": (
+                "Wake word updated successfully."
+            )
         }
 
     def enable(self) -> dict:
@@ -221,7 +343,9 @@ class WakeWordDetector:
         return {
             "success": True,
             "enabled": True,
-            "message": "Wake word detection enabled."
+            "message": (
+                "Wake word detection enabled."
+            )
         }
 
     def disable(self) -> dict:
@@ -231,8 +355,18 @@ class WakeWordDetector:
         return {
             "success": True,
             "enabled": False,
-            "message": "Wake word detection disabled."
+            "message": (
+                "Wake word detection disabled."
+            )
         }
+
+    def is_enabled(self) -> bool:
+
+        return self.enabled
+
+    def get_wake_word(self) -> str:
+
+        return self.wake_word
 
     def get_status(self) -> dict:
 
@@ -240,5 +374,7 @@ class WakeWordDetector:
             "name": self.name,
             "wake_word": self.wake_word,
             "enabled": self.enabled,
-            "variations": self._get_wake_word_variations()
+            "variations": (
+                self._get_wake_word_variations()
+            )
         }

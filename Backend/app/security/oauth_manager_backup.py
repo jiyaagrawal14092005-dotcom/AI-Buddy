@@ -1,10 +1,6 @@
-import json
 import uuid
 from copy import deepcopy
 from datetime import datetime, timezone
-
-from app.database.connection import SessionLocal
-from app.database.models import OAuthConnection
 
 
 class OAuthManager:
@@ -21,9 +17,6 @@ class OAuthManager:
 
         self.name = "oauth_manager"
         self.enabled = True
-
-        # Load persistent OAuth connections from database.
-        self._load_connections_from_database()
 
     # ---------------------------------------------------------
     # VALIDATION
@@ -52,21 +45,6 @@ class OAuthManager:
             return {
                 "success": False,
                 "message": "User ID cannot be empty."
-            }
-
-        try:
-            numeric_user_id = int(user_id)
-
-            if numeric_user_id <= 0:
-                return {
-                    "success": False,
-                    "message": "User ID must be a positive number."
-                }
-
-        except ValueError:
-            return {
-                "success": False,
-                "message": "User ID must contain a valid number."
             }
 
         return {
@@ -157,301 +135,6 @@ class OAuthManager:
         ).isoformat()
 
     # ---------------------------------------------------------
-    # DATABASE HELPERS
-    # ---------------------------------------------------------
-
-    def _user_id_to_int(
-        self,
-        user_id: str
-    ) -> int:
-
-        return int(user_id)
-
-    def _serialize_scopes(
-        self,
-        scopes: list
-    ) -> str:
-
-        return json.dumps(
-            scopes,
-            ensure_ascii=False
-        )
-
-    def _deserialize_scopes(
-        self,
-        scopes_text: str
-    ) -> list:
-
-        try:
-
-            scopes = json.loads(
-                scopes_text
-            )
-
-            if isinstance(scopes, list):
-                return [
-                    scope
-                    for scope in scopes
-                    if isinstance(scope, str)
-                ]
-
-        except (
-            json.JSONDecodeError,
-            TypeError
-        ):
-            pass
-
-        return []
-
-    def _datetime_to_string(
-        self,
-        value
-    ) -> str:
-
-        if value is None:
-            return self._timestamp()
-
-        if isinstance(
-            value,
-            datetime
-        ):
-
-            if value.tzinfo is None:
-                value = value.replace(
-                    tzinfo=timezone.utc
-                )
-
-            return value.isoformat()
-
-        return str(value)
-
-    def _connection_to_dict(
-        self,
-        connection: OAuthConnection
-    ) -> dict:
-
-        return {
-            "connection_id": connection.connection_id,
-            "user_id": str(connection.user_id),
-            "provider": connection.provider,
-            "scopes": self._deserialize_scopes(
-                connection.scopes
-            ),
-            "status": connection.status,
-            "created_at": self._datetime_to_string(
-                connection.created_at
-            ),
-            "updated_at": self._datetime_to_string(
-                connection.updated_at
-            )
-        }
-
-    def _save_connection(
-        self,
-        connection_data: dict
-    ) -> dict:
-
-        db = SessionLocal()
-
-        try:
-
-            user_id = int(
-                connection_data["user_id"]
-            )
-
-            provider = connection_data["provider"]
-
-            existing = (
-                db.query(OAuthConnection)
-                .filter(
-                    OAuthConnection.user_id == user_id,
-                    OAuthConnection.provider == provider
-                )
-                .first()
-            )
-
-            created_at = connection_data.get(
-                "created_at"
-            )
-
-            updated_at = connection_data.get(
-                "updated_at"
-            )
-
-            created_at_dt = datetime.fromisoformat(
-                created_at
-            ) if created_at else datetime.utcnow()
-
-            updated_at_dt = datetime.fromisoformat(
-                updated_at
-            ) if updated_at else datetime.utcnow()
-
-            if created_at_dt.tzinfo is not None:
-                created_at_dt = created_at_dt.replace(
-                    tzinfo=None
-                )
-
-            if updated_at_dt.tzinfo is not None:
-                updated_at_dt = updated_at_dt.replace(
-                    tzinfo=None
-                )
-
-            if existing is None:
-
-                existing = OAuthConnection(
-                    user_id=user_id,
-                    provider=provider,
-                    connection_id=connection_data[
-                        "connection_id"
-                    ],
-                    scopes=self._serialize_scopes(
-                        connection_data["scopes"]
-                    ),
-                    status=connection_data["status"],
-                    created_at=created_at_dt,
-                    updated_at=updated_at_dt
-                )
-
-                db.add(existing)
-
-            else:
-
-                existing.connection_id = (
-                    connection_data["connection_id"]
-                )
-
-                existing.scopes = (
-                    self._serialize_scopes(
-                        connection_data["scopes"]
-                    )
-                )
-
-                existing.status = (
-                    connection_data["status"]
-                )
-
-                existing.updated_at = (
-                    updated_at_dt
-                )
-
-            db.commit()
-            db.refresh(existing)
-
-            return {
-                "success": True,
-                "connection": self._connection_to_dict(
-                    existing
-                )
-            }
-
-        except Exception as error:
-
-            db.rollback()
-
-            return {
-                "success": False,
-                "message": "OAuth connection database operation failed.",
-                "error": str(error)
-            }
-
-        finally:
-
-            db.close()
-
-    def _delete_connection_from_database(
-        self,
-        user_id: str,
-        provider: str
-    ) -> dict:
-
-        db = SessionLocal()
-
-        try:
-
-            numeric_user_id = int(
-                user_id
-            )
-
-            connection = (
-                db.query(OAuthConnection)
-                .filter(
-                    OAuthConnection.user_id == numeric_user_id,
-                    OAuthConnection.provider == provider
-                )
-                .first()
-            )
-
-            if connection is None:
-
-                return {
-                    "success": False,
-                    "message": "OAuth connection not found."
-                }
-
-            db.delete(connection)
-            db.commit()
-
-            return {
-                "success": True,
-                "message": "OAuth connection removed from database."
-            }
-
-        except Exception as error:
-
-            db.rollback()
-
-            return {
-                "success": False,
-                "message": "OAuth connection database deletion failed.",
-                "error": str(error)
-            }
-
-        finally:
-
-            db.close()
-
-    # ---------------------------------------------------------
-    # LOAD PERSISTENT CONNECTIONS
-    # ---------------------------------------------------------
-
-    def _load_connections_from_database(
-        self
-    ) -> None:
-
-        db = SessionLocal()
-
-        try:
-
-            database_connections = (
-                db.query(OAuthConnection)
-                .all()
-            )
-
-            for database_connection in database_connections:
-
-                connection = self._connection_to_dict(
-                    database_connection
-                )
-
-                user_id = connection["user_id"]
-                provider = connection["provider"]
-
-                if user_id not in self.connections:
-                    self.connections[user_id] = {}
-
-                self.connections[user_id][provider] = connection
-
-        except Exception:
-
-            # The manager should still initialize even if
-            # database loading temporarily fails.
-            self.connections = {}
-
-        finally:
-
-            db.close()
-
-    # ---------------------------------------------------------
     # CREATE CONNECTION
     # ---------------------------------------------------------
 
@@ -487,32 +170,9 @@ class OAuthManager:
         provider = provider_result["provider"]
         scopes = scope_result["scopes"]
 
-        existing_connections = self.connections.get(
-            user_id,
-            {}
+        connection_id = str(
+            uuid.uuid4()
         )
-
-        existing_connection = existing_connections.get(
-            provider
-        )
-
-        if existing_connection is not None:
-
-            connection_id = existing_connection[
-                "connection_id"
-            ]
-
-            created_at = existing_connection[
-                "created_at"
-            ]
-
-        else:
-
-            connection_id = str(
-                uuid.uuid4()
-            )
-
-            created_at = self._timestamp()
 
         now = self._timestamp()
 
@@ -522,7 +182,7 @@ class OAuthManager:
             "provider": provider,
             "scopes": deepcopy(scopes),
             "status": "PENDING",
-            "created_at": created_at,
+            "created_at": now,
             "updated_at": now
         }
 
@@ -531,14 +191,6 @@ class OAuthManager:
 
         self.connections[user_id][provider] = connection
 
-        database_result = self._save_connection(
-            connection
-        )
-
-        if not database_result["success"]:
-
-            return database_result
-
         return {
             "success": True,
             "connection_id": connection_id,
@@ -546,7 +198,7 @@ class OAuthManager:
             "provider": provider,
             "status": "PENDING",
             "scopes": deepcopy(scopes),
-            "message": "OAuth connection created and persisted."
+            "message": "OAuth connection created."
         }
 
     # ---------------------------------------------------------
@@ -581,17 +233,6 @@ class OAuthManager:
         )
 
         if not user_connections:
-
-            # Reload from database in case this manager
-            # instance was created before the connection existed.
-            self._load_connections_from_database()
-
-            user_connections = self.connections.get(
-                user_id
-            )
-
-        if not user_connections:
-
             return {
                 "success": False,
                 "message": "No OAuth connections found for this user."
@@ -602,27 +243,22 @@ class OAuthManager:
         )
 
         if not connection:
-
             return {
                 "success": False,
                 "message": "OAuth connection not found."
             }
 
         if connection["status"] == "AUTHORIZED":
-
             return {
                 "success": True,
                 "user_id": user_id,
                 "provider": provider,
-                "connection_id": connection[
-                    "connection_id"
-                ],
+                "connection_id": connection["connection_id"],
                 "status": "AUTHORIZED",
                 "message": "OAuth connection is already authorized."
             }
 
         if connection["status"] == "REVOKED":
-
             return {
                 "success": False,
                 "message": "Revoked OAuth connection cannot be authorized."
@@ -631,20 +267,11 @@ class OAuthManager:
         connection["status"] = "AUTHORIZED"
         connection["updated_at"] = self._timestamp()
 
-        database_result = self._save_connection(
-            connection
-        )
-
-        if not database_result["success"]:
-            return database_result
-
         return {
             "success": True,
             "user_id": user_id,
             "provider": provider,
-            "connection_id": connection[
-                "connection_id"
-            ],
+            "connection_id": connection["connection_id"],
             "status": "AUTHORIZED",
             "message": "OAuth connection authorized."
         }
@@ -690,15 +317,6 @@ class OAuthManager:
         )
 
         if not user_connections:
-
-            self._load_connections_from_database()
-
-            user_connections = self.connections.get(
-                user_id
-            )
-
-        if not user_connections:
-
             return {
                 "success": False,
                 "message": "No OAuth connections found for this user."
@@ -709,14 +327,12 @@ class OAuthManager:
         )
 
         if not connection:
-
             return {
                 "success": False,
                 "message": "OAuth connection not found."
             }
 
         if connection["status"] == "REVOKED":
-
             return {
                 "success": False,
                 "message": "Revoked OAuth connection cannot be authorized."
@@ -729,20 +345,11 @@ class OAuthManager:
         connection["status"] = "AUTHORIZED"
         connection["updated_at"] = self._timestamp()
 
-        database_result = self._save_connection(
-            connection
-        )
-
-        if not database_result["success"]:
-            return database_result
-
         return {
             "success": True,
             "user_id": user_id,
             "provider": provider,
-            "connection_id": connection[
-                "connection_id"
-            ],
+            "connection_id": connection["connection_id"],
             "status": "AUTHORIZED",
             "scopes": deepcopy(scopes),
             "message": (
@@ -782,15 +389,6 @@ class OAuthManager:
         )
 
         if not user_connections:
-
-            self._load_connections_from_database()
-
-            user_connections = self.connections.get(
-                user_id
-            )
-
-        if not user_connections:
-
             return {
                 "success": False,
                 "message": "No OAuth connections found."
@@ -801,7 +399,6 @@ class OAuthManager:
         )
 
         if not connection:
-
             return {
                 "success": False,
                 "message": "OAuth connection not found."
@@ -809,9 +406,7 @@ class OAuthManager:
 
         return {
             "success": True,
-            "connection": deepcopy(
-                connection
-            )
+            "connection": deepcopy(connection)
         }
 
     # ---------------------------------------------------------
@@ -824,18 +419,38 @@ class OAuthManager:
         provider: str
     ) -> bool:
 
-        result = self.get_connection(
-            user_id,
+        user_result = self._validate_user_id(
+            user_id
+        )
+
+        if not user_result["success"]:
+            return False
+
+        provider_result = self._validate_provider(
             provider
         )
 
-        if not result["success"]:
+        if not provider_result["success"]:
             return False
 
-        return (
-            result["connection"]["status"]
-            == "AUTHORIZED"
+        user_id = user_result["user_id"]
+        provider = provider_result["provider"]
+
+        user_connections = self.connections.get(
+            user_id
         )
+
+        if not user_connections:
+            return False
+
+        connection = user_connections.get(
+            provider
+        )
+
+        if not connection:
+            return False
+
+        return connection["status"] == "AUTHORIZED"
 
     # ---------------------------------------------------------
     # OWNERSHIP CHECK
@@ -875,15 +490,19 @@ class OAuthManager:
         provider = provider_result["provider"]
         connection_id = connection_id.strip()
 
-        result = self.get_connection(
-            user_id,
+        user_connections = self.connections.get(
+            user_id
+        )
+
+        if not user_connections:
+            return False
+
+        connection = user_connections.get(
             provider
         )
 
-        if not result["success"]:
+        if not connection:
             return False
-
-        connection = result["connection"]
 
         return (
             connection["connection_id"] == connection_id
@@ -922,15 +541,6 @@ class OAuthManager:
         )
 
         if not user_connections:
-
-            self._load_connections_from_database()
-
-            user_connections = self.connections.get(
-                user_id
-            )
-
-        if not user_connections:
-
             return {
                 "success": False,
                 "message": "User connections not found."
@@ -941,7 +551,6 @@ class OAuthManager:
         )
 
         if not connection:
-
             return {
                 "success": False,
                 "message": "OAuth connection not found."
@@ -950,20 +559,11 @@ class OAuthManager:
         connection["status"] = "REVOKED"
         connection["updated_at"] = self._timestamp()
 
-        database_result = self._save_connection(
-            connection
-        )
-
-        if not database_result["success"]:
-            return database_result
-
         return {
             "success": True,
             "user_id": user_id,
             "provider": provider,
-            "connection_id": connection[
-                "connection_id"
-            ],
+            "connection_id": connection["connection_id"],
             "status": "REVOKED",
             "message": "OAuth connection revoked."
         }
@@ -986,8 +586,6 @@ class OAuthManager:
 
         user_id = user_result["user_id"]
 
-        self._load_connections_from_database()
-
         user_connections = self.connections.get(
             user_id,
             {}
@@ -995,24 +593,14 @@ class OAuthManager:
 
         return [
             {
-                "connection_id": connection[
-                    "connection_id"
-                ],
-                "provider": connection[
-                    "provider"
-                ],
-                "status": connection[
-                    "status"
-                ],
+                "connection_id": connection["connection_id"],
+                "provider": connection["provider"],
+                "status": connection["status"],
                 "scopes": deepcopy(
                     connection["scopes"]
                 ),
-                "created_at": connection[
-                    "created_at"
-                ],
-                "updated_at": connection[
-                    "updated_at"
-                ]
+                "created_at": connection["created_at"],
+                "updated_at": connection["updated_at"]
             }
             for connection
             in user_connections.values()
@@ -1126,36 +714,16 @@ class OAuthManager:
         )
 
         if not user_connections:
-
-            self._load_connections_from_database()
-
-            user_connections = self.connections.get(
-                user_id
-            )
-
-        if not user_connections:
-
             return {
                 "success": False,
                 "message": "User connections not found."
             }
 
         if provider not in user_connections:
-
             return {
                 "success": False,
                 "message": "OAuth connection not found."
             }
-
-        database_result = (
-            self._delete_connection_from_database(
-                user_id,
-                provider
-            )
-        )
-
-        if not database_result["success"]:
-            return database_result
 
         del user_connections[provider]
 
@@ -1187,64 +755,17 @@ class OAuthManager:
 
         user_id = user_result["user_id"]
 
-        self._load_connections_from_database()
-
-        user_connections = self.connections.get(
-            user_id
-        )
-
-        if not user_connections:
-
+        if user_id not in self.connections:
             return {
                 "success": False,
                 "message": "User connections not found."
             }
-
-        providers = list(
-            user_connections.keys()
-        )
-
-        db = SessionLocal()
-
-        try:
-
-            numeric_user_id = int(
-                user_id
-            )
-
-            (
-                db.query(OAuthConnection)
-                .filter(
-                    OAuthConnection.user_id
-                    == numeric_user_id
-                )
-                .delete(
-                    synchronize_session=False
-                )
-            )
-
-            db.commit()
-
-        except Exception as error:
-
-            db.rollback()
-
-            return {
-                "success": False,
-                "message": "Failed to remove user OAuth connections.",
-                "error": str(error)
-            }
-
-        finally:
-
-            db.close()
 
         del self.connections[user_id]
 
         return {
             "success": True,
             "user_id": user_id,
-            "providers": providers,
             "message": "All OAuth connections removed successfully."
         }
 
@@ -1263,16 +784,11 @@ class OAuthManager:
             )
         )
 
-    def get_total_connection_count(
-        self
-    ) -> int:
-
-        self._load_connections_from_database()
+    def get_total_connection_count(self) -> int:
 
         total = 0
 
         for user_connections in self.connections.values():
-
             total += len(
                 user_connections
             )
@@ -1294,11 +810,7 @@ class OAuthManager:
     # STATUS
     # ---------------------------------------------------------
 
-    def get_status(
-        self
-    ) -> dict:
-
-        self._load_connections_from_database()
+    def get_status(self) -> dict:
 
         total_users = len(
             self.connections
@@ -1322,30 +834,22 @@ class OAuthManager:
                 )
 
                 if status == "PENDING":
-
                     pending_connections += 1
 
                 elif status == "AUTHORIZED":
-
                     authorized_connections += 1
 
                 elif status == "REVOKED":
-
                     revoked_connections += 1
 
         return {
             "name": self.name,
             "available": True,
             "enabled": self.enabled,
-            "storage": "database",
-            "persistent": True,
             "total_users": total_users,
             "total_connections": total_connections,
             "pending_connections": pending_connections,
             "authorized_connections": authorized_connections,
             "revoked_connections": revoked_connections,
-            "message": (
-                "OAuth manager is operational "
-                "with persistent database storage."
-            )
+            "message": "OAuth manager is operational."
         }
