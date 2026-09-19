@@ -1,0 +1,852 @@
+﻿===== D:\AI Buddy\Backend\app\main.py =====
+import asyncio
+
+from fastapi import FastAPI
+
+from app.api.auth import router as auth_router
+from app.api.chat import router as chat_router
+from app.api.voice import router as voice_router
+from app.api.tasks import router as tasks_router
+from app.api.workflows import router as workflows_router
+from app.api.scheduler import router as scheduler_router
+from app.api.integrations import router as integrations_router
+from app.api.memory import router as memory_router
+from app.api.notifications import router as notifications_router
+from app.api.security import router as security_router
+from app.api.timer import router as timer_router
+from app.api.approval import router as approval_router
+from app.api.booking import router as booking_router
+from app.api.shopping import router as shopping_router
+
+
+app = FastAPI(
+    title="AI Buddy",
+    description=(
+        "An Autonomous AI Agent for "
+        "Intelligent Digital Task Automation"
+    ),
+    version="1.0.0"
+)
+
+
+app.include_router(
+    auth_router,
+    prefix="/api"
+)
+
+app.include_router(
+    chat_router,
+    prefix="/api"
+)
+
+app.include_router(
+    voice_router,
+    prefix="/api"
+)
+
+app.include_router(
+    tasks_router,
+    prefix="/api"
+)
+
+app.include_router(
+    workflows_router,
+    prefix="/api"
+)
+
+app.include_router(
+    scheduler_router,
+    prefix="/api"
+)
+
+app.include_router(
+    integrations_router,
+    prefix="/api"
+)
+
+app.include_router(
+    memory_router,
+    prefix="/api"
+)
+
+app.include_router(
+    notifications_router,
+    prefix="/api"
+)
+
+app.include_router(
+    security_router,
+    prefix="/api"
+)
+
+app.include_router(
+    timer_router
+)
+
+# Approval router already contains /api/approval prefix
+app.include_router(
+    approval_router
+)
+
+app.include_router(
+    booking_router,
+    prefix="/api"
+)
+
+app.include_router(
+    shopping_router,
+    prefix="/api"
+)
+
+
+@app.get("/")
+def home():
+
+    return {
+        "message": "AI Buddy is running!",
+        "status": "online"
+    }
+
+
+@app.get("/health")
+def health_check():
+
+    return {
+        "status": "healthy"
+    }
+
+
+@app.get("/debug/event-loop")
+async def debug_event_loop():
+
+    loop = asyncio.get_running_loop()
+
+    return {
+        "event_loop": type(loop).__name__,
+        "platform": __import__("sys").platform
+    }
+
+===== D:\AI Buddy\Backend\app\api\chat.py =====
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+
+from app.agent.brain import AIBrain
+from app.database.connection import get_db
+from app.security.shared import security_manager
+
+
+router = APIRouter(tags=["Chat"])
+
+
+# =========================================================
+# SHARED AI BRAIN + SHARED SECURITY MANAGER
+# =========================================================
+
+brain = AIBrain(
+    security_manager=security_manager
+)
+
+
+# =========================================================
+# CHAT REQUEST
+# =========================================================
+
+class ChatRequest(BaseModel):
+
+    message: str = Field(
+        ...,
+        min_length=1,
+        description=(
+            "Message sent by the user to AI Buddy."
+        )
+    )
+
+    user_id: int = Field(
+        ...,
+        gt=0,
+        description=(
+            "ID of the user sending the message."
+        )
+    )
+
+    approval_id: str | None = Field(
+        default=None,
+        description=(
+            "Approval ID returned by AI Buddy "
+            "when user approval is required."
+        )
+    )
+
+
+# =========================================================
+# CHAT ENDPOINT
+# =========================================================
+
+@router.post("/chat")
+async def chat(
+    request: ChatRequest,
+    db: Session = Depends(get_db)
+):
+
+    security_user_id = (
+        f"user-{request.user_id}"
+    )
+
+    # =====================================================
+    # REQUEST SECURITY VALIDATION
+    # =====================================================
+
+    security_result = (
+        security_manager.validate_request(
+            user_id=security_user_id,
+            prompt=request.message
+        )
+    )
+
+    # =====================================================
+    # BLOCK UNSAFE REQUEST
+    # =====================================================
+
+    if not security_result.get(
+        "allowed",
+        False
+    ):
+
+        security_manager.record_audit_log(
+            username=security_user_id,
+            action="chat.request_validation",
+            status="blocked",
+            details={
+                "message": request.message,
+                "stage": security_result.get(
+                    "stage",
+                    "request_validation"
+                ),
+                "reason": security_result.get(
+                    "message",
+                    "Request blocked by security."
+                )
+            }
+        )
+
+        return {
+            "success": False,
+            "user_message": request.message,
+            "approval_required": False,
+            "approval_id": None,
+            "intent": None,
+            "plan": None,
+            "reasoning": None,
+            "message": security_result.get(
+                "message",
+                "Request blocked by security."
+            ),
+            "action_result": {
+                "success": False,
+                "security_blocked": True,
+                "stage": security_result.get(
+                    "stage",
+                    "request_validation"
+                ),
+                "message": security_result.get(
+                    "message",
+                    "Request blocked by security."
+                )
+            },
+            "context": []
+        }
+
+    # =====================================================
+    # SANITIZED MESSAGE
+    # =====================================================
+
+    sanitized_message = (
+        security_result.get(
+            "prompt",
+            request.message
+        )
+    )
+
+    # =====================================================
+    # SEND REQUEST TO AI BRAIN
+    # =====================================================
+
+    result = brain.respond(
+        message=sanitized_message,
+        user_id=request.user_id,
+        db=db,
+        approval_id=request.approval_id
+    )
+
+    # =====================================================
+    # AUDIT LOG
+    # =====================================================
+
+    security_manager.record_audit_log(
+        username=security_user_id,
+        action="chat.request",
+        status=(
+            "success"
+            if result.get(
+                "success",
+                False
+            )
+            else "failed"
+        ),
+        details={
+            "message": request.message,
+            "intent": (
+                result.get(
+                    "intent"
+                )
+                if isinstance(
+                    result.get(
+                        "intent"
+                    ),
+                    str
+                )
+                else (
+                    result.get(
+                        "intent",
+                        {}
+                    ).get(
+                        "intent"
+                    )
+                    if isinstance(
+                        result.get(
+                            "intent"
+                        ),
+                        dict
+                    )
+                    else None
+                )
+            ),
+            "approval_required": result.get(
+                "approval_required",
+                False
+            ),
+            "approval_id": result.get(
+                "approval_id"
+            )
+        }
+    )
+
+    # =====================================================
+    # RETURN RESPONSE
+    # =====================================================
+
+    return {
+        "success": result.get(
+            "success",
+            False
+        ),
+        "user_message": request.message,
+        "approval_required": result.get(
+            "approval_required",
+            False
+        ),
+        "approval_id": result.get(
+            "approval_id"
+        ),
+        "intent": result.get(
+            "intent"
+        ),
+        "plan": result.get(
+            "plan"
+        ),
+        "reasoning": result.get(
+            "reasoning"
+        ),
+        "message": result.get(
+            "message"
+        ),
+        "action_result": result.get(
+            "action_result"
+        ),
+        "context": result.get(
+            "context",
+            []
+        )
+    }
+
+===== D:\AI Buddy\Backend\app\api\voice.py =====
+import base64
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+from app.database.connection import get_db
+from app.voice.conversation import VoiceConversation
+from app.voice.jarvis_mode import JarvisMode
+
+
+router = APIRouter(
+    prefix="/voice",
+    tags=["Voice"]
+)
+
+
+# ============================================================
+# VOICE COMPONENTS
+# ============================================================
+
+voice_conversation = VoiceConversation(
+    wake_word="Zarvis"
+)
+
+jarvis_mode = JarvisMode(
+    wake_word="Zarvis"
+)
+
+
+# ============================================================
+# VOICE STATUS
+# ============================================================
+
+@router.get("/status")
+def voice_status():
+    return {
+        "success": True,
+        "voice": voice_conversation.get_status(),
+        "jarvis": jarvis_mode.get_status()
+    }
+
+
+# ============================================================
+# VOICE CONVERSATION
+# ============================================================
+
+@router.post("/start")
+def start_voice_conversation():
+    return voice_conversation.start()
+
+
+@router.post("/stop")
+def stop_voice_conversation():
+    return voice_conversation.stop()
+
+
+@router.post("/process")
+async def process_voice_text(
+    text: str,
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    return await voice_conversation.process_input(
+        text,
+        user_id,
+        db
+    )
+
+
+@router.post("/response")
+def add_voice_response(response: str):
+    return voice_conversation.add_response(response)
+
+
+# ============================================================
+# LISTENING
+# ============================================================
+
+@router.post("/listening/start")
+def start_listening():
+    return voice_conversation.start_listening()
+
+
+@router.post("/listening/stop")
+def stop_listening():
+    return voice_conversation.stop_listening()
+
+
+# ============================================================
+# RECORDING
+# ============================================================
+
+@router.post("/recording/start")
+def start_recording():
+    return voice_conversation.start_recording()
+
+
+@router.post("/recording/stop")
+def stop_recording():
+    result = voice_conversation.stop_recording()
+
+    if not result.get("success", False):
+        return result
+
+    audio_data = result.get("audio_data")
+
+    if isinstance(audio_data, bytes):
+        result["audio_data"] = (
+            base64.b64encode(audio_data)
+            .decode("utf-8")
+        )
+
+    return result
+
+
+# ============================================================
+# SPEECH TO TEXT
+# ============================================================
+
+@router.post("/speech-to-text")
+async def speech_to_text(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    return await voice_conversation.process_recorded_audio(
+        user_id,
+        db
+    )
+
+
+# ============================================================
+# JARVIS MODE
+# ============================================================
+
+@router.post("/jarvis/start")
+async def start_jarvis(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    return await jarvis_mode.start(
+        user_id,
+        db
+    )
+
+
+@router.post("/jarvis/stop")
+async def stop_jarvis():
+    return await jarvis_mode.stop()
+
+
+@router.get("/jarvis/status")
+def jarvis_status():
+    return {
+        "success": True,
+        "jarvis": jarvis_mode.get_status()
+    }
+
+
+@router.post("/jarvis/toggle")
+async def toggle_jarvis(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    return await jarvis_mode.toggle(
+        user_id,
+        db
+    )
+
+
+# ============================================================
+# VOICE HISTORY
+# ============================================================
+
+@router.get("/history")
+def voice_history():
+    return {
+        "success": True,
+        "history": voice_conversation.get_history()
+    }
+
+
+@router.delete("/history")
+def clear_voice_history():
+    voice_conversation.clear_history()
+
+    return {
+        "success": True,
+        "message": "Voice conversation history cleared."
+    }
+
+
+# ============================================================
+# JARVIS HISTORY
+# ============================================================
+
+@router.get("/jarvis/history")
+def jarvis_history():
+    return {
+        "success": True,
+        "history": jarvis_mode.get_history()
+    }
+
+
+@router.delete("/jarvis/history")
+def clear_jarvis_history():
+    jarvis_mode.clear_history()
+
+    return {
+        "success": True,
+        "message": "Jarvis history cleared."
+    }
+
+===== D:\AI Buddy\Frontend\ai-buddy\src\services\api.js =====
+// ==========================================
+// ZARVIS API SERVICE
+// ==========================================
+
+const API_BASE_URL = "http://localhost:8000";
+
+// Common API request handler
+async function apiRequest(endpoint, options = {}) {
+    try {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            headers: {
+                "Content-Type": "application/json",
+                ...(options.headers || {}),
+            },
+            ...options,
+        });
+
+        if (!response.ok) {
+            throw new Error(
+                `API Error: ${response.status} ${response.statusText}`
+            );
+        }
+
+        const contentType = response.headers.get("content-type");
+
+        if (contentType && contentType.includes("application/json")) {
+            return await response.json();
+        }
+
+        return await response.text();
+    } catch (error) {
+        console.error("Zarvis API Error:", error);
+        throw error;
+    }
+}
+
+// GET request
+export async function get(endpoint) {
+    return apiRequest(endpoint, {
+        method: "GET",
+    });
+}
+
+// POST request
+export async function post(endpoint, data = {}) {
+    return apiRequest(endpoint, {
+        method: "POST",
+        body: JSON.stringify(data),
+    });
+}
+
+// PUT request
+export async function put(endpoint, data = {}) {
+    return apiRequest(endpoint, {
+        method: "PUT",
+        body: JSON.stringify(data),
+    });
+}
+
+// DELETE request
+export async function remove(endpoint) {
+    return apiRequest(endpoint, {
+        method: "DELETE",
+    });
+}
+
+// Default API object
+const api = {
+    get,
+    post,
+    put,
+    delete: remove,
+};
+
+export default api;
+
+===== D:\AI Buddy\Frontend\ai-buddy\src\services\chatService.js =====
+// ==========================================
+// ZARVIS CHAT SERVICE
+// ==========================================
+
+import api from "./api";
+
+// Send a message to Zarvis
+export async function sendMessage(message) {
+    if (!message || !message.trim()) {
+        throw new Error("Message cannot be empty.");
+    }
+
+    return api.post("/api/chat", {
+        message: message.trim(),
+    });
+}
+
+// Get chat history
+export async function getChatHistory() {
+    return api.get("/api/chat/history");
+}
+
+// Clear chat history
+export async function clearChatHistory() {
+    return api.delete("/api/chat/history");
+}
+
+// Send voice/text command
+export async function sendCommand(command) {
+    if (!command || !command.trim()) {
+        throw new Error("Command cannot be empty.");
+    }
+
+    return api.post("/api/chat/command", {
+        command: command.trim(),
+    });
+}
+
+const chatService = {
+    sendMessage,
+    getChatHistory,
+    clearChatHistory,
+    sendCommand,
+};
+
+export default chatService;
+
+===== D:\AI Buddy\Frontend\ai-buddy\src\services\voiceService.js =====
+// ==========================================
+// ZARVIS VOICE SERVICE
+// ==========================================
+
+// Check whether browser supports speech recognition
+export function isSpeechRecognitionSupported() {
+    return Boolean(
+        window.SpeechRecognition ||
+        window.webkitSpeechRecognition
+    );
+}
+
+// Start speech recognition
+export function startListening({
+    onResult,
+    onStart,
+    onEnd,
+    onError,
+} = {}) {
+    if (!isSpeechRecognitionSupported()) {
+        const error = new Error(
+            "Speech recognition is not supported in this browser."
+        );
+
+        onError?.(error);
+        return null;
+    }
+
+    const SpeechRecognition =
+        window.SpeechRecognition ||
+        window.webkitSpeechRecognition;
+
+    const recognition = new SpeechRecognition();
+
+    recognition.lang = "en-IN";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+        onStart?.();
+    };
+
+    recognition.onresult = (event) => {
+        const transcript =
+            event.results?.[0]?.[0]?.transcript || "";
+
+        onResult?.(transcript);
+    };
+
+    recognition.onerror = (event) => {
+        onError?.(
+            new Error(
+                event.error || "Speech recognition failed."
+            )
+        );
+    };
+
+    recognition.onend = () => {
+        onEnd?.();
+    };
+
+    recognition.start();
+
+    return recognition;
+}
+
+// Stop speech recognition
+export function stopListening(recognition) {
+    if (recognition) {
+        recognition.stop();
+    }
+}
+
+// Check whether browser supports text-to-speech
+export function isSpeechSynthesisSupported() {
+    return "speechSynthesis" in window;
+}
+
+// Make Zarvis speak
+export function speak(text, options = {}) {
+    if (!isSpeechSynthesisSupported()) {
+        console.warn(
+            "Text-to-speech is not supported in this browser."
+        );
+        return;
+    }
+
+    if (!text || !text.trim()) {
+        return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(
+        text.trim()
+    );
+
+    utterance.lang = options.lang || "en-IN";
+    utterance.rate = options.rate || 1;
+    utterance.pitch = options.pitch || 1;
+    utterance.volume = options.volume ?? 1;
+
+    window.speechSynthesis.speak(utterance);
+
+    return utterance;
+}
+
+// Stop Zarvis speaking
+export function stopSpeaking() {
+    if (isSpeechSynthesisSupported()) {
+        window.speechSynthesis.cancel();
+    }
+}
+
+// Pause Zarvis speaking
+export function pauseSpeaking() {
+    if (isSpeechSynthesisSupported()) {
+        window.speechSynthesis.pause();
+    }
+}
+
+// Resume Zarvis speaking
+export function resumeSpeaking() {
+    if (isSpeechSynthesisSupported()) {
+        window.speechSynthesis.resume();
+    }
+}
+
+const voiceService = {
+    isSpeechRecognitionSupported,
+    startListening,
+    stopListening,
+    isSpeechSynthesisSupported,
+    speak,
+    stopSpeaking,
+    pauseSpeaking,
+    resumeSpeaking,
+};
+
+export default voiceService;
+
