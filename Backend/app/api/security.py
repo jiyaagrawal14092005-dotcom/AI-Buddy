@@ -155,7 +155,7 @@ def check_permission(
 ):
 
     allowed = security_manager.check_permission(
-        username=user_id,
+        user_id=user_id,
         permission=permission
     )
 
