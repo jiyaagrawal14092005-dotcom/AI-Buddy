@@ -1,5 +1,5 @@
-import robotImage from "../images/zarvis_robot_transparent.png";
-import "../styles/cosmos.css";
+import robotImage from "../../images/zarvis_robot_transparent.png";
+import "../../styles/cosmos.css";
 
 function ChatBox() {
     return (

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-
+import { useNavigate } from "react-router-dom";
 import {
     Sparkles,
     Mic,
@@ -18,10 +18,11 @@ import {
     Activity,
 } from "lucide-react";
 
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
+import Sidebar from "../components/common/Sidebar";
+import Navbar from "../components/common/Navbar";
 
 function Assistant() {
+    const navigate = useNavigate();
     const [isListening, setIsListening] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isThinking, setIsThinking] = useState(false);
@@ -423,15 +424,14 @@ function Assistant() {
                             <div className="assistant-voice-center">
 
                                 <div
-                                    className={`assistant-voice-orb ${
-                                        isListening
+                                    className={`assistant-voice-orb ${isListening
                                             ? "voice-orb-listening"
                                             : isSpeaking
                                                 ? "voice-orb-speaking"
                                                 : isThinking
                                                     ? "voice-orb-thinking"
                                                     : ""
-                                    }`}
+                                        }`}
                                 >
 
                                     <div className="assistant-orb-ring orb-ring-1"></div>
@@ -484,11 +484,10 @@ function Assistant() {
                                 {/* WAVEFORM */}
 
                                 <div
-                                    className={`assistant-waveform ${
-                                        isListening || isSpeaking
+                                    className={`assistant-waveform ${isListening || isSpeaking
                                             ? "wave-active"
                                             : ""
-                                    }`}
+                                        }`}
                                 >
 
                                     {Array.from({
@@ -524,11 +523,10 @@ function Assistant() {
 
                                         <div
                                             key={index}
-                                            className={`conversation-message ${
-                                                message.type === "user"
+                                            className={`conversation-message ${message.type === "user"
                                                     ? "conversation-user"
                                                     : "conversation-zarvis"
-                                            }`}
+                                                }`}
                                         >
 
                                             <div className="conversation-avatar">
@@ -626,9 +624,13 @@ function Assistant() {
 
                                     </div>
 
-                                    <button type="button">
-                                        View all
-                                    </button>
+                                    <button
+    type="button"
+    onClick={() => navigate("/tasks")}
+>
+    View all
+</button>
+                                    
 
                                 </div>
 

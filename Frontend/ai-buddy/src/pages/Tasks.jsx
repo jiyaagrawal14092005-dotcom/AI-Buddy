@@ -12,9 +12,8 @@ import {
     ListTodo,
 } from "lucide-react";
 
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
-
+import Sidebar from "../components/common/Sidebar";
+import Navbar from "../components/common/Navbar";
 
 const initialTasks = [
     {
@@ -592,11 +591,10 @@ function Tasks() {
                                 filteredTasks.map((task) => (
 
                                     <div
-                                        className={`task-page-row ${
-                                            task.completed
+                                        className={`task-page-row ${task.completed
                                                 ? "task-page-completed"
                                                 : ""
-                                        }`}
+                                            }`}
                                         key={task.id}
                                     >
 

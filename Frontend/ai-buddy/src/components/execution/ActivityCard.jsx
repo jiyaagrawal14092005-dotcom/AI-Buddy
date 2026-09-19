@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router-dom";
+
 import {
     Activity,
     CheckCircle2,
@@ -38,6 +40,8 @@ const activities = [
 ];
 
 function ActivityCard() {
+    const navigate = useNavigate();
+
     return (
         <section className="dashboard-module activity-module">
 
@@ -113,6 +117,7 @@ function ActivityCard() {
             <button
                 type="button"
                 className="module-footer-button"
+                onClick={() => navigate("/activity")}
             >
                 <span>VIEW ACTIVITY LOG</span>
                 <Activity size={13} />

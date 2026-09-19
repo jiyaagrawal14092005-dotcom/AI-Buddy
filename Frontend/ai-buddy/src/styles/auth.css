@@ -1,0 +1,1902 @@
+/* =========================================================
+   ZARVIS SIGNUP PAGE
+   Fully isolated styles
+   Does NOT use Dashboard classes
+========================================================= */
+
+
+/* =========================================================
+   PAGE
+========================================================= */
+
+.zarvis-signup-page {
+    width: 100%;
+    min-height: 100vh;
+
+    box-sizing: border-box;
+
+    position: relative;
+    overflow: hidden;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 30px;
+
+    background:
+        radial-gradient(
+            circle at 18% 48%,
+            rgba(139, 92, 246, 0.16),
+            transparent 32%
+        ),
+        radial-gradient(
+            circle at 82% 50%,
+            rgba(109, 40, 217, 0.12),
+            transparent 34%
+        ),
+        #06040d;
+
+    color: #ffffff;
+}
+
+
+/* =========================================================
+   BACKGROUND
+========================================================= */
+
+.zarvis-signup-bg-glow {
+    position: absolute;
+
+    width: 500px;
+    height: 500px;
+
+    left: 8%;
+    top: 18%;
+
+    border-radius: 50%;
+
+    background:
+        rgba(139, 92, 246, 0.07);
+
+    filter: blur(100px);
+
+    pointer-events: none;
+}
+
+
+.zarvis-signup-stars {
+    position: absolute;
+
+    inset: 0;
+
+    pointer-events: none;
+
+    opacity: 0.35;
+
+    background-image:
+        radial-gradient(
+            circle,
+            rgba(255,255,255,0.8) 1px,
+            transparent 1px
+        );
+
+    background-size: 120px 120px;
+
+    background-position: 20px 20px;
+}
+
+
+/* =========================================================
+   MAIN CONTAINER
+========================================================= */
+
+.zarvis-signup-container {
+    width: min(1080px, 100%);
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        390px;
+
+    align-items: center;
+
+    gap: 70px;
+
+    position: relative;
+
+    z-index: 2;
+}
+
+
+/* =========================================================
+   LEFT SECTION
+========================================================= */
+
+.zarvis-signup-left {
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+}
+
+
+/* =========================================================
+   BRAND
+========================================================= */
+
+.zarvis-signup-brand {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin-bottom: 16px;
+}
+
+
+.zarvis-signup-brand-icon {
+    width: 40px;
+    height: 40px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 12px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #a855f7,
+            #6d28d9
+        );
+
+    color: #ffffff;
+
+    box-shadow:
+        0 0 20px
+        rgba(168, 85, 247, 0.4);
+}
+
+
+.zarvis-signup-brand span {
+    font-size: 27px;
+
+    font-weight: 700;
+
+    letter-spacing: 4px;
+
+    color: #ffffff;
+
+    text-shadow:
+        0 0 18px
+        rgba(192, 132, 252, 0.45);
+}
+
+
+/* =========================================================
+   HERO TITLE
+========================================================= */
+
+.zarvis-signup-hero-title {
+    margin: 0;
+
+    font-size: 30px;
+
+    line-height: 1.2;
+
+    font-weight: 600;
+}
+
+
+.zarvis-signup-hero-title span {
+    color: #c084fc;
+
+    text-shadow:
+        0 0 18px
+        rgba(192, 132, 252, 0.35);
+}
+
+
+.zarvis-signup-hero-subtitle {
+    margin: 9px 0 0;
+
+    color: #91899e;
+
+    font-size: 13px;
+
+    letter-spacing: 0.8px;
+}
+
+
+/* =========================================================
+   ROBOT GALAXY
+========================================================= */
+
+.zarvis-signup-galaxy {
+    width: 430px;
+    height: 335px;
+
+    max-width: 100%;
+
+    position: relative;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    margin-top: 5px;
+}
+
+
+/* Central galaxy glow */
+
+.zarvis-signup-galaxy-glow {
+    position: absolute;
+
+    width: 230px;
+    height: 230px;
+
+    left: 50%;
+    top: 50%;
+
+    transform:
+        translate(-50%, -50%);
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(168, 85, 247, 0.28) 0%,
+            rgba(124, 58, 237, 0.12) 42%,
+            transparent 72%
+        );
+
+    filter: blur(16px);
+
+    z-index: 0;
+}
+
+
+/* Main orbit */
+
+.zarvis-signup-orbit {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    border-radius: 50%;
+
+    pointer-events: none;
+}
+
+
+/* Orbit one */
+
+.zarvis-signup-orbit.orbit-one {
+    width: 335px;
+    height: 115px;
+
+    transform:
+        translate(-50%, -50%)
+        rotate(-14deg);
+
+    border:
+        1px solid
+        rgba(192, 132, 252, 0.52);
+
+    box-shadow:
+        0 0 15px
+        rgba(168, 85, 247, 0.15);
+}
+
+
+/* Orbit two */
+
+.zarvis-signup-orbit.orbit-two {
+    width: 285px;
+    height: 100px;
+
+    transform:
+        translate(-50%, -50%)
+        rotate(48deg);
+
+    border:
+        1px solid
+        rgba(139, 92, 246, 0.22);
+}
+
+
+/* Orbit dots */
+
+.zarvis-signup-orbit-dot {
+    position: absolute;
+
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: #c084fc;
+
+    box-shadow:
+        0 0 10px
+        rgba(192, 132, 252, 0.9);
+
+    z-index: 2;
+}
+
+
+.zarvis-signup-orbit-dot.dot-one {
+    left: 12%;
+
+    top: 47%;
+}
+
+
+.zarvis-signup-orbit-dot.dot-two {
+    right: 13%;
+
+    top: 38%;
+
+    width: 5px;
+    height: 5px;
+
+    background: #8b5cf6;
+}
+
+
+/* Robot */
+
+.zarvis-signup-robot {
+    width: 245px;
+    height: 245px;
+
+    object-fit: contain;
+
+    position: relative;
+
+    z-index: 3;
+
+    filter:
+        drop-shadow(
+            0 0 15px
+            rgba(192, 132, 252, 0.45)
+        )
+        drop-shadow(
+            0 0 30px
+            rgba(124, 58, 237, 0.22)
+        );
+
+    animation:
+        zarvis-signup-robot-float
+        4s ease-in-out infinite;
+}
+
+
+@keyframes zarvis-signup-robot-float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-7px);
+    }
+}
+
+
+/* Platform */
+
+.zarvis-signup-platform {
+    position: absolute;
+
+    left: 50%;
+
+    bottom: 25px;
+
+    width: 180px;
+    height: 20px;
+
+    transform:
+        translateX(-50%)
+        perspective(100px)
+        rotateX(55deg);
+
+    border-radius: 50%;
+
+    border:
+        1px solid
+        rgba(192, 132, 252, 0.62);
+
+    background:
+        rgba(124, 58, 237, 0.05);
+
+    box-shadow:
+        0 0 12px
+        rgba(168, 85, 247, 0.4),
+
+        0 0 28px
+        rgba(124, 58, 237, 0.18);
+
+    z-index: 2;
+}
+
+
+/* Message */
+
+.zarvis-signup-message {
+    margin-top: -2px;
+
+    color: #bca8d4;
+
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   RIGHT CARD
+========================================================= */
+
+.zarvis-signup-card {
+    width: 390px;
+
+    max-width: 100%;
+
+    box-sizing: border-box;
+
+    padding: 30px;
+
+    border-radius: 22px;
+
+    background:
+        rgba(14, 9, 25, 0.92);
+
+    border:
+        1px solid
+        rgba(168, 85, 247, 0.32);
+
+    box-shadow:
+        0 0 30px
+        rgba(124, 58, 237, 0.13);
+
+    backdrop-filter: blur(16px);
+}
+
+
+/* Card brand */
+
+.zarvis-signup-card-brand {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 7px;
+
+    margin-bottom: 17px;
+
+    color: #c084fc;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    letter-spacing: 3px;
+}
+
+
+/* Card heading */
+
+.zarvis-signup-card h2 {
+    margin: 0;
+
+    text-align: center;
+
+    font-size: 24px;
+
+    font-weight: 600;
+}
+
+
+.zarvis-signup-card-subtitle {
+    margin: 7px 0 22px;
+
+    text-align: center;
+
+    color: #898191;
+
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   FORM
+========================================================= */
+
+.zarvis-signup-form {
+    width: 100%;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 13px;
+}
+
+
+.zarvis-signup-field {
+    width: 100%;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 6px;
+}
+
+
+.zarvis-signup-field label {
+    color: #bbb3c6;
+
+    font-size: 12px;
+}
+
+
+/* Inputs */
+
+.zarvis-signup-field input {
+    width: 100%;
+
+    height: 40px;
+
+    box-sizing: border-box;
+
+    padding:
+        0 12px;
+
+    border-radius: 10px;
+
+    border:
+        1px solid
+        rgba(168, 85, 247, 0.22);
+
+    outline: none;
+
+    background:
+        rgba(255, 255, 255, 0.035);
+
+    color: #ffffff;
+
+    font-family: inherit;
+
+    font-size: 13px;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
+}
+
+
+.zarvis-signup-field input::placeholder {
+    color: #625c6c;
+}
+
+
+.zarvis-signup-field input:focus {
+    border-color:
+        rgba(168, 85, 247, 0.7);
+
+    background:
+        rgba(168, 85, 247, 0.045);
+
+    box-shadow:
+        0 0 12px
+        rgba(168, 85, 247, 0.12);
+}
+
+
+/* =========================================================
+   PASSWORD
+========================================================= */
+
+.zarvis-signup-password {
+    width: 100%;
+
+    position: relative;
+}
+
+
+.zarvis-signup-password input {
+    padding-right: 42px;
+}
+
+
+.zarvis-signup-password button {
+    position: absolute;
+
+    right: 9px;
+    top: 50%;
+
+    transform:
+        translateY(-50%);
+
+    display: grid;
+
+    place-items: center;
+
+    padding: 4px;
+
+    border: none;
+
+    background: transparent;
+
+    color: #777080;
+
+    cursor: pointer;
+}
+
+
+.zarvis-signup-password button:hover {
+    color: #c084fc;
+}
+
+
+/* =========================================================
+   SUBMIT BUTTON
+========================================================= */
+
+.zarvis-signup-submit {
+    width: 100%;
+
+    height: 41px;
+
+    margin-top: 5px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #9333ea,
+            #6d28d9
+        );
+
+    color: #ffffff;
+
+    font-family: inherit;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 0 18px
+        rgba(168, 85, 247, 0.22);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+
+.zarvis-signup-submit:hover {
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 0 24px
+        rgba(168, 85, 247, 0.38);
+}
+
+
+/* =========================================================
+   LOGIN
+========================================================= */
+
+.zarvis-signup-login {
+    margin-top: 18px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 5px;
+
+    color: #81798c;
+
+    font-size: 12px;
+}
+
+
+.zarvis-signup-login button {
+    display: flex;
+
+    align-items: center;
+
+    gap: 3px;
+
+    padding: 0;
+
+    border: none;
+
+    background: transparent;
+
+    color: #c084fc;
+
+    font-family: inherit;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+
+.zarvis-signup-login button:hover {
+    color: #e9d5ff;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 900px) {
+
+    .zarvis-signup-container {
+        grid-template-columns: 1fr 360px;
+
+        gap: 35px;
+    }
+
+    .zarvis-signup-galaxy {
+        width: 360px;
+    }
+
+    .zarvis-signup-robot {
+        width: 215px;
+        height: 215px;
+    }
+
+    .zarvis-signup-orbit.orbit-one {
+        width: 300px;
+    }
+
+    .zarvis-signup-orbit.orbit-two {
+        width: 255px;
+    }
+
+    .zarvis-signup-card {
+        width: 360px;
+    }
+}
+
+
+@media (max-width: 760px) {
+
+    .zarvis-signup-page {
+        padding: 25px 18px;
+    }
+
+    .zarvis-signup-container {
+        grid-template-columns: 1fr;
+
+        max-width: 400px;
+    }
+
+    .zarvis-signup-left {
+        display: none;
+    }
+
+    .zarvis-signup-card {
+        width: 100%;
+    }
+}
+
+
+@media (max-width: 450px) {
+
+    .zarvis-signup-card {
+        padding: 25px 20px;
+    }
+
+    .zarvis-signup-card h2 {
+        font-size: 22px;
+    }
+}
+
+
+
+
+/* changing code */
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   ZARVIS LOGIN
+   Fully isolated styles
+========================================================= */
+
+.zarvis-login-page {
+    width: 100%;
+    min-height: 100vh;
+
+    box-sizing: border-box;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 30px;
+
+    position: relative;
+    overflow: hidden;
+
+    background:
+        radial-gradient(
+            circle at 20% 50%,
+            rgba(139, 92, 246, 0.16),
+            transparent 35%
+        ),
+        radial-gradient(
+            circle at 80% 50%,
+            rgba(109, 40, 217, 0.12),
+            transparent 35%
+        ),
+        #06040d;
+
+    color: #ffffff;
+}
+
+
+.zarvis-login-bg-glow {
+    position: absolute;
+
+    width: 450px;
+    height: 450px;
+
+    left: 12%;
+    top: 20%;
+
+    border-radius: 50%;
+
+    background: rgba(139, 92, 246, 0.08);
+
+    filter: blur(100px);
+
+    pointer-events: none;
+}
+
+
+.zarvis-login-stars {
+    position: absolute;
+
+    inset: 0;
+
+    opacity: 0.3;
+
+    pointer-events: none;
+
+    background-image:
+        radial-gradient(
+            circle,
+            rgba(255,255,255,0.8) 1px,
+            transparent 1px
+        );
+
+    background-size: 120px 120px;
+}
+
+
+/* =========================================================
+   CONTAINER
+========================================================= */
+
+.zarvis-login-container {
+    width: min(1000px, 100%);
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        390px;
+
+    align-items: center;
+
+    gap: 75px;
+
+    position: relative;
+
+    z-index: 2;
+}
+
+
+/* =========================================================
+   LEFT
+========================================================= */
+
+.zarvis-login-left {
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+}
+
+
+.zarvis-login-brand {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin-bottom: 20px;
+}
+
+
+.zarvis-login-brand-icon {
+    width: 40px;
+    height: 40px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 12px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #a855f7,
+            #6d28d9
+        );
+
+    color: white;
+
+    box-shadow:
+        0 0 20px
+        rgba(168, 85, 247, 0.4);
+}
+
+
+.zarvis-login-brand span {
+    font-size: 27px;
+
+    font-weight: 700;
+
+    letter-spacing: 4px;
+}
+
+
+.zarvis-login-left h1 {
+    margin: 0;
+
+    font-size: 32px;
+
+    line-height: 1.25;
+
+    font-weight: 600;
+}
+
+
+.zarvis-login-left h1 span {
+    color: #c084fc;
+
+    text-shadow:
+        0 0 18px
+        rgba(192, 132, 252, 0.35);
+}
+
+
+.zarvis-login-left > p {
+    margin: 12px 0 0;
+
+    color: #91899e;
+
+    font-size: 14px;
+
+    letter-spacing: 1px;
+}
+
+
+.zarvis-login-message {
+    margin-top: 55px;
+
+    color: #bca8d4;
+
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   LOGIN CARD
+========================================================= */
+
+.zarvis-login-card {
+    width: 390px;
+
+    max-width: 100%;
+
+    box-sizing: border-box;
+
+    padding: 32px;
+
+    border-radius: 22px;
+
+    background:
+        rgba(14, 9, 25, 0.92);
+
+    border:
+        1px solid
+        rgba(168, 85, 247, 0.32);
+
+    box-shadow:
+        0 0 35px
+        rgba(124, 58, 237, 0.14);
+
+    backdrop-filter: blur(16px);
+}
+
+
+.zarvis-login-card-brand {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 7px;
+
+    margin-bottom: 18px;
+
+    color: #c084fc;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    letter-spacing: 3px;
+}
+
+
+.zarvis-login-card h2 {
+    margin: 0;
+
+    text-align: center;
+
+    font-size: 25px;
+
+    font-weight: 600;
+}
+
+
+.zarvis-login-subtitle {
+    margin: 8px 0 25px;
+
+    text-align: center;
+
+    color: #898191;
+
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   FORM
+========================================================= */
+
+.zarvis-login-form {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 16px;
+}
+
+
+.zarvis-login-field {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 7px;
+}
+
+
+.zarvis-login-field label {
+    color: #bbb3c6;
+
+    font-size: 12px;
+}
+
+
+.zarvis-login-field input {
+    width: 100%;
+
+    height: 42px;
+
+    box-sizing: border-box;
+
+    padding: 0 12px;
+
+    border-radius: 10px;
+
+    border:
+        1px solid
+        rgba(168, 85, 247, 0.22);
+
+    outline: none;
+
+    background:
+        rgba(255, 255, 255, 0.035);
+
+    color: white;
+
+    font-family: inherit;
+
+    font-size: 13px;
+}
+
+
+.zarvis-login-field input::placeholder {
+    color: #625c6c;
+}
+
+
+.zarvis-login-field input:focus {
+    border-color: #a855f7;
+
+    box-shadow:
+        0 0 12px
+        rgba(168, 85, 247, 0.14);
+}
+
+
+/* =========================================================
+   PASSWORD
+========================================================= */
+
+.zarvis-login-password {
+    position: relative;
+}
+
+
+.zarvis-login-password input {
+    padding-right: 42px;
+}
+
+
+.zarvis-login-password button {
+    position: absolute;
+
+    right: 9px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    display: grid;
+
+    place-items: center;
+
+    padding: 4px;
+
+    border: none;
+
+    background: transparent;
+
+    color: #777080;
+
+    cursor: pointer;
+}
+
+
+.zarvis-login-password button:hover {
+    color: #c084fc;
+}
+
+
+/* =========================================================
+   LOGIN BUTTON
+========================================================= */
+
+.zarvis-login-submit {
+    width: 100%;
+
+    height: 42px;
+
+    margin-top: 6px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 8px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #9333ea,
+            #6d28d9
+        );
+
+    color: white;
+
+    font-family: inherit;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 0 18px
+        rgba(168, 85, 247, 0.22);
+
+    transition: 0.2s ease;
+}
+
+
+.zarvis-login-submit:hover {
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 0 25px
+        rgba(168, 85, 247, 0.38);
+}
+
+
+/* =========================================================
+   SIGNUP
+========================================================= */
+
+.zarvis-login-signup {
+    margin-top: 22px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 5px;
+
+    color: #81798c;
+
+    font-size: 12px;
+}
+
+
+.zarvis-login-signup button {
+    display: flex;
+
+    align-items: center;
+
+    gap: 3px;
+
+    padding: 0;
+
+    border: none;
+
+    background: transparent;
+
+    color: #c084fc;
+
+    font-family: inherit;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+
+.zarvis-login-signup button:hover {
+    color: #e9d5ff;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 760px) {
+
+    .zarvis-login-page {
+        padding: 20px;
+    }
+
+    .zarvis-login-container {
+        grid-template-columns: 1fr;
+
+        max-width: 400px;
+    }
+
+    .zarvis-login-left {
+        display: none;
+    }
+
+    .zarvis-login-card {
+        width: 100%;
+    }
+}
+
+
+@media (max-width: 450px) {
+
+    .zarvis-login-card {
+        padding: 26px 20px;
+    }
+}
+
+
+
+
+
+/* =========================================================
+   ZARVIS SIGNUP
+   Same theme as Login — no robot
+========================================================= */
+
+.zarvis-signup-page {
+    width: 100%;
+    min-height: 100vh;
+
+    box-sizing: border-box;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 30px;
+
+    position: relative;
+    overflow: hidden;
+
+    background:
+        radial-gradient(
+            circle at 20% 50%,
+            rgba(139, 92, 246, 0.16),
+            transparent 35%
+        ),
+        radial-gradient(
+            circle at 80% 50%,
+            rgba(109, 40, 217, 0.12),
+            transparent 35%
+        ),
+        #06040d;
+
+    color: #ffffff;
+}
+
+
+/* Background */
+
+.zarvis-signup-bg-glow {
+    position: absolute;
+
+    width: 450px;
+    height: 450px;
+
+    left: 12%;
+    top: 20%;
+
+    border-radius: 50%;
+
+    background: rgba(139, 92, 246, 0.08);
+
+    filter: blur(100px);
+
+    pointer-events: none;
+}
+
+
+.zarvis-signup-stars {
+    position: absolute;
+
+    inset: 0;
+
+    opacity: 0.3;
+
+    pointer-events: none;
+
+    background-image:
+        radial-gradient(
+            circle,
+            rgba(255,255,255,0.8) 1px,
+            transparent 1px
+        );
+
+    background-size: 120px 120px;
+}
+
+
+/* Container */
+
+.zarvis-signup-container {
+    width: min(1000px, 100%);
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        390px;
+
+    align-items: center;
+
+    gap: 75px;
+
+    position: relative;
+
+    z-index: 2;
+}
+
+
+/* Left */
+
+.zarvis-signup-left {
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+}
+
+
+/* Brand */
+
+.zarvis-signup-brand {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin-bottom: 20px;
+}
+
+
+.zarvis-signup-brand-icon {
+    width: 40px;
+    height: 40px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 12px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #a855f7,
+            #6d28d9
+        );
+
+    color: white;
+
+    box-shadow:
+        0 0 20px
+        rgba(168, 85, 247, 0.4);
+}
+
+
+.zarvis-signup-brand span {
+    font-size: 27px;
+
+    font-weight: 700;
+
+    letter-spacing: 4px;
+}
+
+
+/* Heading */
+
+.zarvis-signup-left h1 {
+    margin: 0;
+
+    font-size: 32px;
+
+    line-height: 1.25;
+
+    font-weight: 600;
+}
+
+
+.zarvis-signup-left h1 span {
+    color: #c084fc;
+
+    text-shadow:
+        0 0 18px
+        rgba(192, 132, 252, 0.35);
+}
+
+
+.zarvis-signup-left > p {
+    margin: 12px 0 0;
+
+    color: #91899e;
+
+    font-size: 14px;
+
+    letter-spacing: 1px;
+}
+
+
+.zarvis-signup-message {
+    margin-top: 55px;
+
+    color: #bca8d4;
+
+    font-size: 14px;
+}
+
+
+/* Card */
+
+.zarvis-signup-card {
+    width: 390px;
+
+    max-width: 100%;
+
+    box-sizing: border-box;
+
+    padding: 30px;
+
+    border-radius: 22px;
+
+    background:
+        rgba(14, 9, 25, 0.92);
+
+    border:
+        1px solid
+        rgba(168, 85, 247, 0.32);
+
+    box-shadow:
+        0 0 35px
+        rgba(124, 58, 237, 0.14);
+
+    backdrop-filter: blur(16px);
+}
+
+
+/* Card brand */
+
+.zarvis-signup-card-brand {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 7px;
+
+    margin-bottom: 17px;
+
+    color: #c084fc;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    letter-spacing: 3px;
+}
+
+
+.zarvis-signup-card h2 {
+    margin: 0;
+
+    text-align: center;
+
+    font-size: 25px;
+
+    font-weight: 600;
+}
+
+
+.zarvis-signup-subtitle {
+    margin: 8px 0 22px;
+
+    text-align: center;
+
+    color: #898191;
+
+    font-size: 12px;
+}
+
+
+/* Form */
+
+.zarvis-signup-form {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 13px;
+}
+
+
+.zarvis-signup-field {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 6px;
+}
+
+
+.zarvis-signup-field label {
+    color: #bbb3c6;
+
+    font-size: 12px;
+}
+
+
+.zarvis-signup-field input {
+    width: 100%;
+
+    height: 40px;
+
+    box-sizing: border-box;
+
+    padding: 0 12px;
+
+    border-radius: 10px;
+
+    border:
+        1px solid
+        rgba(168, 85, 247, 0.22);
+
+    outline: none;
+
+    background:
+        rgba(255, 255, 255, 0.035);
+
+    color: white;
+
+    font-family: inherit;
+
+    font-size: 13px;
+}
+
+
+.zarvis-signup-field input::placeholder {
+    color: #625c6c;
+}
+
+
+.zarvis-signup-field input:focus {
+    border-color: #a855f7;
+
+    box-shadow:
+        0 0 12px
+        rgba(168, 85, 247, 0.14);
+}
+
+
+/* Password */
+
+.zarvis-signup-password {
+    position: relative;
+}
+
+
+.zarvis-signup-password input {
+    padding-right: 42px;
+}
+
+
+.zarvis-signup-password button {
+    position: absolute;
+
+    right: 9px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    display: grid;
+
+    place-items: center;
+
+    padding: 4px;
+
+    border: none;
+
+    background: transparent;
+
+    color: #777080;
+
+    cursor: pointer;
+}
+
+
+.zarvis-signup-password button:hover {
+    color: #c084fc;
+}
+
+
+/* Submit */
+
+.zarvis-signup-submit {
+    width: 100%;
+
+    height: 42px;
+
+    margin-top: 5px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #9333ea,
+            #6d28d9
+        );
+
+    color: white;
+
+    font-family: inherit;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 0 18px
+        rgba(168, 85, 247, 0.22);
+
+    transition: 0.2s ease;
+}
+
+
+.zarvis-signup-submit:hover {
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 0 25px
+        rgba(168, 85, 247, 0.38);
+}
+
+
+/* Login link */
+
+.zarvis-signup-login {
+    margin-top: 18px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 5px;
+
+    color: #81798c;
+
+    font-size: 12px;
+}
+
+
+.zarvis-signup-login button {
+    display: flex;
+
+    align-items: center;
+
+    gap: 3px;
+
+    padding: 0;
+
+    border: none;
+
+    background: transparent;
+
+    color: #c084fc;
+
+    font-family: inherit;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+
+.zarvis-signup-login button:hover {
+    color: #e9d5ff;
+}
+
+
+/* Responsive */
+
+@media (max-width: 760px) {
+
+    .zarvis-signup-page {
+        padding: 20px;
+    }
+
+    .zarvis-signup-container {
+        grid-template-columns: 1fr;
+
+        max-width: 400px;
+    }
+
+    .zarvis-signup-left {
+        display: none;
+    }
+
+    .zarvis-signup-card {
+        width: 100%;
+    }
+}
+
+
+@media (max-width: 450px) {
+
+    .zarvis-signup-card {
+        padding: 26px 20px;
+    }
+}

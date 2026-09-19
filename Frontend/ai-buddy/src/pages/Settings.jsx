@@ -11,7 +11,7 @@ import {
     RotateCcw,
 } from "lucide-react";
 
-import Sidebar from "../components/Sidebar";
+import Sidebar from "../components/common/Sidebar";
 
 function Settings() {
     const [notifications, setNotifications] = useState(true);
@@ -161,9 +161,8 @@ function Settings() {
 
                                 <button
                                     type="button"
-                                    className={`settings-toggle ${
-                                        voiceAssistant ? "active" : ""
-                                    }`}
+                                    className={`settings-toggle ${voiceAssistant ? "active" : ""
+                                        }`}
                                     onClick={() =>
                                         setVoiceAssistant(!voiceAssistant)
                                     }
@@ -192,9 +191,8 @@ function Settings() {
 
                                 <button
                                     type="button"
-                                    className={`settings-toggle ${
-                                        soundEffects ? "active" : ""
-                                    }`}
+                                    className={`settings-toggle ${soundEffects ? "active" : ""
+                                        }`}
                                     onClick={() =>
                                         setSoundEffects(!soundEffects)
                                     }
@@ -246,9 +244,8 @@ function Settings() {
 
                                 <button
                                     type="button"
-                                    className={`settings-toggle ${
-                                        notifications ? "active" : ""
-                                    }`}
+                                    className={`settings-toggle ${notifications ? "active" : ""
+                                        }`}
                                     onClick={() =>
                                         setNotifications(!notifications)
                                     }
@@ -300,9 +297,8 @@ function Settings() {
 
                                 <button
                                     type="button"
-                                    className={`settings-toggle ${
-                                        darkMode ? "active" : ""
-                                    }`}
+                                    className={`settings-toggle ${darkMode ? "active" : ""
+                                        }`}
                                     onClick={() =>
                                         setDarkMode(!darkMode)
                                     }

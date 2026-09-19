@@ -9,8 +9,8 @@ import {
     Trash2,
 } from "lucide-react";
 
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
+import Sidebar from "../components/common/Sidebar";
+import Navbar from "../components/common/Navbar";
 
 
 function Schedule() {

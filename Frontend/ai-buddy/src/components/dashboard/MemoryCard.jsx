@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router-dom";
+
 import {
     Brain,
     UserRound,
@@ -25,6 +27,8 @@ const memories = [
 ];
 
 function MemoryCard() {
+    const navigate = useNavigate();
+
     return (
         <section className="dashboard-module memory-module">
 
@@ -108,6 +112,7 @@ function MemoryCard() {
             <button
                 type="button"
                 className="module-footer-button"
+                onClick={() => navigate("/memory")}
             >
                 <span>OPEN MEMORY</span>
                 <ArrowUpRight size={14} />

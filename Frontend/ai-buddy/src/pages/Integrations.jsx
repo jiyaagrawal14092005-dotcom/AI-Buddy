@@ -13,9 +13,8 @@ import {
     ExternalLink,
 } from "lucide-react";
 
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
-
+import Sidebar from "../components/common/Sidebar";
+import Navbar from "../components/common/Navbar";
 const initialIntegrations = [
     {
         id: 1,
@@ -217,8 +216,8 @@ function Integrations() {
                                 return (
                                     <div
                                         className={`integration-card-final ${item.connected
-                                                ? "connected"
-                                                : ""
+                                            ? "connected"
+                                            : ""
                                             }`}
                                         key={item.id}
                                     >
@@ -231,8 +230,8 @@ function Integrations() {
 
                                             <div
                                                 className={`integration-connection-final ${item.connected
-                                                        ? "connected"
-                                                        : ""
+                                                    ? "connected"
+                                                    : ""
                                                     }`}
                                             >
                                                 <span></span>

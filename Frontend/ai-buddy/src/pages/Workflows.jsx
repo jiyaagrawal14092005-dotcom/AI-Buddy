@@ -13,8 +13,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
+import Sidebar from "../components/common/Sidebar";
+import Navbar from "../components/common/Navbar";
 
 const initialWorkflows = [
   {
@@ -77,12 +77,12 @@ function Workflows() {
       prev.map((workflow) =>
         workflow.id === id
           ? {
-              ...workflow,
-              status:
-                workflow.status === "ACTIVE"
-                  ? "READY"
-                  : "ACTIVE",
-            }
+            ...workflow,
+            status:
+              workflow.status === "ACTIVE"
+                ? "READY"
+                : "ACTIVE",
+          }
           : workflow
       )
     );
@@ -101,10 +101,10 @@ function Workflows() {
       prev.map((workflow) =>
         workflow.id === id
           ? {
-              ...workflow,
-              status: "ACTIVE",
-              lastRun: "Just now",
-            }
+            ...workflow,
+            status: "ACTIVE",
+            lastRun: "Just now",
+          }
           : workflow
       )
     );
@@ -464,11 +464,10 @@ function Workflows() {
 
 
                       <div
-                        className={`workflow-status ${
-                          workflow.status === "ACTIVE"
+                        className={`workflow-status ${workflow.status === "ACTIVE"
                             ? "workflow-active"
                             : "workflow-ready"
-                        }`}
+                          }`}
                       >
 
                         <span></span>

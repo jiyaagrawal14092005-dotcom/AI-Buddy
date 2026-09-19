@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router-dom";
+
 import {
     CalendarDays,
     Clock3,
@@ -23,6 +25,8 @@ const schedule = [
 ];
 
 function ScheduleCard() {
+    const navigate = useNavigate();
+
     return (
         <section className="schedule-system">
 
@@ -40,7 +44,11 @@ function ScheduleCard() {
                     </div>
                 </div>
 
-                <button className="schedule-view-all">
+                <button
+                    type="button"
+                    className="schedule-view-all"
+                    onClick={() => navigate("/schedule")}
+                >
                     VIEW ALL
                     <ArrowUpRight size={13} />
                 </button>

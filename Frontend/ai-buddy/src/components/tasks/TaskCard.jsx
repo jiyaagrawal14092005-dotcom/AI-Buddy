@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router-dom";
+
 import {
     CheckSquare,
     CheckCircle2,
@@ -27,6 +29,8 @@ const tasks = [
 ];
 
 function TaskCard() {
+    const navigate = useNavigate();
+
     return (
         <section className="task-system">
 
@@ -44,7 +48,11 @@ function TaskCard() {
                     </div>
                 </div>
 
-                <button className="task-view-all">
+                <button
+                    type="button"
+                    className="task-view-all"
+                    onClick={() => navigate("/tasks")}
+                >
                     VIEW ALL
                     <ArrowUpRight size={13} />
                 </button>
@@ -68,8 +76,9 @@ function TaskCard() {
 
                 {tasks.map((task, index) => (
                     <div
-                        className={`task-row ${task.done ? "task-row-done" : ""
-                            }`}
+                        className={`task-row ${
+                            task.done ? "task-row-done" : ""
+                        }`}
                         key={index}
                     >
 

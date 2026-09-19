@@ -13,6 +13,8 @@ import Integrations from "./pages/Integrations";
 import Memory from "./pages/Memory";
 import Security from "./pages/Security";
 import Settings from "./pages/Settings";
+import Login from "./pages/auth/Login";
+import Signup from "./pages/auth/Signup";
 
 function App() {
   return (
@@ -20,6 +22,8 @@ function App() {
       <BuddyProvider>
         <BrowserRouter>
           <Routes>
+            <Route path="/login" element={<Login />} />
+<Route path="/signup" element={<Signup />} />
             <Route
               path="/"
               element={<Dashboard />}

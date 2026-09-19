@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router-dom";
+
 import {
     ListTodo,
     Clock3,
@@ -32,6 +34,8 @@ const upcomingTasks = [
 ];
 
 function UpcomingTasks() {
+    const navigate = useNavigate();
+
     return (
         <section className="dashboard-module upcoming-module">
 
@@ -56,6 +60,8 @@ function UpcomingTasks() {
                 <button
                     type="button"
                     className="module-action"
+                    onClick={() => navigate("/tasks")}
+                    aria-label="Open task queue"
                 >
                     <ArrowUpRight size={15} />
                 </button>
@@ -113,6 +119,7 @@ function UpcomingTasks() {
             <button
                 type="button"
                 className="module-footer-button"
+                onClick={() => navigate("/tasks")}
             >
                 <span>OPEN TASK QUEUE</span>
                 <ArrowUpRight size={14} />

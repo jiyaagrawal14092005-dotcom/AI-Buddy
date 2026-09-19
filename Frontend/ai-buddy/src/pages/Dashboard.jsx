@@ -3,17 +3,17 @@ import { Sparkles, Mic, Send } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useBuddy } from "../context/BuddyContext";
 
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
-import ChatBox from "../components/ChatBox";
+import Sidebar from "../components/common/Sidebar";
+import Navbar from "../components/common/Navbar";
+import ChatBox from "../components/chat/ChatBox";
 
-import TaskCard from "../components/TaskCard";
-import ScheduleCard from "../components/ScheduleCard";
-import ActivityCard from "../components/ActivityCard";
-import MemoryCard from "../components/MemoryCard";
-import AgentNetwork from "../components/AgentNetwork";
-import Timer from "../components/Timer";
-import UpcomingTasks from "../components/UpcomingTasks";
+import TaskCard from "../components/tasks/TaskCard";
+import ScheduleCard from "../components/scheduler/ScheduleCard";
+import ActivityCard from "../components/execution/ActivityCard";
+import MemoryCard from "../components/dashboard/MemoryCard";
+import AgentNetwork from "../components/dashboard/AgentNetwork";
+import Timer from "../components/scheduler/Timer";
+import UpcomingTasks from "../components/tasks/UpcomingTasks";
 
 
 function Dashboard() {
@@ -159,6 +159,7 @@ function Dashboard() {
 
         recognitionRef.current =
             recognition;
+           
 
 
         return () => {
@@ -881,11 +882,10 @@ function Dashboard() {
 
                                 <button
                                     type="button"
-                                    className={`hero-search-voice ${
-                                        isListening
+                                    className={`hero-search-voice ${isListening
                                             ? "listening"
                                             : ""
-                                    }`}
+                                        }`}
                                     aria-label={
                                         isListening
                                             ? "Stop voice command"
@@ -1108,12 +1108,11 @@ function Dashboard() {
 
                             <button
                                 type="button"
-                                className={`quick-action-card ${
-                                    activeAction ===
-                                    "task"
+                                className={`quick-action-card ${activeAction ===
+                                        "task"
                                         ? "active"
                                         : ""
-                                }`}
+                                    }`}
                                 onClick={() =>
                                     navigate(
                                         "/tasks",
@@ -1146,12 +1145,11 @@ function Dashboard() {
 
                             <button
                                 type="button"
-                                className={`quick-action-card ${
-                                    activeAction ===
-                                    "schedule"
+                                className={`quick-action-card ${activeAction ===
+                                        "schedule"
                                         ? "active"
                                         : ""
-                                }`}
+                                    }`}
                                 onClick={() =>
                                     navigate(
                                         "/schedule"
@@ -1178,12 +1176,11 @@ function Dashboard() {
 
                             <button
                                 type="button"
-                                className={`quick-action-card ${
-                                    activeAction ===
-                                    "workflow"
+                                className={`quick-action-card ${activeAction ===
+                                        "workflow"
                                         ? "active"
                                         : ""
-                                }`}
+                                    }`}
                                 onClick={() =>
                                     navigate(
                                         "/workflows",
@@ -1216,12 +1213,11 @@ function Dashboard() {
 
                             <button
                                 type="button"
-                                className={`quick-action-card ${
-                                    activeAction ===
-                                    "memory"
+                                className={`quick-action-card ${activeAction ===
+                                        "memory"
                                         ? "active"
                                         : ""
-                                }`}
+                                    }`}
                                 onClick={() =>
                                     navigate(
                                         "/memory",
@@ -1254,12 +1250,11 @@ function Dashboard() {
 
                             <button
                                 type="button"
-                                className={`quick-action-card ${
-                                    activeAction ===
-                                    "focus"
+                                className={`quick-action-card ${activeAction ===
+                                        "focus"
                                         ? "active"
                                         : ""
-                                }`}
+                                    }`}
                                 onClick={
                                     handleStartTimer
                                 }
@@ -1311,36 +1306,36 @@ function Dashboard() {
                                     )
 
                                     : activeAction ===
-                                      "task"
+                                        "task"
 
-                                    ? "Create Task selected"
+                                        ? "Create Task selected"
 
-                                    : activeAction ===
-                                      "schedule"
+                                        : activeAction ===
+                                            "schedule"
 
-                                    ? "Schedule selected"
+                                            ? "Schedule selected"
 
-                                    : activeAction ===
-                                      "travel"
+                                            : activeAction ===
+                                                "travel"
 
-                                    ? "Travel Plan selected"
+                                                ? "Travel Plan selected"
 
-                                    : activeAction ===
-                                      "workflow"
+                                                : activeAction ===
+                                                    "workflow"
 
-                                    ? "New Workflow selected"
+                                                    ? "New Workflow selected"
 
-                                    : activeAction ===
-                                      "memory"
+                                                    : activeAction ===
+                                                        "memory"
 
-                                    ? "Save Memory selected"
+                                                        ? "Save Memory selected"
 
-                                    : activeAction ===
-                                      "focus"
+                                                        : activeAction ===
+                                                            "focus"
 
-                                    ? "Focus Mode selected"
+                                                            ? "Focus Mode selected"
 
-                                    : ""}
+                                                            : ""}
 
                             </strong>
 
