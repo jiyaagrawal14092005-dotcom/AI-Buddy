@@ -1,4 +1,4 @@
-﻿import os
+import os
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
@@ -30,21 +30,8 @@ class SearchTool(BaseTool):
 
         self.client = None
 
-        # Preferred Gemini model for web-grounded search.
+        # Gemini model currently used by AI Buddy.
         self.model = "gemini-3.6-flash"
-
-        # Normal-answer fallback models.
-        # These are tried one by one if the preferred
-        # grounded search is unavailable.
-        self.fallback_models = [
-            "gemini-3.5-flash",
-            "gemini-2.5-flash",
-            "gemini-flash-lite-latest"
-        ]
-
-        # Stores the last model that successfully
-        # generated an answer.
-        self.last_successful_model = None
 
         self.available = False
         self.error = None
@@ -128,6 +115,7 @@ class SearchTool(BaseTool):
             domain = parsed_url.netloc
 
             if domain.startswith("www."):
+
                 domain = domain[4:]
 
             return domain
@@ -467,158 +455,55 @@ class SearchTool(BaseTool):
                 "AI client is not available."
             )
 
-        # -----------------------------------------
-        # BUILD FALLBACK MODEL LIST
-        # -----------------------------------------
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=(
+                "You are the general knowledge assistant "
+                "inside AI Buddy.\n\n"
 
-        fallback_models = []
+                "Answer the user's question clearly, "
+                "accurately and simply.\n\n"
 
-        # Try the last model that worked first.
+                "Do not claim that you performed a live "
+                "web search.\n\n"
+
+                "Do not invent references or sources.\n\n"
+
+                "If the question requires information "
+                "that may have changed recently, clearly "
+                "state that live web information was not "
+                "available for this answer.\n\n"
+
+                f"User question:\n{query}"
+            )
+        )
+
+        if response is None:
+
+            raise RuntimeError(
+                "The fallback AI model returned no response."
+            )
+
+        answer = getattr(
+            response,
+            "text",
+            None
+        )
+
         if (
-            isinstance(
-                self.last_successful_model,
-                str
-            )
-            and self.last_successful_model.strip()
+            not isinstance(answer, str)
+            or not answer.strip()
         ):
 
-            fallback_models.append(
-                self.last_successful_model.strip()
+            raise RuntimeError(
+                "The fallback AI model returned an empty answer."
             )
 
-        # Add configured fallback models.
-        if isinstance(
-            self.fallback_models,
-            list
-        ):
-
-            fallback_models.extend(
-                self.fallback_models
-            )
-
-        # Finally add the main model if it is not
-        # already present.
-        if self.model not in fallback_models:
-
-            fallback_models.append(
-                self.model
-            )
-
-        # Remove duplicate model names while
-        # preserving their order.
-        fallback_models = list(
-            dict.fromkeys(
-                fallback_models
-            )
-        )
-
-        # -----------------------------------------
-        # FALLBACK PROMPT
-        # -----------------------------------------
-
-        prompt = (
-            "You are the general knowledge assistant "
-            "inside AI Buddy.\n\n"
-
-            "Answer the user's question clearly, "
-            "accurately and simply.\n\n"
-
-            "Do not claim that you performed a live "
-            "web search.\n\n"
-
-            "Do not invent references or sources.\n\n"
-
-            "If the question requires information "
-            "that may have changed recently, clearly "
-            "state that live web information was not "
-            "available for this answer.\n\n"
-
-            f"User question:\n{query}"
-        )
-
-        errors = []
-
-        # -----------------------------------------
-        # TRY FALLBACK MODELS ONE BY ONE
-        # -----------------------------------------
-
-        for model_name in fallback_models:
-
-            try:
-
-                print(
-                    "FALLBACK MODEL ATTEMPT:",
-                    model_name
-                )
-
-                response = (
-                    self.client.models.generate_content(
-                        model=model_name,
-                        contents=prompt
-                    )
-                )
-
-                if response is None:
-
-                    raise RuntimeError(
-                        "The fallback AI model returned "
-                        "no response."
-                    )
-
-                answer = getattr(
-                    response,
-                    "text",
-                    None
-                )
-
-                if (
-                    not isinstance(answer, str)
-                    or not answer.strip()
-                ):
-
-                    raise RuntimeError(
-                        "The fallback AI model returned "
-                        "an empty answer."
-                    )
-
-                # Store the model that successfully
-                # generated the answer.
-                self.last_successful_model = (
-                    model_name
-                )
-
-                self.error = None
-
-                return {
-                    "answer": answer.strip(),
-                    "sources": [],
-                    "images": [],
-                    "model_used": model_name
-                }
-
-            except Exception as error:
-
-                error_message = (
-                    f"{model_name}: {error}"
-                )
-
-                errors.append(
-                    error_message
-                )
-
-                print(
-                    "FALLBACK MODEL ERROR:",
-                    error_message
-                )
-
-        # -----------------------------------------
-        # ALL MODELS FAILED
-        # -----------------------------------------
-
-        raise RuntimeError(
-            "All fallback AI models failed. "
-            + " | ".join(errors)
-        )
+        return {
+            "answer": answer.strip(),
+            "sources": [],
+            "images": []
+        }
 
     # =========================================
     # EXECUTE SEARCH
@@ -655,10 +540,6 @@ class SearchTool(BaseTool):
             ""
         )
 
-        # -----------------------------------------
-        # VALIDATE QUERY
-        # -----------------------------------------
-
         try:
 
             query = self._validate_query(
@@ -680,9 +561,9 @@ class SearchTool(BaseTool):
                 "message": str(error)
             }
 
-        # -----------------------------------------
+        # =========================================
         # CHECK GEMINI CLIENT
-        # -----------------------------------------
+        # =========================================
 
         if not self.available:
 
@@ -712,10 +593,8 @@ class SearchTool(BaseTool):
 
         try:
 
-            result = (
-                self._generate_grounded_answer(
-                    query
-                )
+            result = self._generate_grounded_answer(
+                query
             )
 
             return {
@@ -760,10 +639,8 @@ class SearchTool(BaseTool):
 
         try:
 
-            result = (
-                self._generate_fallback_answer(
-                    query
-                )
+            result = self._generate_fallback_answer(
+                query
             )
 
             return {
@@ -778,10 +655,6 @@ class SearchTool(BaseTool):
                 "status": "fallback_answer",
                 "grounding_used": False,
                 "fallback_used": True,
-                "model_used": result.get(
-                    "model_used",
-                    self.last_successful_model
-                ),
                 "message": (
                     "Question answered using AI knowledge. "
                     "Live web grounding was unavailable."
@@ -850,9 +723,5 @@ class SearchTool(BaseTool):
             "name": self.name,
             "available": self.is_available(),
             "model": self.model,
-            "fallback_models": self.fallback_models,
-            "last_successful_model": (
-                self.last_successful_model
-            ),
             "error": self.error
         }
