@@ -23,9 +23,13 @@ import Navbar from "../components/common/Navbar";
 
 function Assistant() {
     const navigate = useNavigate();
+
     const [isListening, setIsListening] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isThinking, setIsThinking] = useState(false);
+
+    // TEXT INPUT
+    const [inputText, setInputText] = useState("");
 
     const [messages, setMessages] = useState([
         {
@@ -264,6 +268,16 @@ function Assistant() {
         processCommand(command);
     };
 
+    // TEXT INPUT SUBMIT
+    const handleTextSubmit = (e) => {
+        e.preventDefault();
+
+        if (!inputText.trim()) return;
+
+        processCommand(inputText);
+        setInputText("");
+    };
+
     useEffect(() => {
         shouldListenRef.current = true;
 
@@ -424,14 +438,15 @@ function Assistant() {
                             <div className="assistant-voice-center">
 
                                 <div
-                                    className={`assistant-voice-orb ${isListening
+                                    className={`assistant-voice-orb ${
+                                        isListening
                                             ? "voice-orb-listening"
                                             : isSpeaking
                                                 ? "voice-orb-speaking"
                                                 : isThinking
                                                     ? "voice-orb-thinking"
                                                     : ""
-                                        }`}
+                                    }`}
                                 >
 
                                     <div className="assistant-orb-ring orb-ring-1"></div>
@@ -484,10 +499,11 @@ function Assistant() {
                                 {/* WAVEFORM */}
 
                                 <div
-                                    className={`assistant-waveform ${isListening || isSpeaking
+                                    className={`assistant-waveform ${
+                                        isListening || isSpeaking
                                             ? "wave-active"
                                             : ""
-                                        }`}
+                                    }`}
                                 >
 
                                     {Array.from({
@@ -523,10 +539,11 @@ function Assistant() {
 
                                         <div
                                             key={index}
-                                            className={`conversation-message ${message.type === "user"
+                                            className={`conversation-message ${
+                                                message.type === "user"
                                                     ? "conversation-user"
                                                     : "conversation-zarvis"
-                                                }`}
+                                            }`}
                                         >
 
                                             <div className="conversation-avatar">
@@ -567,6 +584,27 @@ function Assistant() {
                                     ))}
 
                             </div>
+
+
+                            {/* TEXT CHAT INPUT */}
+
+                            <form
+                                className="zarvis-chat-input"
+                                onSubmit={handleTextSubmit}
+                            >
+                                <input
+                                    type="text"
+                                    value={inputText}
+                                    onChange={(e) =>
+                                        setInputText(e.target.value)
+                                    }
+                                    placeholder="Ask Zarvis anything..."
+                                />
+
+                                <button type="submit">
+                                    Send
+                                </button>
+                            </form>
 
 
                             {/* BOTTOM STATUS */}
@@ -625,12 +663,11 @@ function Assistant() {
                                     </div>
 
                                     <button
-    type="button"
-    onClick={() => navigate("/tasks")}
->
-    View all
-</button>
-                                    
+                                        type="button"
+                                        onClick={() => navigate("/tasks")}
+                                    >
+                                        View all
+                                    </button>
 
                                 </div>
 
