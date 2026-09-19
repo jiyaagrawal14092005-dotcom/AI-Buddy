@@ -1,6 +1,7 @@
 import os
 import sys
 import threading
+import time
 
 
 # ---------------------------------------------------------
@@ -21,6 +22,7 @@ if sys.platform == "win32":
         )
 
         if os.path.isdir(pywin32_system32):
+
             if hasattr(os, "add_dll_directory"):
                 os.add_dll_directory(pywin32_system32)
 
@@ -31,7 +33,11 @@ if sys.platform == "win32":
             )
 
     except Exception as error:
-        print("PYWIN32 DLL PATH ERROR:", repr(error))
+
+        print(
+            "PYWIN32 DLL PATH ERROR:",
+            repr(error)
+        )
 
 
 import pyttsx3
@@ -40,13 +46,23 @@ import pyttsx3
 class TextToSpeech:
 
     def __init__(self):
+
         self.name = "text_to_speech"
+
         self.available = False
+
         self.engine = None
+
         self.error = None
 
-        # Prevent multiple TTS operations from running together.
+        # Prevent multiple speech operations.
         self._lock = threading.Lock()
+
+        # Used to interrupt current speech.
+        self._stop_event = threading.Event()
+
+        # Indicates whether speech is currently running.
+        self._speaking = False
 
     # ---------------------------------------------------------
     # Engine availability
@@ -57,18 +73,19 @@ class TextToSpeech:
         try:
 
             if sys.platform == "win32":
-                import pywintypes
+
                 import pythoncom
 
-                # Initialize COM for the current thread.
                 pythoncom.CoInitialize()
 
                 try:
+
                     engine = pyttsx3.init(
                         driverName="sapi5"
                     )
 
                     self.available = True
+
                     self.error = None
 
                     try:
@@ -81,11 +98,13 @@ class TextToSpeech:
                     return True
 
                 finally:
+
                     pythoncom.CoUninitialize()
 
             engine = pyttsx3.init()
 
             self.available = True
+
             self.error = None
 
             try:
@@ -100,6 +119,7 @@ class TextToSpeech:
         except Exception as error:
 
             self.available = False
+
             self.error = str(error)
 
             print(
@@ -143,7 +163,12 @@ class TextToSpeech:
         with self._lock:
 
             engine = None
+
             com_initialized = False
+
+            self._stop_event.clear()
+
+            self._speaking = True
 
             try:
 
@@ -153,14 +178,10 @@ class TextToSpeech:
 
                 if sys.platform == "win32":
 
-                    import pywintypes
                     import pythoncom
 
-                    # IMPORTANT:
-                    # FastAPI sync endpoints can execute inside
-                    # different worker threads. COM must therefore
-                    # be initialized in the current thread.
                     pythoncom.CoInitialize()
+
                     com_initialized = True
 
                     engine = pyttsx3.init(
@@ -181,7 +202,9 @@ class TextToSpeech:
 
                 try:
 
-                    voices = engine.getProperty("voices")
+                    voices = engine.getProperty(
+                        "voices"
+                    )
 
                     if voices:
 
@@ -216,7 +239,9 @@ class TextToSpeech:
                     pass
 
                 self.engine = engine
+
                 self.available = True
+
                 self.error = None
 
                 # -------------------------------------------------
@@ -225,13 +250,67 @@ class TextToSpeech:
 
                 engine.say(text)
 
-                engine.runAndWait()
+                # -------------------------------------------------
+                # Interruptible speech loop
+                # -------------------------------------------------
 
-                # Stop engine after speaking.
+                engine.startLoop(False)
+
+                while True:
+
+                    # Stop requested.
+                    if self._stop_event.is_set():
+
+                        try:
+                            engine.stop()
+                        except Exception:
+                            pass
+
+                        try:
+                            engine.endLoop()
+                        except Exception:
+                            pass
+
+                        return {
+                            "success": True,
+                            "audio": None,
+                            "text": text,
+                            "status": "stopped",
+                            "message": "Speech stopped."
+                        }
+
+                    # Process a small amount of speech.
+                    try:
+
+                        engine.iterate()
+
+                    except Exception:
+
+                        # Some pyttsx3 drivers can finish
+                        # iteration by raising an internal
+                        # driver exception.
+                        pass
+
+                    # Check whether the engine has finished.
+                    try:
+
+                        if not engine.isBusy():
+                            break
+
+                    except Exception:
+
+                        break
+
+                    time.sleep(0.03)
+
                 try:
-                    engine.stop()
+                    engine.endLoop()
                 except Exception:
                     pass
+
+                # -------------------------------------------------
+                # Normal completion
+                # -------------------------------------------------
 
                 return {
                     "success": True,
@@ -244,6 +323,7 @@ class TextToSpeech:
             except Exception as error:
 
                 self.available = False
+
                 self.error = str(error)
 
                 print(
@@ -274,11 +354,18 @@ class TextToSpeech:
                         pass
 
                     try:
+                        engine.endLoop()
+                    except Exception:
+                        pass
+
+                    try:
                         del engine
                     except Exception:
                         pass
 
                 self.engine = None
+
+                self._speaking = False
 
                 # -------------------------------------------------
                 # Release COM
@@ -287,13 +374,16 @@ class TextToSpeech:
                 if com_initialized:
 
                     try:
+
                         import pythoncom
+
                         pythoncom.CoUninitialize()
+
                     except Exception:
                         pass
 
     # ---------------------------------------------------------
-    # Alias
+    # Speak alias
     # ---------------------------------------------------------
 
     def speak(
@@ -302,6 +392,37 @@ class TextToSpeech:
     ) -> dict:
 
         return self.synthesize(text)
+
+    # ---------------------------------------------------------
+    # Stop current speech
+    # ---------------------------------------------------------
+
+    def stop(self) -> dict:
+
+        self._stop_event.set()
+
+        engine = self.engine
+
+        if engine is not None:
+
+            try:
+                engine.stop()
+            except Exception:
+                pass
+
+        return {
+            "success": True,
+            "stopped": True,
+            "message": "Current speech stop requested."
+        }
+
+    # ---------------------------------------------------------
+    # Speaking status
+    # ---------------------------------------------------------
+
+    def is_speaking(self) -> bool:
+
+        return self._speaking
 
     # ---------------------------------------------------------
     # Status
@@ -314,5 +435,6 @@ class TextToSpeech:
         return {
             "name": self.name,
             "available": available,
+            "speaking": self._speaking,
             "error": self.error
         }

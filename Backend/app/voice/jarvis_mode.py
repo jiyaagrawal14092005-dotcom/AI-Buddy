@@ -1,16 +1,26 @@
 import asyncio
-import io
-import wave
+import queue
+import threading
 
-import numpy as np
-import sounddevice as sd
 from sqlalchemy.orm import Session
 
 from app.voice.voice_manager import VoiceManager
+from app.voice.voice_command import VoiceCommand
 from app.agent.brain import AIBrain
 
 
 class JarvisMode:
+
+    STOP_COMMANDS = {
+        "stop",
+        "stop listening",
+        "stop jarvis",
+        "jarvis stop",
+        "zarvis stop",
+        "exit",
+        "quit",
+        "goodbye"
+    }
 
     def __init__(
         self,
@@ -63,10 +73,6 @@ class JarvisMode:
         self.user_id = user_id
         self.chunk_seconds = chunk_seconds
 
-        self.sample_rate = 16000
-        self.channels = 1
-        self.dtype = "int16"
-
         self.voice_manager = VoiceManager(
             wake_word
         )
@@ -75,11 +81,22 @@ class JarvisMode:
 
         self.active = False
         self.listening = False
+        self.speaking = False
 
-        self._stop_event = asyncio.Event()
+        # Thread-safe stop signal.
+        self._stop_event = threading.Event()
+
         self._loop_task = None
 
+        # Recognized microphone text is transferred
+        # from CommandListener thread to the async loop.
+        self._command_queue = queue.Queue()
+
         self.history = []
+
+    # ---------------------------------------------------------
+    # USER ID
+    # ---------------------------------------------------------
 
     def set_user_id(
         self,
@@ -99,60 +116,340 @@ class JarvisMode:
 
         self.user_id = user_id
 
-    def _record_chunk(self) -> bytes:
+    # ---------------------------------------------------------
+    # COMMAND NORMALIZATION
+    # ---------------------------------------------------------
 
-        recording = sd.rec(
-            int(
-                self.sample_rate
-                * self.chunk_seconds
-            ),
-            samplerate=self.sample_rate,
-            channels=self.channels,
-            dtype=self.dtype
-        )
-
-        sd.wait()
-
-        if recording is None:
-            return b""
-
-        audio_array = np.asarray(
-            recording
-        )
-
-        audio_bytes = (
-            audio_array
-            .astype(np.int16)
-            .tobytes()
-        )
-
-        wav_buffer = io.BytesIO()
-
-        with wave.open(
-            wav_buffer,
-            "wb"
-        ) as wav_file:
-
-            wav_file.setnchannels(
-                self.channels
-            )
-
-            wav_file.setsampwidth(
-                2
-            )
-
-            wav_file.setframerate(
-                self.sample_rate
-            )
-
-            wav_file.writeframes(
-                audio_bytes
-            )
-
-        return wav_buffer.getvalue()
-
-    async def _listen_once(
+    def _normalize_command(
         self,
+        text: str
+    ) -> str:
+
+        if not isinstance(
+            text,
+            str
+        ):
+            return ""
+
+        return " ".join(
+            text.lower().strip().split()
+        )
+
+    # ---------------------------------------------------------
+    # STOP COMMAND CHECK
+    # ---------------------------------------------------------
+
+    def _is_stop_command(
+        self,
+        text: str
+    ) -> bool:
+
+        normalized_text = (
+            self._normalize_command(
+                text
+            )
+        )
+
+        if not normalized_text:
+            return False
+
+        # Direct stop commands.
+        if normalized_text in self.STOP_COMMANDS:
+            return True
+
+        # Accept wake-word + stop.
+        #
+        # Examples:
+        # "Zarvis stop"
+        # "Jarvis stop"
+        # "zarvis stop listening"
+        # "jarvis stop jarvis"
+        wake_word = self._normalize_command(
+            self.wake_word
+        )
+
+        if wake_word:
+
+            wake_word_prefix = (
+                wake_word + " "
+            )
+
+            if normalized_text.startswith(
+                wake_word_prefix
+            ):
+
+                command_after_wake_word = (
+                    normalized_text[
+                        len(wake_word_prefix):
+                    ].strip()
+                )
+
+                if (
+                    command_after_wake_word
+                    in self.STOP_COMMANDS
+                ):
+                    return True
+
+        return False
+
+    # ---------------------------------------------------------
+    # STOP CURRENT SPEECH
+    # ---------------------------------------------------------
+
+    def _stop_speech(self) -> None:
+
+        try:
+
+            self.voice_manager.text_to_speech.stop()
+
+        except Exception as error:
+
+            print(
+                "JARVIS TTS STOP ERROR:",
+                repr(error)
+            )
+
+        self.speaking = False
+
+    # ---------------------------------------------------------
+    # CLEAR COMMAND QUEUE
+    # ---------------------------------------------------------
+
+    def _clear_command_queue(self) -> None:
+
+        while True:
+
+            try:
+
+                self._command_queue.get_nowait()
+
+            except queue.Empty:
+
+                break
+
+            except Exception:
+
+                break
+
+    # ---------------------------------------------------------
+    # REQUEST VOICE STOP
+    # ---------------------------------------------------------
+
+    def _request_voice_stop(
+        self
+    ) -> None:
+
+        print(
+            "Jarvis stop command detected."
+        )
+
+        # Stop accepting new commands immediately.
+        self.active = False
+        self.listening = False
+
+        # Signal every running component.
+        self._stop_event.set()
+
+        # IMPORTANT:
+        # Interrupt currently running TTS immediately.
+        self._stop_speech()
+
+        # Stop microphone capture.
+        try:
+
+            self.voice_manager.command_listener.stop_microphone()
+
+        except Exception as error:
+
+            print(
+                "JARVIS MICROPHONE STOP ERROR:",
+                repr(error)
+            )
+
+        # Remove commands that may have been
+        # recognized before the stop command.
+        self._clear_command_queue()
+
+        # Wake the async command loop.
+        try:
+
+            self._command_queue.put_nowait(
+                None
+            )
+
+        except Exception:
+
+            pass
+
+    # ---------------------------------------------------------
+    # MICROPHONE CALLBACK
+    # ---------------------------------------------------------
+
+    def _on_microphone_text(
+        self,
+        text: str
+    ) -> None:
+
+        if not isinstance(
+            text,
+            str
+        ):
+            return
+
+        text = text.strip()
+
+        if not text:
+            return
+
+        print(
+            f"Jarvis microphone heard: {text}"
+        )
+
+        # -----------------------------------------------------
+        # STOP HAS HIGHEST PRIORITY
+        # -----------------------------------------------------
+
+        if self._is_stop_command(
+            text
+        ):
+
+            self._request_voice_stop()
+
+            return
+
+        # -----------------------------------------------------
+        # IGNORE ALL NON-STOP SPEECH AFTER STOP
+        # -----------------------------------------------------
+
+        if not self.active:
+            return
+
+        # -----------------------------------------------------
+        # IMPORTANT:
+        # While Jarvis is speaking, ignore ordinary recognized
+        # speech so Jarvis does not accidentally process its
+        # own voice as a new command.
+        #
+        # STOP COMMAND WAS CHECKED ABOVE, so Stop still works.
+        # -----------------------------------------------------
+
+        if self.speaking:
+            return
+
+        # -----------------------------------------------------
+        # SEND COMMAND TO ASYNC LOOP
+        # -----------------------------------------------------
+
+        try:
+
+            self._command_queue.put_nowait(
+                text
+            )
+
+        except Exception as error:
+
+            print(
+                "JARVIS COMMAND QUEUE ERROR:",
+                repr(error)
+            )
+
+    # ---------------------------------------------------------
+    # GET NEXT MICROPHONE COMMAND
+    # ---------------------------------------------------------
+
+    async def _get_next_command(
+        self
+    ):
+
+        while (
+            self.active
+            and not self._stop_event.is_set()
+        ):
+
+            try:
+
+                command = await asyncio.to_thread(
+                    self._command_queue.get
+                )
+
+                if command is None:
+
+                    return None
+
+                if not isinstance(
+                    command,
+                    str
+                ):
+
+                    continue
+
+                command = command.strip()
+
+                if not command:
+
+                    continue
+
+                return command
+
+            except asyncio.CancelledError:
+
+                raise
+
+            except Exception as error:
+
+                print(
+                    "JARVIS COMMAND QUEUE READ ERROR:",
+                    repr(error)
+                )
+
+                await asyncio.sleep(
+                    0.1
+                )
+
+        return None
+
+    # ---------------------------------------------------------
+    # CREATE VOICE COMMAND
+    # ---------------------------------------------------------
+
+    def _create_voice_command(
+        self,
+        command_text: str
+    ) -> dict:
+
+        command = VoiceCommand()
+
+        try:
+
+            command.set_text(
+                command_text
+            )
+
+            command.set_command(
+                command_text
+            )
+
+            return command.to_dict()
+
+        except (
+            TypeError,
+            ValueError
+        ) as error:
+
+            print(
+                "JARVIS VOICE COMMAND ERROR:",
+                repr(error)
+            )
+
+            return {}
+
+    # ---------------------------------------------------------
+    # PROCESS ONE JARVIS INPUT
+    # ---------------------------------------------------------
+
+    async def _process_command(
+        self,
+        text: str,
         db: Session
     ) -> dict:
 
@@ -176,257 +473,285 @@ class JarvisMode:
                 )
             }
 
-        self.listening = True
+        # -------------------------------------------------
+        # DIRECT STOP CHECK
+        # -------------------------------------------------
 
-        try:
+        if self._is_stop_command(
+            text
+        ):
 
-            # ---------------------------------
-            # RECORD AUDIO
-            # ---------------------------------
+            self._request_voice_stop()
 
-            audio_data = await asyncio.to_thread(
-                self._record_chunk
-            )
-
-            # ---------------------------------
-            # STOP CHECK
-            # ---------------------------------
-
-            if self._stop_event.is_set():
-                return {
-                    "success": True,
-                    "executed": False,
-                    "stopped": True,
-                    "message": (
-                        "Jarvis recording stopped."
-                    )
-                }
-
-            if not audio_data:
-
-                return {
-                    "success": False,
-                    "executed": False,
-                    "text": "",
-                    "message": (
-                        "No audio data was recorded."
-                    )
-                }
-
-            # ---------------------------------
-            # AUDIO → STT
-            # ---------------------------------
-
-            speech_result = (
-                self.voice_manager
-                .speech_to_text
-                .transcribe(
-                    audio_data
+            return {
+                "success": True,
+                "executed": False,
+                "stopped": True,
+                "wake_word_detected": False,
+                "text": text,
+                "command": None,
+                "brain_input": "",
+                "response": "",
+                "voice_response": None,
+                "message": (
+                    "Jarvis mode stopped by voice command."
                 )
+            }
+
+        # -------------------------------------------------
+        # STOP EVENT CHECK
+        # -------------------------------------------------
+
+        if self._stop_event.is_set():
+
+            return {
+                "success": True,
+                "executed": False,
+                "stopped": True,
+                "text": text,
+                "command": None,
+                "brain_input": "",
+                "response": "",
+                "voice_response": None,
+                "message": (
+                    "Jarvis was stopped before "
+                    "processing the command."
+                )
+            }
+
+        # -------------------------------------------------
+        # LOCAL WAKE-WORD GATE
+        # -------------------------------------------------
+
+        voice_result = (
+            self.voice_manager.process_text(
+                text
             )
+        )
 
-            # ---------------------------------
-            # STOP CHECK
-            # ---------------------------------
+        if not voice_result.get(
+            "success",
+            False
+        ):
 
-            if self._stop_event.is_set():
-                return {
-                    "success": True,
-                    "executed": False,
-                    "stopped": True,
-                    "message": (
-                        "Jarvis stopped after recording."
-                    )
-                }
+            return {
+                **voice_result,
+                "text": text,
+                "executed": False
+            }
 
-            if not speech_result.get(
-                "success",
+        wake_word_detected = (
+            voice_result.get(
+                "wake_word_detected",
                 False
-            ):
+            )
+        )
 
-                return {
-                    "success": False,
-                    "executed": False,
-                    "text": "",
-                    "message": (
-                        speech_result.get(
-                            "message",
-                            "Speech could not be recognized."
-                        )
-                    )
-                }
+        command_data = (
+            voice_result.get(
+                "command"
+            )
+        )
 
-            text = speech_result.get(
+        # -------------------------------------------------
+        # PRIVACY BLOCK
+        # -------------------------------------------------
+
+        if not wake_word_detected:
+
+            return {
+                "success": True,
+                "executed": False,
+                "wake_word_detected": False,
+                "text": text,
+                "command": None,
+                "brain_input": "",
+                "message": (
+                    "Wake word not detected. "
+                    "Command ignored before AI Brain."
+                )
+            }
+
+        # -------------------------------------------------
+        # COMMAND VALIDATION
+        # -------------------------------------------------
+
+        if not isinstance(
+            command_data,
+            dict
+        ):
+
+            return {
+                "success": True,
+                "executed": False,
+                "wake_word_detected": True,
+                "text": text,
+                "command": None,
+                "brain_input": "",
+                "message": (
+                    "Wake word detected but "
+                    "no command was provided."
+                )
+            }
+
+        command_text = (
+            command_data.get(
                 "text",
                 ""
             ).strip()
+        )
 
-            if not text:
+        if not command_text:
 
-                return {
-                    "success": True,
-                    "executed": False,
-                    "text": "",
-                    "message": (
-                        "No speech was detected."
-                    )
-                }
-
-            # ---------------------------------
-            # LOCAL WAKE-WORD GATE
-            # ---------------------------------
-
-            voice_result = (
-                self.voice_manager.process_text(
-                    text
+            return {
+                "success": True,
+                "executed": False,
+                "wake_word_detected": True,
+                "text": text,
+                "command": command_data,
+                "brain_input": "",
+                "message": (
+                    "Wake word detected but "
+                    "no command was provided."
                 )
+            }
+
+        # -------------------------------------------------
+        # STOP CHECK BEFORE AI BRAIN
+        # -------------------------------------------------
+
+        if self._stop_event.is_set():
+
+            return {
+                "success": True,
+                "executed": False,
+                "stopped": True,
+                "message": (
+                    "Jarvis stopped before command execution."
+                )
+            }
+
+        # -------------------------------------------------
+        # AI BRAIN
+        # -------------------------------------------------
+
+        brain_result = self.ai_brain.respond(
+            command_text,
+            self.user_id,
+            db
+        )
+
+        if not isinstance(
+            brain_result,
+            dict
+        ):
+
+            brain_result = {
+                "success": False,
+                "message": (
+                    "AI Brain returned an invalid response."
+                )
+            }
+
+        # -------------------------------------------------
+        # EXTRACT ACTUAL AI ANSWER
+        # -------------------------------------------------
+
+        response_text = ""
+
+        action_result = brain_result.get(
+            "action_result"
+        )
+
+        if isinstance(
+            action_result,
+            dict
+        ):
+
+            answer = action_result.get(
+                "answer"
             )
 
-            if not voice_result.get(
-                "success",
-                False
+            if (
+                isinstance(
+                    answer,
+                    str
+                )
+                and answer.strip()
             ):
 
-                return {
-                    **voice_result,
-                    "text": text,
-                    "executed": False
-                }
-
-            wake_word_detected = (
-                voice_result.get(
-                    "wake_word_detected",
-                    False
+                response_text = (
+                    answer.strip()
                 )
+
+        # -------------------------------------------------
+        # FALLBACK RESPONSE EXTRACTION
+        # -------------------------------------------------
+
+        if not response_text:
+
+            direct_answer = brain_result.get(
+                "answer"
             )
 
-            command_data = (
-                voice_result.get(
-                    "command"
+            if (
+                isinstance(
+                    direct_answer,
+                    str
                 )
-            )
-
-            # ---------------------------------
-            # PRIVACY BLOCK
-            # ---------------------------------
-
-            if not wake_word_detected:
-
-                return {
-                    "success": True,
-                    "executed": False,
-                    "wake_word_detected": False,
-                    "text": text,
-                    "command": None,
-                    "brain_input": "",
-                    "message": (
-                        "Wake word not detected. "
-                        "Command ignored before AI Brain."
-                    )
-                }
-
-            # ---------------------------------
-            # COMMAND VALIDATION
-            # ---------------------------------
-
-            if not isinstance(
-                command_data,
-                dict
+                and direct_answer.strip()
             ):
 
-                return {
-                    "success": True,
-                    "executed": False,
-                    "wake_word_detected": True,
-                    "text": text,
-                    "command": None,
-                    "brain_input": "",
-                    "message": (
-                        "Wake word detected but "
-                        "no command was provided."
-                    )
-                }
+                response_text = (
+                    direct_answer.strip()
+                )
 
-            command_text = (
-                command_data.get(
-                    "text",
-                    ""
-                ).strip()
-            )
+        # -------------------------------------------------
+        # FINAL MESSAGE FALLBACK
+        # -------------------------------------------------
 
-            if not command_text:
+        if not response_text:
 
-                return {
-                    "success": True,
-                    "executed": False,
-                    "wake_word_detected": True,
-                    "text": text,
-                    "command": command_data,
-                    "brain_input": "",
-                    "message": (
-                        "Wake word detected but "
-                        "no command was provided."
-                    )
-                }
-
-            # ---------------------------------
-            # AI BRAIN
-            # ---------------------------------
-
-            if self._stop_event.is_set():
-                return {
-                    "success": True,
-                    "executed": False,
-                    "stopped": True,
-                    "message": (
-                        "Jarvis stopped before command execution."
-                    )
-                }
-
-            # AIBrain.respond() is synchronous.
-            # DO NOT use await here.
-
-            brain_result = self.ai_brain.respond(
-                command_text,
-                self.user_id,
-                db
-            )
-
-            if not isinstance(
-                brain_result,
-                dict
-            ):
-
-                brain_result = {
-                    "success": False,
-                    "message": (
-                        "AI Brain returned an invalid response."
-                    )
-                }
-
-            response_text = brain_result.get(
+            brain_message = brain_result.get(
                 "message",
                 ""
             )
 
-            # ---------------------------------
-            # TEXT → SPEECH
-            # ---------------------------------
-
-            voice_response = None
-
             if (
-                brain_result.get(
-                    "success",
-                    False
-                )
-                and isinstance(
-                    response_text,
+                isinstance(
+                    brain_message,
                     str
                 )
-                and response_text.strip()
-                and not self._stop_event.is_set()
+                and brain_message.strip()
             ):
+
+                response_text = (
+                    brain_message.strip()
+                )
+
+        # -------------------------------------------------
+        # TEXT → SPEECH
+        # -------------------------------------------------
+
+        voice_response = None
+
+        if (
+            brain_result.get(
+                "success",
+                False
+            )
+            and isinstance(
+                response_text,
+                str
+            )
+            and response_text.strip()
+            and not self._stop_event.is_set()
+            and self.active
+        ):
+
+            self.speaking = True
+
+            try:
 
                 voice_response = (
                     self.voice_manager.speak(
@@ -434,78 +759,61 @@ class JarvisMode:
                     )
                 )
 
-            # ---------------------------------
-            # HISTORY
-            # ---------------------------------
+            finally:
 
-            history_item = {
-                "text": text,
-                "wake_word_detected": True,
-                "command": command_data,
-                "brain_input": command_text,
-                "brain": brain_result,
-                "response": response_text,
-                "voice_response": voice_response
-            }
+                self.speaking = False
 
-            self.history.append(
-                history_item
-            )
+        # -------------------------------------------------
+        # HISTORY
+        # -------------------------------------------------
 
-            # ---------------------------------
-            # RESPONSE
-            # ---------------------------------
+        history_item = {
+            "text": text,
+            "wake_word_detected": True,
+            "command": command_data,
+            "brain_input": command_text,
+            "brain": brain_result,
+            "response": response_text,
+            "voice_response": voice_response
+        }
 
-            return {
-                "success": brain_result.get(
+        self.history.append(
+            history_item
+        )
+
+        # -------------------------------------------------
+        # RESPONSE
+        # -------------------------------------------------
+
+        return {
+            "success": brain_result.get(
+                "success",
+                False
+            ),
+            "executed": True,
+            "wake_word_detected": True,
+            "text": text,
+            "command": command_data,
+            "brain_input": command_text,
+            "brain": brain_result,
+            "response": response_text,
+            "voice_response": voice_response,
+            "message": (
+                "Jarvis command executed successfully."
+                if brain_result.get(
                     "success",
                     False
-                ),
-                "executed": True,
-                "wake_word_detected": True,
-                "text": text,
-                "command": command_data,
-                "brain_input": command_text,
-                "brain": brain_result,
-                "response": response_text,
-                "voice_response": voice_response,
-                "message": (
-                    "Jarvis command executed successfully."
-                    if brain_result.get(
-                        "success",
-                        False
-                    )
-                    else brain_result.get(
-                        "message",
-                        "Jarvis command failed."
-                    )
                 )
-            }
-
-        except asyncio.CancelledError:
-
-            return {
-                "success": True,
-                "executed": False,
-                "stopped": True,
-                "message": (
-                    "Jarvis listening task cancelled safely."
+                else brain_result.get(
+                    "message",
+                    "Jarvis command failed."
                 )
-            }
+            )
+        }
 
-        except Exception as error:
-
-            return {
-                "success": False,
-                "executed": False,
-                "message": (
-                    f"Jarvis listening error: {error}"
-                )
-            }
-
-        finally:
-
-            self.listening = False
+    # ---------------------------------------------------------
+    # MAIN LOOP
+    # ---------------------------------------------------------
 
     async def _run_loop(
         self,
@@ -517,32 +825,85 @@ class JarvisMode:
             and not self._stop_event.is_set()
         ):
 
-            result = await self._listen_once(
-                db
-            )
+            try:
 
-            if (
-                not self.active
-                or self._stop_event.is_set()
-            ):
+                # Wait for CommandListener to recognize
+                # the next piece of speech.
+                text = await self._get_next_command()
+
+                if (
+                    text is None
+                    or not self.active
+                    or self._stop_event.is_set()
+                ):
+
+                    break
+
+                # -------------------------------------------------
+                # STOP CHECK
+                # -------------------------------------------------
+
+                if self._is_stop_command(
+                    text
+                ):
+
+                    self._request_voice_stop()
+
+                    break
+
+                self.listening = True
+
+                result = await self._process_command(
+                    text,
+                    db
+                )
+
+                self.listening = False
+
+                if (
+                    not self.active
+                    or self._stop_event.is_set()
+                ):
+
+                    break
+
+                if (
+                    not result.get(
+                        "success",
+                        False
+                    )
+                    and result.get(
+                        "message",
+                        ""
+                    )
+                ):
+
+                    print(
+                        f"Jarvis: {result['message']}"
+                    )
+
+                await asyncio.sleep(0)
+
+            except asyncio.CancelledError:
+
                 break
 
-            if (
-                not result.get(
-                    "success",
-                    False
-                )
-                and result.get(
-                    "message",
-                    ""
-                )
-            ):
+            except Exception as error:
+
+                self.listening = False
 
                 print(
-                    f"Jarvis: {result['message']}"
+                    "JARVIS MAIN LOOP ERROR:",
+                    repr(error)
                 )
 
-            await asyncio.sleep(0)
+                await asyncio.sleep(
+                    0.1
+                )
+
+    # ---------------------------------------------------------
+    # START JARVIS
+    # ---------------------------------------------------------
 
     async def start(
         self,
@@ -590,8 +951,80 @@ class JarvisMode:
 
         self.active = True
         self.listening = False
+        self.speaking = False
 
-        self._stop_event = asyncio.Event()
+        self._stop_event.clear()
+
+        # Clear old queued commands.
+        self._clear_command_queue()
+
+        # -------------------------------------------------
+        # CONNECT COMMAND LISTENER CALLBACK
+        # -------------------------------------------------
+
+        callback_result = (
+            self.voice_manager
+            .command_listener
+            .set_command_callback(
+                self._on_microphone_text
+            )
+        )
+
+        if not callback_result.get(
+            "success",
+            False
+        ):
+
+            self.active = False
+
+            return {
+                "success": False,
+                "active": False,
+                "listening": False,
+                "speaking": False,
+                "wake_word": self.wake_word,
+                "message": (
+                    "Unable to configure Jarvis microphone callback."
+                ),
+                "callback": callback_result
+            }
+
+        # -------------------------------------------------
+        # START SINGLE MICROPHONE LISTENER
+        # -------------------------------------------------
+
+        listener_result = (
+            self.voice_manager
+            .command_listener
+            .start_listening()
+        )
+
+        if not listener_result.get(
+            "success",
+            False
+        ):
+
+            self.active = False
+
+            self.voice_manager.command_listener.set_command_callback(
+                None
+            )
+
+            return {
+                "success": False,
+                "active": False,
+                "listening": False,
+                "speaking": False,
+                "wake_word": self.wake_word,
+                "message": (
+                    "Unable to start Jarvis microphone listener."
+                ),
+                "listener": listener_result
+            }
+
+        # -------------------------------------------------
+        # START ASYNC JARVIS PROCESSING LOOP
+        # -------------------------------------------------
 
         self._loop_task = asyncio.create_task(
             self._run_loop(
@@ -602,7 +1035,8 @@ class JarvisMode:
         return {
             "success": True,
             "active": True,
-            "listening": False,
+            "listening": True,
+            "speaking": False,
             "wake_word": self.wake_word,
             "message": (
                 "Jarvis mode started. "
@@ -610,13 +1044,41 @@ class JarvisMode:
             )
         }
 
+    # ---------------------------------------------------------
+    # STOP JARVIS
+    # ---------------------------------------------------------
+
     async def stop(self) -> dict:
 
         if not self.active:
 
+            self._stop_event.set()
+
+            self._stop_speech()
+
+            try:
+
+                self.voice_manager.command_listener.stop_microphone()
+
+            except Exception:
+                pass
+
+            try:
+
+                self.voice_manager.command_listener.set_command_callback(
+                    None
+                )
+
+            except Exception:
+                pass
+
+            self._clear_command_queue()
+
             return {
                 "success": False,
                 "active": False,
+                "listening": False,
+                "speaking": False,
                 "message": (
                     "Jarvis mode is not active."
                 )
@@ -624,69 +1086,111 @@ class JarvisMode:
 
         self.active = False
 
+        self.listening = False
+
         self._stop_event.set()
 
-        # ---------------------------------
-        # STOP ACTIVE SOUNDDEVICE RECORDING
-        # ---------------------------------
+        # -------------------------------------------------
+        # STOP CURRENT SPEECH
+        # -------------------------------------------------
+
+        self._stop_speech()
+
+        # -------------------------------------------------
+        # STOP MICROPHONE
+        # -------------------------------------------------
 
         try:
-            sd.stop()
+
+            self.voice_manager.command_listener.stop_microphone()
+
+        except Exception as error:
+
+            print(
+                "JARVIS MICROPHONE STOP ERROR:",
+                repr(error)
+            )
+
+        # Disable callback after microphone shutdown.
+        try:
+
+            self.voice_manager.command_listener.set_command_callback(
+                None
+            )
+
         except Exception:
             pass
 
-        # ---------------------------------
-        # WAIT FOR LOOP TASK
-        # ---------------------------------
+        # Remove pending commands.
+        self._clear_command_queue()
+
+        # Wake waiting async loop.
+        try:
+
+            self._command_queue.put_nowait(
+                None
+            )
+
+        except Exception:
+            pass
+
+        # -------------------------------------------------
+        # STOP ASYNC LOOP
+        # -------------------------------------------------
 
         if self._loop_task is not None:
 
-            try:
-
-                await asyncio.wait_for(
-                    asyncio.shield(
-                        self._loop_task
-                    ),
-                    timeout=2
-                )
-
-            except asyncio.TimeoutError:
-
-                # The recording should normally
-                # have stopped because sd.stop()
-                # was called above.
-
-                if not self._loop_task.done():
-
-                    self._loop_task.cancel()
+            if not self._loop_task.done():
 
                 try:
 
-                    await self._loop_task
+                    await asyncio.wait_for(
+                        asyncio.shield(
+                            self._loop_task
+                        ),
+                        timeout=2
+                    )
+
+                except asyncio.TimeoutError:
+
+                    if not self._loop_task.done():
+
+                        self._loop_task.cancel()
+
+                    try:
+
+                        await self._loop_task
+
+                    except asyncio.CancelledError:
+
+                        pass
 
                 except asyncio.CancelledError:
 
                     pass
 
-            except asyncio.CancelledError:
+                except Exception:
 
-                pass
-
-            except Exception:
-
-                pass
+                    pass
 
         self._loop_task = None
+
         self.listening = False
+        self.speaking = False
 
         return {
             "success": True,
             "active": False,
             "listening": False,
+            "speaking": False,
             "message": (
                 "Jarvis mode stopped."
             )
         }
+
+    # ---------------------------------------------------------
+    # TOGGLE
+    # ---------------------------------------------------------
 
     async def toggle(
         self,
@@ -695,12 +1199,17 @@ class JarvisMode:
     ) -> dict:
 
         if self.active:
+
             return await self.stop()
 
         return await self.start(
             user_id,
             db
         )
+
+    # ---------------------------------------------------------
+    # HISTORY
+    # ---------------------------------------------------------
 
     def get_history(self) -> list:
 
@@ -712,6 +1221,10 @@ class JarvisMode:
 
         self.history.clear()
 
+    # ---------------------------------------------------------
+    # STATUS
+    # ---------------------------------------------------------
+
     def is_active(self) -> bool:
 
         return self.active
@@ -722,15 +1235,21 @@ class JarvisMode:
 
     def get_status(self) -> dict:
 
+        command_listener_status = (
+            self.voice_manager
+            .command_listener
+            .get_status()
+        )
+
         return {
             "name": "jarvis_mode",
             "active": self.active,
             "listening": self.listening,
+            "speaking": self.speaking,
             "user_id": self.user_id,
             "wake_word": self.wake_word,
             "chunk_seconds": self.chunk_seconds,
-            "sample_rate": self.sample_rate,
-            "channels": self.channels,
+            "command_listener": command_listener_status,
             "history_count": len(
                 self.history
             )

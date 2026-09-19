@@ -1,4 +1,3 @@
-
 import os
 from datetime import datetime, timedelta
 
@@ -331,12 +330,54 @@ class AIBrain:
                     city
                 )
 
+            # =================================
+            # SEARCH TOOL EXECUTION
+            # =================================
+
+            if tool_name == "search":
+
+                query = parameters.get(
+                    "query",
+                    ""
+                )
+
+                if not isinstance(
+                    query,
+                    str
+                ) or not query.strip():
+
+                    return {
+                        "success": False,
+                        "message": (
+                            "Search query is required."
+                        )
+                    }
+
+                search_parameters = {
+                    "query": query.strip()
+                }
+
+                return tool.execute(
+                    search_parameters
+                )
+
+            # =================================
+            # TIME TOOL EXECUTION
+            # =================================
+
             if tool_name == "time_tool":
 
                 action = parameters.get(
                     "action",
                     "current_time"
                 )
+
+                if isinstance(
+                    action,
+                    str
+                ):
+
+                    action = action.strip().lower()
 
                 timezone = parameters.get(
                     "timezone",
@@ -1497,6 +1538,122 @@ class AIBrain:
                 )
             }
 
+        # ---------------------------------
+        # TIME / DATE ACTION NORMALIZATION
+        # ---------------------------------
+
+        if (
+            intent_name == "GET_TIME"
+            and isinstance(
+                plan,
+                dict
+            )
+        ):
+
+            steps = plan.get(
+                "steps",
+                []
+            )
+
+            if (
+                isinstance(
+                    steps,
+                    list
+                )
+                and steps
+                and isinstance(
+                    steps[0],
+                    dict
+                )
+            ):
+
+                tool_name = steps[0].get(
+                    "tool"
+                )
+
+                if tool_name == "time_tool":
+
+                    parameters = steps[0].get(
+                        "parameters",
+                        {}
+                    )
+
+                    if not isinstance(
+                        parameters,
+                        dict
+                    ):
+
+                        parameters = {}
+
+                    parameters["action"] = (
+                        "current_time"
+                    )
+
+                    parameters.setdefault(
+                        "timezone",
+                        "Asia/Kolkata"
+                    )
+
+                    steps[0]["parameters"] = (
+                        parameters
+                    )
+
+        if (
+            intent_name == "GET_DATE"
+            and isinstance(
+                plan,
+                dict
+            )
+        ):
+
+            steps = plan.get(
+                "steps",
+                []
+            )
+
+            if (
+                isinstance(
+                    steps,
+                    list
+                )
+                and steps
+                and isinstance(
+                    steps[0],
+                    dict
+                )
+            ):
+
+                tool_name = steps[0].get(
+                    "tool"
+                )
+
+                if tool_name == "time_tool":
+
+                    parameters = steps[0].get(
+                        "parameters",
+                        {}
+                    )
+
+                    if not isinstance(
+                        parameters,
+                        dict
+                    ):
+
+                        parameters = {}
+
+                    parameters["action"] = (
+                        "current_date"
+                    )
+
+                    parameters.setdefault(
+                        "timezone",
+                        "Asia/Kolkata"
+                    )
+
+                    steps[0]["parameters"] = (
+                        parameters
+                    )
+
         reasoning_plan = (
             self._prepare_reasoning_plan(
                 plan
@@ -1685,11 +1842,6 @@ class AIBrain:
                                     approved_parameters.copy()
                                 )
 
-                                # Re-read action from the
-                                # approved parameters so that
-                                # security checks use exactly
-                                # the approved action.
-
                                 approved_action = (
                                     parameters.get(
                                         "action"
@@ -1729,10 +1881,6 @@ class AIBrain:
                                 }
 
                         else:
-
-                            # ---------------------------------
-                            # INVALID / UNAPPROVED ID
-                            # ---------------------------------
 
                             response_message = (
                                 approval_check.get(
@@ -1876,11 +2024,6 @@ class AIBrain:
                             }
 
                         else:
-
-                            # ---------------------------------
-                            # APPROVAL WAS PROVIDED BUT
-                            # SECURITY STILL BLOCKED IT
-                            # ---------------------------------
 
                             response_message = (
                                 security_result.get(
@@ -2057,4 +2200,3 @@ class AIBrain:
             "approval_id": current_approval_id,
             "context": context
         }
-

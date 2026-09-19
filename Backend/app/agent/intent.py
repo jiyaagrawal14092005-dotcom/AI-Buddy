@@ -1191,61 +1191,6 @@ class IntentDetector:
             parameters["city"] = city
 
         # =====================================
-        # TIME AND DATE DETECTION
-        # =====================================
-
-        time_patterns = [
-            r"\bwhat\s+time\s+is\s+it\b",
-            r"\bwhat(?:\'s| is)\s+the\s+time\b",
-            r"\bcurrent\s+time\b",
-            r"\btime\s+right\s+now\b",
-            r"\btime\s+now\b",
-            r"\btell\s+me\s+the\s+time\b",
-            r"\bwhat\s+time\s+it\s+is\b"
-        ]
-
-        date_patterns = [
-            r"\bwhat\s+date\s+is\s+it\b",
-            r"\bwhat(?:\'s| is)\s+today(?:\'s)?\s+date\b",
-            r"\btoday(?:\'s)?\s+date\b",
-            r"\bcurrent\s+date\b",
-            r"\bwhat\s+day\s+is\s+it\b",
-            r"\bwhat\s+day\s+it\s+is\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in time_patterns
-        ):
-            return {
-                "intent": "GET_TIME",
-                "confidence": 0.98,
-                "parameters": {
-                    "action": "current_time",
-                    "timezone": "Asia/Kolkata"
-                }
-            }
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in date_patterns
-        ):
-            return {
-                "intent": "GET_DATE",
-                "confidence": 0.98,
-                "parameters": {
-                    "action": "current_date",
-                    "timezone": "Asia/Kolkata"
-                }
-            }
-
-        # =====================================
         # SEARCH INFORMATION
         # =====================================
 
@@ -1477,8 +1422,6 @@ class IntentDetector:
             "CREATE_REMINDER",
             "SET_TIMER",
             "GET_WEATHER",
-            "GET_TIME",
-            "GET_DATE",
             "SEARCH_INFORMATION",
             "SEND_EMAIL",
             "CHECK_CALENDAR",
@@ -1492,6 +1435,8 @@ class IntentDetector:
             "MANAGE_FILE",
             "OPEN_APPLICATION",
             "BROWSE_WEB",
+            "GET_TIME",
+            "GET_DATE",
             "GENERAL_QUERY"
         }
 
@@ -2252,6 +2197,59 @@ class IntentDetector:
 
         if browser_result is not None:
             return browser_result
+
+        # =====================================
+        # TIME / DATE
+        # =====================================
+
+        time_patterns = [
+            r"\bwhat\s+time\s+is\s+it\b",
+            r"\bwhat(?:'s| is)\s+the\s+time\b",
+            r"\bcurrent\s+time\b",
+            r"\btime\s+right\s+now\b",
+            r"\btime\s+now\b",
+            r"\bwhat\s+time\s+is\s+it\s+right\s+now\b"
+        ]
+
+        date_patterns = [
+            r"\bwhat\s+date\s+is\s+it\b",
+            r"\bwhat(?:'s| is)\s+today(?:'s)?\s+date\b",
+            r"\bwhat\s+is\s+today\b",
+            r"\btoday(?:'s)?\s+date\b",
+            r"\bcurrent\s+date\b",
+            r"\bwhat\s+day\s+is\s+it\b",
+            r"\bwhat(?:'s| is)\s+the\s+day\b"
+        ]
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in time_patterns
+        ):
+            return {
+                "intent": "GET_TIME",
+                "confidence": 0.99,
+                "parameters": {
+                    "timezone": "Asia/Kolkata"
+                }
+            }
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in date_patterns
+        ):
+            return {
+                "intent": "GET_DATE",
+                "confidence": 0.99,
+                "parameters": {
+                    "timezone": "Asia/Kolkata"
+                }
+            }
 
         # =====================================
         # CALENDAR
@@ -3088,62 +3086,6 @@ class IntentDetector:
                 }
             }
 
-
-                # =====================================
-        # TIME AND DATE DETECTION
-        # =====================================
-
-        time_patterns = [
-            r"\bwhat\s+time\s+is\s+it\b",
-            r"\bwhat(?:'s| is)\s+the\s+time\b",
-            r"\bcurrent\s+time\b",
-            r"\btime\s+right\s+now\b",
-            r"\btime\s+now\b",
-            r"\btell\s+me\s+the\s+time\b",
-            r"\bwhat\s+time\s+it\s+is\b"
-        ]
-
-        date_patterns = [
-            r"\bwhat\s+date\s+is\s+it\b",
-            r"\bwhat(?:'s| is)\s+today(?:'s)?\s+date\b",
-            r"\btoday(?:'s)?\s+date\b",
-            r"\bcurrent\s+date\b",
-            r"\bwhat\s+day\s+is\s+it\b",
-            r"\bwhat\s+day\s+it\s+is\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in time_patterns
-        ):
-            return {
-                "intent": "GET_TIME",
-                "confidence": 0.98,
-                "parameters": {
-                    "action": "current_time",
-                    "timezone": "Asia/Kolkata"
-                }
-            }
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in date_patterns
-        ):
-            return {
-                "intent": "GET_DATE",
-                "confidence": 0.98,
-                "parameters": {
-                    "action": "current_date",
-                    "timezone": "Asia/Kolkata"
-                }
-            }
-        
         # =====================================
         # SEARCH INFORMATION
         # =====================================
@@ -3181,7 +3123,7 @@ class IntentDetector:
             r"\bupdate\b",
             r"\brecently\b",
             r"\btell\s+me\s+about\b",
-            r"\bexplain\b.*"
+            r"\bexplain\b",
             r"\b(?:technology|company|person|"
             r"topic|concept)\b",
             r"\binformation\s+about\b",
@@ -3572,7 +3514,7 @@ User message:
 """
 
         response = self.client.models.generate_content(
-            model="gemini-3.6-flash",
+            model="gemini-3.7-flash",
             contents=prompt
         )
 
@@ -3643,96 +3585,13 @@ User message:
         except Exception as error:
 
             print(
-                "⚠️ Local browser detection failed:"
+                "âš ï¸ Local browser detection failed:"
             )
 
             print(
                 f"Error: {error}"
             )
 
-                # =====================================
-        # FAST LOCAL TIME AND DATE DETECTION
-        # =====================================
-
-        try:
-
-            lower_message = message.lower()
-
-            # -------------------------------
-            # Current Time
-            # -------------------------------
-
-            time_patterns = [
-                r"\bwhat\s+time\s+is\s+it\b",
-                r"\bwhat(?:'s| is)\s+the\s+time\b",
-                r"\bcurrent\s+time\b",
-                r"\btime\s+right\s+now\b",
-                r"\btime\s+now\b",
-                r"\btell\s+me\s+the\s+time\b",
-                r"\bwhat\s+time\s+it\s+is\b"
-            ]
-
-            if any(
-                re.search(
-                    pattern,
-                    lower_message
-                )
-                for pattern in time_patterns
-            ):
-
-                return self._validate_result(
-                    {
-                        "intent": "GET_TIME",
-                        "confidence": 0.98,
-                        "parameters": {
-                            "action": "current_time",
-                            "timezone": "Asia/Kolkata"
-                        }
-                    }
-                )
-
-            # -------------------------------
-            # Current Date
-            # -------------------------------
-
-            date_patterns = [
-                r"\bwhat\s+date\s+is\s+it\b",
-                r"\bwhat(?:'s| is)\s+today(?:'s)?\s+date\b",
-                r"\btoday(?:'s)?\s+date\b",
-                r"\bcurrent\s+date\b",
-                r"\bwhat\s+day\s+is\s+it\b",
-                r"\bwhat\s+day\s+it\s+is\b"
-            ]
-
-            if any(
-                re.search(
-                    pattern,
-                    lower_message
-                )
-                for pattern in date_patterns
-            ):
-
-                return self._validate_result(
-                    {
-                        "intent": "GET_DATE",
-                        "confidence": 0.98,
-                        "parameters": {
-                            "action": "current_date",
-                            "timezone": "Asia/Kolkata"
-                        }
-                    }
-                )
-
-        except Exception as error:
-
-            print(
-                "Local time/date detection failed:"
-            )
-
-            print(
-                f"Error: {error}"
-            )
-            
         # =====================================
         # FAST LOCAL CALENDAR DETECTION
         # =====================================
@@ -3780,7 +3639,7 @@ User message:
         except Exception as error:
 
             print(
-                "⚠️ Local calendar detection failed:"
+                "âš ï¸ Local calendar detection failed:"
             )
 
             print(
@@ -3834,7 +3693,7 @@ User message:
         except Exception as error:
 
             print(
-                "⚠️ Local booking detection failed:"
+                "âš ï¸ Local booking detection failed:"
             )
 
             print(
@@ -3898,7 +3757,7 @@ User message:
         except Exception as error:
 
             print(
-                "⚠️ Local timer detection failed:"
+                "âš ï¸ Local timer detection failed:"
             )
 
             print(
@@ -4061,7 +3920,7 @@ User message:
         except Exception as error:
 
             print(
-                "⚠️ Local shopping detection failed:"
+                "âš ï¸ Local shopping detection failed:"
             )
 
             print(
@@ -4107,5 +3966,116 @@ User message:
                 f"Error: {error}"
             )
 
+        # =====================================
+        # FAST LOCAL INTENT DETECTION
+        # =====================================
 
+        # Run the complete local detector before calling Gemini.
+        # This is important for search/factual requests because
+        # local detection should work even when Gemini quota is
+        # exhausted or unavailable.
+
+        try:
+
+            local_result = (
+                self._local_detect(
+                    message
+                )
+            )
+
+            if isinstance(
+                local_result,
+                dict
+            ):
+
+                local_result = (
+                    self._validate_result(
+                        local_result
+                    )
+                )
+
+                local_intent = (
+                    local_result.get(
+                        "intent",
+                        "GENERAL_QUERY"
+                    )
+                )
+
+                if local_intent != "GENERAL_QUERY":
+
+                    return local_result
+
+        except Exception as error:
+
+            print(
+                "Local intent detection failed:"
+            )
+
+            print(
+                f"Error: {error}"
+            )
+
+        # =====================================
+        # GEMINI FALLBACK
+        # =====================================
+
+        try:
+
+            gemini_result = (
+                self._detect_with_gemini(
+                    message
+                )
+            )
+
+            gemini_result = (
+                self._repair_parameters(
+                    message,
+                    gemini_result
+                )
+            )
+
+            return self._validate_result(
+                gemini_result
+            )
+
+        except Exception as error:
+
+            print(
+                "Gemini intent detection failed:"
+            )
+
+            print(
+                f"Error: {error}"
+            )
+
+            # If Gemini is unavailable, return the local
+            # result instead of returning None.
+
+            try:
+
+                fallback_result = (
+                    self._local_detect(
+                        message
+                    )
+                )
+
+                return self._validate_result(
+                    fallback_result
+                )
+
+            except Exception as fallback_error:
+
+                print(
+                    "Local fallback intent detection failed:"
+                )
+
+                print(
+                    f"Error: {fallback_error}"
+                )
+
+                return {
+                    "intent": "GENERAL_QUERY",
+                    "confidence": 0.0,
+                    "parameters": {}
+                }
 
