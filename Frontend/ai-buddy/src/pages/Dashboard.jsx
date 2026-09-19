@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Sparkles, Mic, Send } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useBuddy } from "../context/BuddyContext";
+import { useAuth } from "../context/AuthContext";
 
 import Sidebar from "../components/common/Sidebar";
 import Navbar from "../components/common/Navbar";
@@ -15,6 +16,9 @@ import AgentNetwork from "../components/dashboard/AgentNetwork";
 import Timer from "../components/scheduler/Timer";
 import UpcomingTasks from "../components/tasks/UpcomingTasks";
 
+import { getTasks } from "../services/taskService";
+import { getScheduledJobs } from "../services/schedulerService";
+
 
 function Dashboard() {
 
@@ -24,6 +28,11 @@ function Dashboard() {
         buddyStatus,
         isThinking,
     } = useBuddy();
+
+    const {
+        user,
+        authenticated,
+    } = useAuth();
 
 
     const [activeAction, setActiveAction] =
@@ -38,9 +47,191 @@ function Dashboard() {
     const [voiceMessage, setVoiceMessage] =
         useState("");
 
-
     const recognitionRef =
         useRef(null);
+
+
+    /* =================================================
+       DASHBOARD REAL DATA
+    ================================================= */
+
+    const [dashboardTasks, setDashboardTasks] =
+        useState([]);
+
+    const [dashboardSchedule, setDashboardSchedule] =
+        useState([]);
+
+    const [dashboardLoading, setDashboardLoading] =
+        useState(true);
+
+
+    /* =================================================
+       LOAD DASHBOARD DATA
+    ================================================= */
+
+    useEffect(() => {
+
+        const loadDashboardData = async () => {
+
+            if (
+                !authenticated ||
+                !user?.id
+            ) {
+
+                setDashboardTasks([]);
+                setDashboardSchedule([]);
+                setDashboardLoading(false);
+
+                return;
+            }
+
+
+            try {
+
+                setDashboardLoading(true);
+
+
+                const [
+                    tasksResult,
+                    scheduleResult,
+                ] = await Promise.all([
+
+                    getTasks(user.id),
+
+                    getScheduledJobs(user.id),
+
+                ]);
+
+
+                const tasks =
+                    Array.isArray(tasksResult)
+                        ? tasksResult
+                        : Array.isArray(tasksResult?.tasks)
+                            ? tasksResult.tasks
+                            : [];
+
+
+                const jobs =
+                    Array.isArray(scheduleResult?.jobs)
+                        ? scheduleResult.jobs
+                        : [];
+
+
+                setDashboardTasks(tasks);
+
+
+                const activeJobs =
+                    jobs
+                        .filter(
+                            (job) =>
+                                job.status === "scheduled" ||
+                                job.status === "SCHEDULED"
+                        )
+                        .sort(
+                            (a, b) =>
+                                new Date(a.schedule) -
+                                new Date(b.schedule)
+                        );
+
+
+                setDashboardSchedule(
+                    activeJobs
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to load dashboard data:",
+                    error
+                );
+
+                setDashboardTasks([]);
+                setDashboardSchedule([]);
+
+            } finally {
+
+                setDashboardLoading(false);
+
+            }
+
+        };
+
+
+        loadDashboardData();
+
+    }, [
+        authenticated,
+        user?.id,
+    ]);
+
+
+    /* =================================================
+       DASHBOARD STATISTICS
+    ================================================= */
+
+    const totalTasks =
+        dashboardTasks.length;
+
+
+    const completedTasks =
+        dashboardTasks.filter(
+            (task) =>
+                String(task.status || "").toLowerCase() ===
+                "completed"
+        ).length;
+
+
+    const scheduledCount =
+        dashboardSchedule.length;
+
+
+    const getNextScheduleTime = () => {
+
+        if (
+            dashboardSchedule.length === 0
+        ) {
+
+            return "No upcoming events";
+
+        }
+
+
+        const nextJob =
+            dashboardSchedule[0];
+
+
+        if (!nextJob?.schedule) {
+
+            return "Time not specified";
+
+        }
+
+
+        const date =
+            new Date(nextJob.schedule);
+
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+
+            return "Time not specified";
+
+        }
+
+
+        return date.toLocaleTimeString(
+            "en-IN",
+            {
+                hour: "2-digit",
+                minute: "2-digit",
+            }
+        );
+
+    };
 
 
     /* =================================================
@@ -93,11 +284,6 @@ function Dashboard() {
                 `Heard: "${spokenText}"`
             );
 
-
-            /*
-             * Give React a moment to update
-             * the command state before executing.
-             */
 
             setTimeout(() => {
 
@@ -159,7 +345,6 @@ function Dashboard() {
 
         recognitionRef.current =
             recognition;
-           
 
 
         return () => {
@@ -586,19 +771,11 @@ function Dashboard() {
 
         <div className="app">
 
-
-            {/* =================================================
-                SIDEBAR
-            ================================================= */}
-
             <Sidebar />
-
 
             <main className="main-content">
 
-
                 <Navbar />
-
 
                 <div className="dashboard">
 
@@ -609,9 +786,7 @@ function Dashboard() {
 
                     <section className="dashboard-hero">
 
-
                         <div className="dashboard-welcome">
-
 
                             <div className="welcome-label">
 
@@ -629,7 +804,7 @@ function Dashboard() {
                                 Hello,{" "}
 
                                 <span>
-                                    Shanu
+                                    {user?.username || user?.name || "User"}
                                 </span>
 
                             </h1>
@@ -646,10 +821,7 @@ function Dashboard() {
                             </p>
 
 
-                            {/* HERO QUICK ACTIONS */}
-
                             <div className="hero-quick-actions">
-
 
                                 <button
                                     type="button"
@@ -734,17 +906,12 @@ function Dashboard() {
 
                                 </button>
 
-
                             </div>
 
 
-                            {/* HERO STATUS */}
-
                             <div className="hero-status-cards">
 
-
                                 <div className="hero-status-card thinking-card">
-
 
                                     <div className="hero-status-icon zarvis-thinking-logo">
 
@@ -793,7 +960,6 @@ function Dashboard() {
 
                                 <div className="hero-status-card ready-card">
 
-
                                     <div className="hero-status-icon ready-help-icon">
                                         💬
                                     </div>
@@ -820,26 +986,15 @@ function Dashboard() {
 
                                 </div>
 
-
                             </div>
-
 
                         </div>
 
 
-                        {/* =================================================
-                            ROBOT
-                        ================================================= */}
-
                         <ChatBox />
 
 
-                        {/* =================================================
-                            COMMAND SEARCH
-                        ================================================= */}
-
                         <div className="hero-search-bar">
-
 
                             <div className="hero-search-logo">
 
@@ -877,9 +1032,6 @@ function Dashboard() {
 
                             <div className="hero-search-actions">
 
-
-                                {/* VOICE */}
-
                                 <button
                                     type="button"
                                     className={`hero-search-voice ${isListening
@@ -904,8 +1056,6 @@ function Dashboard() {
                                 </button>
 
 
-                                {/* SEND */}
-
                                 <button
                                     type="button"
                                     className="hero-search-send"
@@ -922,13 +1072,10 @@ function Dashboard() {
 
                                 </button>
 
-
                             </div>
 
                         </div>
 
-
-                        {/* VOICE STATUS */}
 
                         {voiceMessage && (
 
@@ -948,12 +1095,11 @@ function Dashboard() {
 
                         )}
 
-
                     </section>
 
 
                     {/* =================================================
-                        STATS
+                        REAL STATS
                     ================================================= */}
 
                     <section className="stats-grid">
@@ -974,11 +1120,22 @@ function Dashboard() {
                             </div>
 
                             <strong className="stat-value">
-                                08
+
+                                {dashboardLoading
+                                    ? "--"
+                                    : String(totalTasks).padStart(
+                                        2,
+                                        "0"
+                                    )}
+
                             </strong>
 
                             <span className="stat-description">
-                                5 completed
+
+                                {dashboardLoading
+                                    ? "Loading tasks..."
+                                    : `${completedTasks} completed`}
+
                             </span>
 
                         </div>
@@ -1003,7 +1160,7 @@ function Dashboard() {
                             </strong>
 
                             <span className="stat-description">
-                                2 running now
+                                Workflow engine ready
                             </span>
 
                         </div>
@@ -1024,11 +1181,24 @@ function Dashboard() {
                             </div>
 
                             <strong className="stat-value">
-                                06
+
+                                {dashboardLoading
+                                    ? "--"
+                                    : String(scheduledCount).padStart(
+                                        2,
+                                        "0"
+                                    )}
+
                             </strong>
 
                             <span className="stat-description">
-                                Next at 10:00 AM
+
+                                {dashboardLoading
+                                    ? "Loading schedule..."
+                                    : scheduledCount > 0
+                                        ? `Next at ${getNextScheduleTime()}`
+                                        : "No upcoming events"}
+
                             </span>
 
                         </div>
@@ -1068,9 +1238,7 @@ function Dashboard() {
 
                     <section className="quick-section">
 
-
                         <div className="section-title-row">
-
 
                             <div>
 
@@ -1097,14 +1265,11 @@ function Dashboard() {
                                 Open Assistant →
                             </button>
 
-
                         </div>
 
 
                         <div className="quick-actions-grid">
 
-
-                            {/* CREATE TASK */}
 
                             <button
                                 type="button"
@@ -1141,8 +1306,6 @@ function Dashboard() {
                             </button>
 
 
-                            {/* SCHEDULE */}
-
                             <button
                                 type="button"
                                 className={`quick-action-card ${activeAction ===
@@ -1171,8 +1334,6 @@ function Dashboard() {
 
                             </button>
 
-
-                            {/* WORKFLOW */}
 
                             <button
                                 type="button"
@@ -1209,8 +1370,6 @@ function Dashboard() {
                             </button>
 
 
-                            {/* MEMORY */}
-
                             <button
                                 type="button"
                                 className={`quick-action-card ${activeAction ===
@@ -1245,8 +1404,6 @@ function Dashboard() {
 
                             </button>
 
-
-                            {/* FOCUS MODE */}
 
                             <button
                                 type="button"
@@ -1287,7 +1444,6 @@ function Dashboard() {
                     {activeAction && (
 
                         <div className="dashboard-action-message">
-
 
                             <span>
                                 COMMAND READY
@@ -1349,7 +1505,6 @@ function Dashboard() {
                                 ×
                             </button>
 
-
                         </div>
 
                     )}
@@ -1361,9 +1516,7 @@ function Dashboard() {
 
                     <section className="zarvis-core-card glass-card">
 
-
                         <div className="zarvis-core-header">
-
 
                             <div>
 
@@ -1391,12 +1544,10 @@ function Dashboard() {
 
                             </div>
 
-
                         </div>
 
 
                         <div className="zarvis-core-metrics">
-
 
                             <div>
 
@@ -1451,7 +1602,6 @@ function Dashboard() {
 
                             </div>
 
-
                         </div>
 
                     </section>
@@ -1478,9 +1628,7 @@ function Dashboard() {
 
                     <div className="dashboard-secondary-grid">
 
-
                         <MemoryCard />
-
 
                         <div id="zarvis-timer">
 
@@ -1488,9 +1636,7 @@ function Dashboard() {
 
                         </div>
 
-
                         <UpcomingTasks />
-
 
                     </div>
 

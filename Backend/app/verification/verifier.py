@@ -10,13 +10,6 @@ class Verifier:
         result: dict
     ) -> dict:
 
-        if not action:
-            return {
-                "success": False,
-                "verified": False,
-                "message": "Action name is required."
-            }
-
         if not isinstance(result, dict):
             return {
                 "success": False,
@@ -25,16 +18,14 @@ class Verifier:
                 "message": "Invalid action result."
             }
 
-        action = str(action).strip().lower()
+        # -----------------------------------------------------
+        # RESULT EXECUTION CHECK
+        # -----------------------------------------------------
 
         action_success = result.get(
             "success",
             False
         )
-
-        # -----------------------------------------------------
-        # EXECUTION FAILED
-        # -----------------------------------------------------
 
         if action_success is not True:
             return {
@@ -46,6 +37,24 @@ class Verifier:
                     "execution failed."
                 )
             }
+
+        # -----------------------------------------------------
+        # ACTION NAME IS OPTIONAL FOR GENERIC TOOLS
+        # -----------------------------------------------------
+
+        if not action:
+
+            return {
+                "success": True,
+                "verified": True,
+                "action": None,
+                "verification_type": "execution_success",
+                "message": (
+                    "Workflow step executed successfully."
+                )
+            }
+
+        action = str(action).strip().lower()
 
         # -----------------------------------------------------
         # BROWSER ACTIONS
@@ -73,6 +82,7 @@ class Verifier:
             "success": True,
             "verified": True,
             "action": action,
+            "verification_type": "execution_success",
             "message": (
                 f"Action '{action}' "
                 "verified successfully."

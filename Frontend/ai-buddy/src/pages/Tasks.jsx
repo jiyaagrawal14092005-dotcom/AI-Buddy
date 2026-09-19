@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import {
@@ -15,55 +15,73 @@ import {
 import Sidebar from "../components/common/Sidebar";
 import Navbar from "../components/common/Navbar";
 
-const initialTasks = [
-    {
-        id: 1,
-        title: "Complete AI assignment",
-        description: "Finish today's AI coursework",
-        date: "Today",
-        time: "10:30 AM",
-        priority: "HIGH",
-        completed: true,
-    },
-    {
-        id: 2,
-        title: "Study Machine Learning",
-        description: "Revise supervised learning concepts",
-        date: "Today",
-        time: "12:00 PM",
+import { useAuth } from "../context/AuthContext";
+import {
+    getTasks,
+    createTask,
+    deleteTask,
+    updateTaskStatus,
+} from "../services/taskService";
+
+
+function normalizeTask(task) {
+    return {
+        id: task.id,
+        user_id: task.user_id,
+        title: task.title || "Untitled Task",
+        description:
+            task.description ||
+            "No description available",
+        date: task.created_at
+            ? new Date(task.created_at).toLocaleDateString()
+            : "Today",
+        time: task.created_at
+            ? new Date(task.created_at).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+            })
+            : "Anytime",
         priority: "MEDIUM",
-        completed: false,
-    },
-    {
-        id: 3,
-        title: "Work on Zarvis frontend",
-        description: "Continue dashboard development",
-        date: "Today",
-        time: "03:30 PM",
-        priority: "HIGH",
-        completed: false,
-    },
-    {
-        id: 4,
-        title: "Review today's notes",
-        description: "Quick revision before evening",
-        date: "Today",
-        time: "06:00 PM",
-        priority: "LOW",
-        completed: false,
-    },
-];
+        completed: task.status === "completed",
+        status: task.status || "pending",
+        created_at: task.created_at,
+    };
+}
 
 
 function Tasks() {
 
     const location = useLocation();
 
-    const [tasks, setTasks] = useState(initialTasks);
+    const { user, authenticated } = useAuth();
+
+    const userId = user?.id;
+
+
+    // ==========================================
+    // TASK STATE
+    // ==========================================
+
+    const [tasks, setTasks] = useState([]);
+
+    const [loading, setLoading] = useState(true);
+
+    const [error, setError] = useState("");
+
+    const [actionLoading, setActionLoading] = useState(false);
+
+
+    // ==========================================
+    // SEARCH
+    // ==========================================
 
     const [search, setSearch] = useState("");
 
-    // Opens automatically when coming from Dashboard → Create Task
+
+    // ==========================================
+    // ADD TASK FORM
+    // ==========================================
+
     const [showForm, setShowForm] = useState(
         location.state?.openForm === true
     );
@@ -77,111 +95,379 @@ function Tasks() {
     });
 
 
-    /* =================================================
-       TOGGLE TASK
-    ================================================= */
+    // ==========================================
+    // LOAD TASKS FROM BACKEND
+    // ==========================================
 
-    const toggleTask = (id) => {
+    const loadTasks = async () => {
 
-        setTasks((prev) =>
-            prev.map((task) =>
-                task.id === id
-                    ? {
-                        ...task,
-                        completed: !task.completed,
-                    }
-                    : task
-            )
-        );
+        if (!userId) {
+            setTasks([]);
+            setLoading(false);
+            return;
+        }
 
+        try {
+
+            setLoading(true);
+
+            setError("");
+
+            const result = await getTasks(userId);
+
+            if (!result?.success) {
+
+                throw new Error(
+                    result?.message ||
+                    "Unable to load tasks."
+                );
+
+            }
+
+            const backendTasks = Array.isArray(result.tasks)
+                ? result.tasks
+                : [];
+
+            setTasks(
+                backendTasks.map(normalizeTask)
+            );
+
+        } catch (err) {
+
+            console.error(
+                "Failed to load tasks:",
+                err
+            );
+
+            setError(
+                err?.message ||
+                "Failed to load tasks."
+            );
+
+            setTasks([]);
+
+        } finally {
+
+            setLoading(false);
+
+        }
     };
 
 
-    /* =================================================
-       DELETE TASK
-    ================================================= */
+    // ==========================================
+    // INITIAL LOAD
+    // ==========================================
 
-    const deleteTask = (id) => {
+    useEffect(() => {
 
-        setTasks((prev) =>
-            prev.filter((task) => task.id !== id)
+        if (authenticated && userId) {
+            loadTasks();
+        } else {
+            setTasks([]);
+            setLoading(false);
+        }
+
+    }, [authenticated, userId]);
+
+
+    // ==========================================
+    // TOGGLE TASK STATUS
+    // ==========================================
+
+    const toggleTask = async (id) => {
+
+        if (!userId) {
+
+            setError(
+                "Please login before updating a task."
+            );
+
+            return;
+        }
+
+        if (actionLoading) {
+            return;
+        }
+
+
+        const selectedTask = tasks.find(
+            (task) => task.id === id
         );
 
+
+        if (!selectedTask) {
+            return;
+        }
+
+
+        const nextStatus =
+            selectedTask.completed
+                ? "pending"
+                : "completed";
+
+
+        try {
+
+            setActionLoading(true);
+
+            setError("");
+
+
+            const result = await updateTaskStatus(
+                id,
+                userId,
+                nextStatus
+            );
+
+
+            if (!result?.success) {
+
+                throw new Error(
+                    result?.message ||
+                    "Task status could not be updated."
+                );
+
+            }
+
+
+            // Backend returns the updated task.
+
+            if (result.task) {
+
+                const updatedTask =
+                    normalizeTask(result.task);
+
+
+                setTasks((previousTasks) =>
+                    previousTasks.map((task) =>
+                        task.id === id
+                            ? updatedTask
+                            : task
+                    )
+                );
+
+            } else {
+
+                // Safe fallback:
+                // reload from database.
+
+                await loadTasks();
+
+            }
+
+        } catch (err) {
+
+            console.error(
+                "Failed to update task status:",
+                err
+            );
+
+            setError(
+                err?.message ||
+                "Failed to update task status."
+            );
+
+        } finally {
+
+            setActionLoading(false);
+
+        }
     };
 
 
-    /* =================================================
-       ADD TASK
-    ================================================= */
+    // ==========================================
+    // DELETE TASK
+    // ==========================================
 
-    const addTask = (event) => {
+    const handleDeleteTask = async (id) => {
+
+        if (!userId) {
+
+            setError(
+                "User ID is required."
+            );
+
+            return;
+        }
+
+        try {
+
+            setActionLoading(true);
+
+            setError("");
+
+            const result = await deleteTask(
+                id,
+                userId
+            );
+
+            if (!result?.success) {
+
+                throw new Error(
+                    result?.message ||
+                    "Task could not be deleted."
+                );
+
+            }
+
+            setTasks((previousTasks) =>
+                previousTasks.filter(
+                    (task) => task.id !== id
+                )
+            );
+
+        } catch (err) {
+
+            console.error(
+                "Failed to delete task:",
+                err
+            );
+
+            setError(
+                err?.message ||
+                "Failed to delete task."
+            );
+
+        } finally {
+
+            setActionLoading(false);
+
+        }
+    };
+
+
+    // ==========================================
+    // ADD TASK
+    // ==========================================
+
+    const addTask = async (event) => {
 
         event.preventDefault();
 
-        if (!newTask.title.trim()) return;
+        if (!userId) {
+
+            setError(
+                "Please login before creating a task."
+            );
+
+            return;
+        }
+
+        if (!newTask.title.trim()) {
+
+            setError(
+                "Task title is required."
+            );
+
+            return;
+        }
 
 
-        const task = {
+        try {
 
-            id: Date.now(),
+            setActionLoading(true);
 
-            title: newTask.title.trim(),
-
-            description:
-                newTask.description.trim() ||
-                "Created with Zarvis",
-
-            date: "Today",
-
-            time: newTask.time || "Anytime",
-
-            priority: newTask.priority,
-
-            completed: false,
-
-        };
+            setError("");
 
 
-        setTasks((prev) => [
-            task,
-            ...prev,
-        ]);
+            const result = await createTask(
+                newTask,
+                userId
+            );
 
 
-        // Reset form
-        setNewTask({
-            title: "",
-            description: "",
-            time: "",
-            priority: "MEDIUM",
-        });
+            if (!result?.success) {
+
+                throw new Error(
+                    result?.message ||
+                    "Task could not be created."
+                );
+
+            }
 
 
-        setShowForm(false);
+            if (result.task) {
 
+                const createdTask =
+                    normalizeTask(result.task);
+
+                setTasks((previousTasks) => [
+                    createdTask,
+                    ...previousTasks,
+                ]);
+
+            } else {
+
+                // Safe fallback:
+                // refresh database data.
+
+                await loadTasks();
+
+            }
+
+
+            // Reset form
+
+            setNewTask({
+                title: "",
+                description: "",
+                time: "",
+                priority: "MEDIUM",
+            });
+
+
+            setShowForm(false);
+
+        } catch (err) {
+
+            console.error(
+                "Failed to create task:",
+                err
+            );
+
+            setError(
+                err?.message ||
+                "Failed to create task."
+            );
+
+        } finally {
+
+            setActionLoading(false);
+
+        }
     };
 
 
-    /* =================================================
-       SEARCH
-    ================================================= */
+    // ==========================================
+    // SEARCH
+    // ==========================================
 
-    const filteredTasks = tasks.filter((task) =>
+    const filteredTasks = useMemo(() => {
 
-        `${task.title} ${task.description}`
-            .toLowerCase()
-            .includes(search.toLowerCase())
+        const searchText =
+            search.trim().toLowerCase();
 
-    );
+        if (!searchText) {
+            return tasks;
+        }
+
+        return tasks.filter((task) =>
+            `${task.title} ${task.description}`
+                .toLowerCase()
+                .includes(searchText)
+        );
+
+    }, [tasks, search]);
 
 
-    /* =================================================
-       TASK STATS
-    ================================================= */
+    // ==========================================
+    // TASK STATS
+    // ==========================================
 
-    const completedTasks = tasks.filter(
-        (task) => task.completed
-    ).length;
+    const completedTasks =
+        tasks.filter(
+            (task) => task.completed
+        ).length;
 
 
     const pendingTasks =
@@ -196,22 +482,22 @@ function Tasks() {
             : 0;
 
 
+    // ==========================================
+    // RENDER
+    // ==========================================
+
     return (
 
         <div className="app">
 
-            {/* =================================================
-                SIDEBAR
-            ================================================= */}
+            {/* SIDEBAR */}
 
             <Sidebar />
 
 
             <main className="main-content">
 
-                {/* =================================================
-                    NAVBAR
-                ================================================= */}
+                {/* NAVBAR */}
 
                 <Navbar />
 
@@ -219,9 +505,9 @@ function Tasks() {
                 <div className="tasks-page">
 
 
-                    {/* =================================================
+                    {/* ==========================================
                         HEADER
-                    ================================================= */}
+                    ========================================== */}
 
                     <section className="tasks-header">
 
@@ -231,7 +517,7 @@ function Tasks() {
 
                                 <ListTodo size={14} />
 
-                                ZARVIS TASK SYSTEM
+                                AI BUDDY TASK SYSTEM
 
                             </span>
 
@@ -242,7 +528,7 @@ function Tasks() {
 
 
                             <p>
-                                Organize your work and let Zarvis
+                                Organize your work and let AI Buddy
                                 keep you on track.
                             </p>
 
@@ -255,6 +541,7 @@ function Tasks() {
                             onClick={() =>
                                 setShowForm(!showForm)
                             }
+                            disabled={actionLoading}
                         >
 
                             <Plus size={18} />
@@ -266,9 +553,24 @@ function Tasks() {
                     </section>
 
 
-                    {/* =================================================
+                    {/* ==========================================
+                        ERROR MESSAGE
+                    ========================================== */}
+
+                    {error && (
+
+                        <div className="task-error">
+
+                            {error}
+
+                        </div>
+
+                    )}
+
+
+                    {/* ==========================================
                         STATS
-                    ================================================= */}
+                    ========================================== */}
 
                     <section className="tasks-stats">
 
@@ -328,9 +630,9 @@ function Tasks() {
                     </section>
 
 
-                    {/* =================================================
+                    {/* ==========================================
                         ADD TASK FORM
-                    ================================================= */}
+                    ========================================== */}
 
                     {showForm && (
 
@@ -362,7 +664,9 @@ function Tasks() {
                                     }
                                     aria-label="Close task form"
                                 >
+
                                     ×
+
                                 </button>
 
                             </div>
@@ -384,10 +688,11 @@ function Tasks() {
                                         type="text"
                                         placeholder="e.g. Complete project"
                                         value={newTask.title}
-                                        onChange={(e) =>
+                                        onChange={(event) =>
                                             setNewTask({
                                                 ...newTask,
-                                                title: e.target.value,
+                                                title:
+                                                    event.target.value,
                                             })
                                         }
                                     />
@@ -407,10 +712,11 @@ function Tasks() {
                                     <input
                                         type="time"
                                         value={newTask.time}
-                                        onChange={(e) =>
+                                        onChange={(event) =>
                                             setNewTask({
                                                 ...newTask,
-                                                time: e.target.value,
+                                                time:
+                                                    event.target.value,
                                             })
                                         }
                                     />
@@ -430,12 +736,14 @@ function Tasks() {
                                     <input
                                         type="text"
                                         placeholder="Add a short description"
-                                        value={newTask.description}
-                                        onChange={(e) =>
+                                        value={
+                                            newTask.description
+                                        }
+                                        onChange={(event) =>
                                             setNewTask({
                                                 ...newTask,
                                                 description:
-                                                    e.target.value,
+                                                    event.target.value,
                                             })
                                         }
                                     />
@@ -453,12 +761,14 @@ function Tasks() {
 
 
                                     <select
-                                        value={newTask.priority}
-                                        onChange={(e) =>
+                                        value={
+                                            newTask.priority
+                                        }
+                                        onChange={(event) =>
                                             setNewTask({
                                                 ...newTask,
                                                 priority:
-                                                    e.target.value,
+                                                    event.target.value,
                                             })
                                         }
                                     >
@@ -487,11 +797,14 @@ function Tasks() {
                             <button
                                 type="submit"
                                 className="task-create-submit"
+                                disabled={actionLoading}
                             >
 
                                 <Plus size={16} />
 
-                                CREATE TASK
+                                {actionLoading
+                                    ? "CREATING..."
+                                    : "CREATE TASK"}
 
                             </button>
 
@@ -500,9 +813,9 @@ function Tasks() {
                     )}
 
 
-                    {/* =================================================
+                    {/* ==========================================
                         SEARCH
-                    ================================================= */}
+                    ========================================== */}
 
                     <section className="tasks-toolbar">
 
@@ -516,8 +829,10 @@ function Tasks() {
                                 type="text"
                                 placeholder="Search your tasks..."
                                 value={search}
-                                onChange={(e) =>
-                                    setSearch(e.target.value)
+                                onChange={(event) =>
+                                    setSearch(
+                                        event.target.value
+                                    )
                                 }
                             />
 
@@ -535,9 +850,9 @@ function Tasks() {
                     </section>
 
 
-                    {/* =================================================
+                    {/* ==========================================
                         TASK LIST
-                    ================================================= */}
+                    ========================================== */}
 
                     <section className="tasks-list-panel">
 
@@ -558,7 +873,9 @@ function Tasks() {
 
 
                             <div className="tasks-list-count">
+
                                 {filteredTasks.length}
+
                             </div>
 
                         </div>
@@ -567,9 +884,32 @@ function Tasks() {
                         <div className="tasks-list">
 
 
-                            {/* EMPTY STATE */}
+                            {/* ==================================
+                                LOADING
+                            ================================== */}
 
-                            {filteredTasks.length === 0 ? (
+                            {loading ? (
+
+                                <div className="tasks-empty">
+
+                                    <ListTodo size={32} />
+
+                                    <h3>
+                                        Loading tasks...
+                                    </h3>
+
+                                    <p>
+                                        AI Buddy is fetching your
+                                        tasks from the database.
+                                    </p>
+
+                                </div>
+
+                            ) : filteredTasks.length === 0 ? (
+
+                                /* ==================================
+                                   EMPTY STATE
+                                ================================== */
 
                                 <div className="tasks-empty">
 
@@ -588,32 +928,40 @@ function Tasks() {
 
                             ) : (
 
+                                /* ==================================
+                                   TASKS
+                                ================================== */
+
                                 filteredTasks.map((task) => (
 
                                     <div
-                                        className={`task-page-row ${task.completed
-                                                ? "task-page-completed"
-                                                : ""
-                                            }`}
+                                        className={
+                                            `task-page-row ${
+                                                task.completed
+                                                    ? "task-page-completed"
+                                                    : ""
+                                            }`
+                                        }
                                         key={task.id}
                                     >
 
 
-                                        {/* =================================================
-                                            CHECK
-                                        ================================================= */}
+                                        {/* CHECK */}
 
                                         <button
                                             type="button"
                                             className="task-page-check"
                                             onClick={() =>
-                                                toggleTask(task.id)
+                                                toggleTask(
+                                                    task.id
+                                                )
                                             }
                                             aria-label={
                                                 task.completed
                                                     ? "Mark task incomplete"
                                                     : "Mark task complete"
                                             }
+                                            disabled={actionLoading}
                                         >
 
                                             {task.completed ? (
@@ -633,9 +981,7 @@ function Tasks() {
                                         </button>
 
 
-                                        {/* =================================================
-                                            CONTENT
-                                        ================================================= */}
+                                        {/* CONTENT */}
 
                                         <div className="task-page-content">
 
@@ -680,29 +1026,30 @@ function Tasks() {
                                         </div>
 
 
-                                        {/* =================================================
-                                            PRIORITY
-                                        ================================================= */}
+                                        {/* PRIORITY */}
 
                                         <span
-                                            className={`task-page-priority priority-${task.priority.toLowerCase()}`}
+                                            className={
+                                                `task-page-priority priority-${task.priority.toLowerCase()}`
+                                            }
                                         >
                                             {task.priority}
                                         </span>
 
 
-                                        {/* =================================================
-                                            DELETE
-                                        ================================================= */}
+                                        {/* DELETE */}
 
                                         <button
                                             type="button"
                                             className="task-page-delete"
                                             onClick={() =>
-                                                deleteTask(task.id)
+                                                handleDeleteTask(
+                                                    task.id
+                                                )
                                             }
                                             title="Delete task"
                                             aria-label="Delete task"
+                                            disabled={actionLoading}
                                         >
 
                                             <Trash2 size={16} />

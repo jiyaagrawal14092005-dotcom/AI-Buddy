@@ -34,6 +34,51 @@ def hash_password(password: str) -> str:
 
 
 # ---------------------------------
+# PASSWORD VERIFICATION
+# ---------------------------------
+
+def verify_password(
+    password: str,
+    stored_password_hash: str
+) -> bool:
+
+    try:
+
+        salt, expected_hash = stored_password_hash.split("$", 1)
+
+        actual_hash = hashlib.pbkdf2_hmac(
+            "sha256",
+            password.encode("utf-8"),
+            salt.encode("utf-8"),
+            100000
+        ).hex()
+
+        return secrets.compare_digest(
+            actual_hash,
+            expected_hash
+        )
+
+    except (ValueError, TypeError):
+
+        return False
+
+
+# ---------------------------------
+# USER RESPONSE HELPER
+# ---------------------------------
+
+def user_response(user: User) -> dict:
+
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "is_active": user.is_active,
+        "created_at": user.created_at
+    }
+
+
+# ---------------------------------
 # AUTHENTICATION STATUS
 # ---------------------------------
 
@@ -141,13 +186,7 @@ def register_user(
         return {
             "success": True,
             "message": "User registered successfully.",
-            "user": {
-                "id": new_user.id,
-                "username": new_user.username,
-                "email": new_user.email,
-                "is_active": new_user.is_active,
-                "created_at": new_user.created_at
-            }
+            "user": user_response(new_user)
         }
 
     except Exception as error:
@@ -159,3 +198,134 @@ def register_user(
             "message": "User registration failed.",
             "error": str(error)
         }
+
+
+# ---------------------------------
+# USER LOGIN
+# ---------------------------------
+
+@router.post("/login")
+def login_user(
+    credentials: dict,
+    db: Session = Depends(get_db)
+):
+
+    email = str(
+        credentials.get("email", "")
+    ).strip().lower()
+
+    password = str(
+        credentials.get("password", "")
+    )
+
+    if not email or not password:
+
+        return {
+            "success": False,
+            "message": "Email and password are required."
+        }
+
+    # ---------------------------------
+    # FIND USER
+    # ---------------------------------
+
+    user = (
+        db.query(User)
+        .filter(
+            User.email == email
+        )
+        .first()
+    )
+
+    if user is None:
+
+        return {
+            "success": False,
+            "message": "Invalid email or password."
+        }
+
+    # ---------------------------------
+    # CHECK ACCOUNT STATUS
+    # ---------------------------------
+
+    if not user.is_active:
+
+        return {
+            "success": False,
+            "message": "User account is inactive."
+        }
+
+    # ---------------------------------
+    # VERIFY PASSWORD
+    # ---------------------------------
+
+    if not verify_password(
+        password,
+        user.password_hash
+    ):
+
+        return {
+            "success": False,
+            "message": "Invalid email or password."
+        }
+
+    # ---------------------------------
+    # LOGIN SUCCESS
+    # ---------------------------------
+
+    return {
+        "success": True,
+        "message": "Login successful.",
+        "user": user_response(user)
+    }
+
+
+# ---------------------------------
+# CURRENT USER
+# ---------------------------------
+
+@router.get("/me")
+def get_current_user(
+    email: str | None = None,
+    db: Session = Depends(get_db)
+):
+
+    if not email:
+
+        return {
+            "success": False,
+            "message": "No authenticated user."
+        }
+
+    user = (
+        db.query(User)
+        .filter(
+            User.email == email.strip().lower()
+        )
+        .first()
+    )
+
+    if user is None:
+
+        return {
+            "success": False,
+            "message": "User not found."
+        }
+
+    return {
+        "success": True,
+        "user": user_response(user)
+    }
+
+
+# ---------------------------------
+# LOGOUT
+# ---------------------------------
+
+@router.post("/logout")
+def logout_user():
+
+    return {
+        "success": True,
+        "message": "Logout successful."
+    }

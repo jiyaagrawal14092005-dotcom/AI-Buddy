@@ -69,6 +69,12 @@ class Timer:
                 "message": "Timer has already completed."
             }
 
+        if self.status == "cancelled":
+            return {
+                "success": False,
+                "message": "Timer has been cancelled."
+            }
+
         self.status = "running"
         self.started_at = datetime.now()
 
@@ -85,6 +91,7 @@ class Timer:
             "timer_id": self.timer_id,
             "status": self.status,
             "duration_seconds": self.duration_seconds,
+            "remaining_seconds": self.duration_seconds,
             "message": "Timer started successfully."
         }
 
@@ -114,20 +121,70 @@ class Timer:
                 "message": "Timer has already completed."
             }
 
+        if self.status == "cancelled":
+            return {
+                "success": False,
+                "message": "Timer is already cancelled."
+            }
+
         self.status = "cancelled"
 
         return {
             "success": True,
             "timer_id": self.timer_id,
             "status": self.status,
+            "remaining_seconds": self.get_remaining_seconds(),
             "message": "Timer cancelled successfully."
         }
 
+    def get_remaining_seconds(self) -> float:
+
+        if self.status == "created":
+            return float(
+                self.duration_seconds
+            )
+
+        if self.status == "completed":
+            return 0.0
+
+        if self.status == "cancelled":
+            if self.started_at is None:
+                return float(
+                    self.duration_seconds
+                )
+
+        if self.started_at is None:
+            return float(
+                self.duration_seconds
+            )
+
+        elapsed_seconds = (
+            datetime.now() - self.started_at
+        ).total_seconds()
+
+        remaining_seconds = (
+            self.duration_seconds -
+            elapsed_seconds
+        )
+
+        return max(
+            0.0,
+            remaining_seconds
+        )
+
     def get_status(self) -> dict:
+
+        remaining_seconds = (
+            self.get_remaining_seconds()
+        )
 
         return {
             "timer_id": self.timer_id,
             "duration_seconds": self.duration_seconds,
+            "remaining_seconds": round(
+                remaining_seconds,
+                2
+            ),
             "status": self.status,
             "created_at": self.created_at.isoformat(),
             "started_at": (

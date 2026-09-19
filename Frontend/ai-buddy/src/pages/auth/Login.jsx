@@ -6,16 +6,19 @@ import {
     Sparkles,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 function Login() {
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
 
         if (!email.trim() || !password.trim()) {
@@ -23,25 +26,32 @@ function Login() {
             return;
         }
 
-        if (password.length === 0) {
-    setError("Please enter your password.");
-    return;
-}
-
-if (password.length < 6) {
-    setError("Password must be at least 6 characters.");
-    return;
-}
-
         if (password.length < 6) {
             setError("Password must be at least 6 characters.");
             return;
         }
 
         setError("");
+        setLoading(true);
 
-        // Backend authentication will be connected later.
-        console.log("Login:", email);
+        try {
+            await login({
+                email: email.trim(),
+                password,
+            });
+
+            // Login successful
+            navigate("/assistant");
+        } catch (error) {
+            console.error("Login failed:", error);
+
+            setError(
+                error?.message ||
+                "Login failed. Please check your email and password."
+            );
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -78,7 +88,6 @@ if (password.length < 6) {
 
                 </section>
 
-
                 <section className="zarvis-login-card">
 
                     <div className="zarvis-login-card-brand">
@@ -91,7 +100,6 @@ if (password.length < 6) {
                     <p className="zarvis-login-subtitle">
                         Login to continue with your AI buddy.
                     </p>
-
 
                     <form
                         className="zarvis-login-form"
@@ -110,10 +118,10 @@ if (password.length < 6) {
                                     setEmail(e.target.value);
                                     setError("");
                                 }}
+                                disabled={loading}
                             />
 
                         </div>
-
 
                         <div className="zarvis-login-field">
 
@@ -133,6 +141,7 @@ if (password.length < 6) {
                                         setPassword(e.target.value);
                                         setError("");
                                     }}
+                                    disabled={loading}
                                 />
 
                                 <button
@@ -142,6 +151,7 @@ if (password.length < 6) {
                                             !showPassword
                                         )
                                     }
+                                    disabled={loading}
                                 >
                                     {showPassword ? (
                                         <EyeOff size={17} />
@@ -153,7 +163,6 @@ if (password.length < 6) {
                             </div>
 
                         </div>
-
 
                         {error && (
                             <div
@@ -168,17 +177,23 @@ if (password.length < 6) {
                             </div>
                         )}
 
-
                         <button
                             type="submit"
                             className="zarvis-login-submit"
+                            disabled={loading}
                         >
-                            <span>Login</span>
-                            <ArrowRight size={17} />
+                            <span>
+                                {loading
+                                    ? "Logging in..."
+                                    : "Login"}
+                            </span>
+
+                            {!loading && (
+                                <ArrowRight size={17} />
+                            )}
                         </button>
 
                     </form>
-
 
                     <div className="zarvis-login-signup">
 
@@ -189,6 +204,7 @@ if (password.length < 6) {
                         <button
                             type="button"
                             onClick={() => navigate("/signup")}
+                            disabled={loading}
                         >
                             Sign Up
                             <ArrowRight size={14} />

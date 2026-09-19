@@ -14,7 +14,7 @@ class WorkflowManager:
     # CREATE WORKFLOW
     # ---------------------------------
 
-    def create(
+    async def create(
         self,
         plan: dict,
         user_id: int,
@@ -70,14 +70,40 @@ class WorkflowManager:
             }
 
         # ---------------------------------
-        # CREATE USING ENGINE
+        # ENSURE WORKFLOW INTENT
         # ---------------------------------
 
-        result = self.engine.create_workflow(
-            plan,
-            user_id,
-            db
-        )
+        if not plan.get("intent"):
+
+            plan = dict(plan)
+
+            plan["intent"] = "CREATE_WORKFLOW"
+
+        # ---------------------------------
+        # CREATE USING ASYNC ENGINE
+        # ---------------------------------
+
+        try:
+
+            result = await self.engine.create_workflow(
+                plan,
+                user_id,
+                db
+            )
+
+        except Exception as error:
+
+            return {
+                "success": False,
+                "message": (
+                    "Workflow engine execution failed."
+                ),
+                "error": str(error)
+            }
+
+        # ---------------------------------
+        # VALIDATE ENGINE RESPONSE
+        # ---------------------------------
 
         if not isinstance(result, dict):
 
@@ -222,6 +248,9 @@ class WorkflowManager:
                     "workflow_id": workflow_id
                 },
                 "engine_workflow": workflow_data,
+                "verification": result.get(
+                    "verification"
+                ),
                 "message": (
                     "Workflow created successfully."
                 )

@@ -1,6 +1,7 @@
+import json
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -12,13 +13,8 @@ router = APIRouter(
     tags=["Workflows"]
 )
 
-
 workflow_manager = WorkflowManager()
 
-
-# ---------------------------------
-# WORKFLOW STATUS
-# ---------------------------------
 
 @router.get("/status")
 def workflow_status():
@@ -30,10 +26,6 @@ def workflow_status():
         "database": "connected"
     }
 
-
-# ---------------------------------
-# GET ALL WORKFLOWS
-# ---------------------------------
 
 @router.get("/")
 def get_workflows(
@@ -50,38 +42,87 @@ def get_workflows(
     }
 
 
-# ---------------------------------
-# CREATE WORKFLOW
-# ---------------------------------
-
 @router.post("/create")
-def create_workflow(
+async def create_workflow(
     name: str,
     tool: str,
     user_id: int,
-    parameters: dict[str, Any] | None = None,
+    parameters: str | None = None,
     db: Session = Depends(get_db)
 ):
 
-    if parameters is None:
-        parameters = {}
+    # ---------------------------------
+    # PARSE PARAMETERS
+    # ---------------------------------
+
+    if parameters is None or not parameters.strip():
+
+        parsed_parameters: dict[str, Any] = {}
+
+    else:
+
+        try:
+
+            parsed_parameters = json.loads(
+                parameters
+            )
+
+        except json.JSONDecodeError as error:
+
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "success": False,
+                    "message": "Invalid workflow parameters JSON.",
+                    "error": str(error)
+                }
+            )
+
+
+        if not isinstance(
+            parsed_parameters,
+            dict
+        ):
+
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "success": False,
+                    "message": (
+                        "Workflow parameters "
+                        "must be a JSON object."
+                    )
+                }
+            )
+
+
+    # ---------------------------------
+    # BUILD WORKFLOW PLAN
+    # ---------------------------------
 
     plan = {
+
+        "intent": "CREATE_WORKFLOW",
+
         "name": name,
+
         "tool": tool,
-        "parameters": parameters
+
+        "parameters": parsed_parameters
+
     }
 
-    return workflow_manager.create(
+
+    # ---------------------------------
+    # CREATE WORKFLOW
+    # ---------------------------------
+
+    return await workflow_manager.create(
         plan,
         user_id,
         db
     )
 
-
-# ---------------------------------
-# CLEAR ALL WORKFLOWS
-# ---------------------------------
 
 @router.delete("/clear")
 def clear_workflows(
@@ -94,10 +135,6 @@ def clear_workflows(
         db
     )
 
-
-# ---------------------------------
-# GET SINGLE WORKFLOW
-# ---------------------------------
 
 @router.get("/{workflow_id}")
 def get_workflow(
@@ -112,10 +149,6 @@ def get_workflow(
         db
     )
 
-
-# ---------------------------------
-# DELETE SINGLE WORKFLOW
-# ---------------------------------
 
 @router.delete("/{workflow_id}")
 def delete_workflow(
