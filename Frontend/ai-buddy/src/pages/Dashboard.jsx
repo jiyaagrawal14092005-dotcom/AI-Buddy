@@ -850,30 +850,21 @@ function Dashboard() {
 
                             </div>
 
-
-                            <input
-                                type="text"
-                                value={command}
-                                onChange={(e) =>
-                                    setCommand(
-                                        e.target.value
-                                    )
-                                }
-                                onKeyDown={(e) => {
-
-                                    if (
-                                        e.key ===
-                                        "Enter"
-                                    ) {
-
-                                        handleCommand();
-
-                                    }
-
-                                }}
-                                placeholder="Type your command or ask me anything..."
-                            />
-
+<input
+    type="text"
+    value={command}
+    onChange={(e) =>
+        setCommand(e.target.value)
+    }
+    onFocus={() => {
+        navigate("/chat", {
+            state: {
+                message: command,
+            },
+        });
+    }}
+    placeholder="Type your command or ask me anything..."
+/>
 
                             <div className="hero-search-actions">
 

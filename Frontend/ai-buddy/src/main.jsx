@@ -19,6 +19,7 @@ import "./styles/workflows.css";
 import "./styles/schedule.css";
 import "./styles/navbar.css";
 import "./styles/auth.css";
+import "./styles/chat.css";
 ReactDOM.createRoot(
   document.getElementById("root")
 ).render(
