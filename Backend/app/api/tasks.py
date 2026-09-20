@@ -67,6 +67,26 @@ def get_tasks(
 
 
 # ---------------------------------
+# UPDATE TASK STATUS
+# ---------------------------------
+
+@router.put("/{task_id}/status")
+def update_task_status(
+    task_id: int,
+    user_id: int,
+    status: str,
+    db: Session = Depends(get_db)
+):
+
+    return task_tool.set_task_status(
+        task_id=task_id,
+        user_id=user_id,
+        status=status,
+        db=db
+    )
+
+
+# ---------------------------------
 # DELETE TASK
 # ---------------------------------
 

@@ -9,11 +9,21 @@ import {
     CheckCircle2,
 } from "lucide-react";
 
+import {
+    getAllTimers,
+    getTimer,
+    cancelTimer,
+} from "../../services/timerService";
+
 
 const DEFAULT_MINUTES = 25;
 
 
 function Timer() {
+
+    // =====================================================
+    // LOCAL FOCUS TIMER
+    // =====================================================
 
     const [seconds, setSeconds] =
         useState(DEFAULT_MINUTES * 60);
@@ -25,11 +35,24 @@ function Timer() {
         useState(false);
 
 
+    // =====================================================
+    // BACKEND AI TIMER
+    // =====================================================
+
+    const [backendTimer, setBackendTimer] =
+        useState(null);
+
+    const [backendLoading, setBackendLoading] =
+        useState(false);
+
+
     const totalSeconds =
         DEFAULT_MINUTES * 60;
 
 
-    /* ================= TIMER ENGINE ================= */
+    // =====================================================
+    // LOCAL TIMER ENGINE
+    // =====================================================
 
     useEffect(() => {
 
@@ -38,78 +61,371 @@ function Timer() {
         }
 
 
-        const interval =
-            setInterval(() => {
+        const interval = setInterval(() => {
 
-                setSeconds((previous) =>
-                    previous - 1
-                );
+            setSeconds((previous) => {
 
-            }, 1000);
+                if (previous <= 1) {
+
+                    setRunning(false);
+                    setCompleted(true);
+
+                    return 0;
+                }
+
+                return previous - 1;
+
+            });
+
+        }, 1000);
 
 
-        return () =>
+        return () => {
             clearInterval(interval);
+        };
 
-    }, [running, seconds]);
+    }, [running]);
 
 
-    /* ================= SESSION COMPLETE ================= */
+    // =====================================================
+    // LOAD BACKEND AI TIMER
+    // =====================================================
 
     useEffect(() => {
 
-        if (seconds === 0) {
+        let mounted = true;
 
-            setRunning(false);
 
-            setCompleted(true);
+        const loadBackendTimer = async () => {
 
+            try {
+
+                setBackendLoading(true);
+
+
+                const result =
+                    await getAllTimers();
+
+
+                if (!mounted) {
+                    return;
+                }
+
+
+                if (
+                    result?.success &&
+                    Array.isArray(result?.timers)
+                ) {
+
+                    const activeTimers =
+                        result.timers.filter(
+                            (timer) =>
+                                timer.status === "running" ||
+                                timer.status === "created"
+                        );
+
+
+                    if (activeTimers.length > 0) {
+
+                        const latestTimer =
+                            activeTimers[
+                                activeTimers.length - 1
+                            ];
+
+
+                        setBackendTimer(
+                            latestTimer
+                        );
+
+                    }
+
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to load backend timer:",
+                    error
+                );
+
+            } finally {
+
+                if (mounted) {
+                    setBackendLoading(false);
+                }
+
+            }
+
+        };
+
+
+        loadBackendTimer();
+
+
+        const interval =
+            setInterval(
+                loadBackendTimer,
+                3000
+            );
+
+
+        return () => {
+
+            mounted = false;
+
+            clearInterval(interval);
+
+        };
+
+    }, []);
+
+
+    // =====================================================
+    // UPDATE BACKEND TIMER
+    // =====================================================
+
+    useEffect(() => {
+
+        if (!backendTimer?.timer_id) {
+            return;
         }
 
-    }, [seconds]);
+
+        let mounted = true;
 
 
-    /* ================= TIME FORMAT ================= */
+        const updateBackendTimer = async () => {
+
+            try {
+
+                const result =
+                    await getTimer(
+                        backendTimer.timer_id
+                    );
+
+
+                if (
+                    mounted &&
+                    result?.success &&
+                    result?.timer
+                ) {
+
+                    setBackendTimer(
+                        result.timer
+                    );
+
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to update backend timer:",
+                    error
+                );
+
+            }
+
+        };
+
+
+        updateBackendTimer();
+
+
+        const interval =
+            setInterval(
+                updateBackendTimer,
+                1000
+            );
+
+
+        return () => {
+
+            mounted = false;
+
+            clearInterval(interval);
+
+        };
+
+    }, [backendTimer?.timer_id]);
+
+
+    // =====================================================
+    // DETERMINE TIMER TYPE
+    // =====================================================
+
+    const isBackendTimer =
+        Boolean(backendTimer);
+
+
+    // =====================================================
+    // BACKEND TIMER STATES
+    // =====================================================
+
+    const backendRunning =
+        backendTimer?.status === "running";
+
+
+    const backendCompleted =
+        backendTimer?.status === "completed";
+
+
+    const backendCreated =
+        backendTimer?.status === "created";
+
+
+    // =====================================================
+    // ACTIVE SECONDS
+    // =====================================================
+
+    const activeSeconds =
+        isBackendTimer
+            ? Math.max(
+                0,
+                Math.ceil(
+                    Number(
+                        backendTimer.remaining_seconds || 0
+                    )
+                )
+            )
+            : seconds;
+
+
+    // =====================================================
+    // TIME FORMAT
+    // =====================================================
 
     const minutes =
-        Math.floor(seconds / 60)
+        Math.floor(activeSeconds / 60)
             .toString()
             .padStart(2, "0");
 
 
     const remainingSeconds =
-        (seconds % 60)
+        (activeSeconds % 60)
             .toString()
             .padStart(2, "0");
 
 
-    /* ================= PROGRESS ================= */
+    // =====================================================
+    // PROGRESS
+    // =====================================================
+
+    const backendDuration =
+        isBackendTimer
+            ? Number(
+                backendTimer.duration_seconds || 0
+            )
+            : totalSeconds;
+
 
     const progress =
-        ((totalSeconds - seconds) /
-            totalSeconds) *
-        100;
+        backendDuration > 0
+            ? (
+                (
+                    backendDuration -
+                    activeSeconds
+                ) /
+                backendDuration
+            ) * 100
+            : 0;
 
 
-    /* ================= START / PAUSE ================= */
+    const safeProgress =
+        Math.min(
+            100,
+            Math.max(
+                0,
+                progress
+            )
+        );
+
+
+    // =====================================================
+    // DISPLAY STATES
+    // =====================================================
+
+    const displayCompleted =
+        isBackendTimer
+            ? backendCompleted
+            : completed;
+
+
+    const displayRunning =
+        isBackendTimer
+            ? backendRunning
+            : running;
+
+
+    // =====================================================
+    // STATUS
+    // =====================================================
+
+    const statusText =
+        displayCompleted
+            ? "COMPLETE"
+            : displayRunning
+            ? "ACTIVE"
+            : backendCreated
+            ? "READY"
+            : "STANDBY";
+
+
+    // =====================================================
+    // START / PAUSE LOCAL TIMER
+    // =====================================================
 
     const toggleTimer = () => {
+
+        // AI timer is controlled by backend
+        if (isBackendTimer) {
+            return;
+        }
+
 
         if (completed) {
             return;
         }
 
-        setRunning((previous) =>
-            !previous
+
+        setRunning(
+            (previous) => !previous
         );
 
     };
 
 
-    /* ================= RESET ================= */
+    // =====================================================
+    // RESET / CANCEL TIMER
+    // =====================================================
 
-    const resetTimer = () => {
+    const resetTimer = async () => {
 
+        // Backend AI timer
+        if (backendTimer?.timer_id) {
+
+            try {
+
+                await cancelTimer(
+                    backendTimer.timer_id
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to cancel backend timer:",
+                    error
+                );
+
+            }
+
+
+            setBackendTimer(null);
+
+            return;
+        }
+
+
+        // Local Focus Timer
         setRunning(false);
 
         setSeconds(
@@ -120,6 +436,32 @@ function Timer() {
 
     };
 
+
+    // =====================================================
+    // FOOTER STATUS
+    // =====================================================
+
+    const footerStatus =
+        displayCompleted
+            ? "SESSION COMPLETE"
+            : displayRunning
+            ? "RUNNING"
+            : "READY";
+
+
+    // =====================================================
+    // SESSION NUMBER
+    // =====================================================
+
+    const sessionNumber =
+        isBackendTimer
+            ? `AI-${backendTimer.timer_id}`
+            : "01";
+
+
+    // =====================================================
+    // UI
+    // =====================================================
 
     return (
 
@@ -143,8 +485,11 @@ function Timer() {
                             SYSTEM MODULE // 04
                         </span>
 
+
                         <h3>
-                            FOCUS MODE
+                            {isBackendTimer
+                                ? "AI TIMER"
+                                : "FOCUS MODE"}
                         </h3>
 
                     </div>
@@ -156,17 +501,14 @@ function Timer() {
 
                     <span
                         className={`live-dot ${
-                            running
+                            displayRunning
                                 ? "timer-live"
                                 : ""
                         }`}
                     ></span>
 
-                    {completed
-                        ? "COMPLETE"
-                        : running
-                        ? "ACTIVE"
-                        : "STANDBY"}
+
+                    {statusText}
 
                 </div>
 
@@ -189,14 +531,16 @@ function Timer() {
 
                 <div className="timer-session-label">
 
-                    SESSION_01
+                    {isBackendTimer
+                        ? `AI_TIMER_${backendTimer.timer_id}`
+                        : "SESSION_01"}
 
                 </div>
 
 
                 <div
                     className={`technical-time ${
-                        completed
+                        displayCompleted
                             ? "timer-completed"
                             : ""
                     }`}
@@ -206,9 +550,11 @@ function Timer() {
                         {minutes}
                     </span>
 
+
                     <b>
                         :
                     </b>
+
 
                     <span>
                         {remainingSeconds}
@@ -223,7 +569,7 @@ function Timer() {
                         className="technical-progress-fill"
                         style={{
                             width:
-                                `${progress}%`,
+                                `${safeProgress}%`,
                         }}
                     ></div>
 
@@ -233,11 +579,20 @@ function Timer() {
                 <div className="technical-progress-info">
 
                     <span>
-                        FOCUS PROGRESS
+
+                        {isBackendTimer
+                            ? "AI TIMER PROGRESS"
+                            : "FOCUS PROGRESS"}
+
                     </span>
 
+
                     <strong>
-                        {Math.round(progress)}%
+
+                        {Math.round(
+                            safeProgress
+                        )}%
+
                     </strong>
 
                 </div>
@@ -256,12 +611,15 @@ function Timer() {
                         CORE LOAD
                     </span>
 
+
                     <strong>
-                        {running
+
+                        {displayRunning
                             ? "64%"
-                            : completed
+                            : displayCompleted
                             ? "28%"
                             : "32%"}
+
                     </strong>
 
                 </div>
@@ -273,8 +631,9 @@ function Timer() {
                         SESSION
                     </span>
 
+
                     <strong>
-                        01
+                        {sessionNumber}
                     </strong>
 
                 </div>
@@ -286,11 +645,13 @@ function Timer() {
                         EFFICIENCY
                     </span>
 
+
                     <strong className="efficiency">
 
                         <Zap size={12} />
 
-                        {completed
+
+                        {displayCompleted
                             ? "DONE"
                             : "HIGH"}
 
@@ -310,16 +671,19 @@ function Timer() {
                     type="button"
                     className="technical-start"
                     onClick={toggleTimer}
-                    disabled={completed}
+                    disabled={
+                        displayCompleted ||
+                        isBackendTimer
+                    }
                 >
 
-                    {completed ? (
+                    {displayCompleted ? (
 
                         <CheckCircle2
                             size={15}
                         />
 
-                    ) : running ? (
+                    ) : displayRunning ? (
 
                         <Pause
                             size={15}
@@ -334,9 +698,11 @@ function Timer() {
                     )}
 
 
-                    {completed
+                    {displayCompleted
                         ? "FOCUS COMPLETE"
-                        : running
+                        : isBackendTimer
+                        ? "AI CONTROLLED"
+                        : displayRunning
                         ? "PAUSE FOCUS"
                         : "START FOCUS"}
 
@@ -347,6 +713,7 @@ function Timer() {
                     type="button"
                     className="technical-reset"
                     onClick={resetTimer}
+                    disabled={backendLoading}
                 >
 
                     <RotateCcw
@@ -365,20 +732,21 @@ function Timer() {
             <div className="technical-footer">
 
                 <span>
-                    LOCAL PROCESS
+
+                    {isBackendTimer
+                        ? "BACKEND PROCESS"
+                        : "LOCAL PROCESS"}
+
                 </span>
+
 
                 <span>
                     ● ZARVIS CORE
                 </span>
 
-                <span>
-                    {completed
-                        ? "SESSION COMPLETE"
-                        : running
-                        ? "RUNNING"
-                        : "READY"}
 
+                <span>
+                    {footerStatus}
                 </span>
 
             </div>

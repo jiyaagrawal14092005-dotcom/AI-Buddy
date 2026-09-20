@@ -57,9 +57,7 @@ class TaskTool:
             )
 
             db.add(task)
-
             db.commit()
-
             db.refresh(task)
 
             return {
@@ -84,9 +82,7 @@ class TaskTool:
 
             return {
                 "success": False,
-                "message": (
-                    "Task could not be created."
-                ),
+                "message": "Task could not be created.",
                 "error": str(error)
             }
 
@@ -184,7 +180,6 @@ class TaskTool:
             task_title = task.title
 
             db.delete(task)
-
             db.commit()
 
             return {
@@ -201,14 +196,127 @@ class TaskTool:
 
             return {
                 "success": False,
-                "message": (
-                    "Task could not be deleted."
-                ),
+                "message": "Task could not be deleted.",
                 "error": str(error)
             }
 
     # ---------------------------------
-    # UPDATE TASK STATUS
+    # UPDATE TASK STATUS IN DATABASE
+    # ---------------------------------
+
+    def set_task_status(
+        self,
+        task_id: int,
+        user_id: int,
+        status: str,
+        db: Session
+    ) -> dict:
+
+        if not isinstance(task_id, int):
+            return {
+                "success": False,
+                "message": "Task ID must be an integer."
+            }
+
+        if task_id <= 0:
+            return {
+                "success": False,
+                "message": "Task ID must be greater than zero."
+            }
+
+        if not isinstance(user_id, int):
+            return {
+                "success": False,
+                "message": "User ID must be an integer."
+            }
+
+        if user_id <= 0:
+            return {
+                "success": False,
+                "message": "User ID must be greater than zero."
+            }
+
+        if not status:
+            return {
+                "success": False,
+                "message": "Task status is required."
+            }
+
+        if not isinstance(status, str):
+            return {
+                "success": False,
+                "message": "Task status must be text."
+            }
+
+        status = status.strip().lower()
+
+        valid_statuses = {
+            "pending",
+            "running",
+            "completed",
+            "failed"
+        }
+
+        if status not in valid_statuses:
+            return {
+                "success": False,
+                "message": (
+                    "Invalid task status. "
+                    "Use pending, running, "
+                    "completed, or failed."
+                )
+            }
+
+        try:
+
+            task = (
+                db.query(Task)
+                .filter(
+                    Task.id == task_id,
+                    Task.user_id == user_id
+                )
+                .first()
+            )
+
+            if task is None:
+                return {
+                    "success": False,
+                    "message": "Task not found."
+                }
+
+            task.status = status
+
+            db.commit()
+            db.refresh(task)
+
+            return {
+                "success": True,
+                "task": {
+                    "id": task.id,
+                    "user_id": task.user_id,
+                    "title": task.title,
+                    "description": task.description,
+                    "status": task.status,
+                    "created_at": task.created_at
+                },
+                "message": (
+                    f"Task '{task.title}' "
+                    f"status updated to '{status}'."
+                )
+            }
+
+        except Exception as error:
+
+            db.rollback()
+
+            return {
+                "success": False,
+                "message": "Task status could not be updated.",
+                "error": str(error)
+            }
+
+    # ---------------------------------
+    # OLD STATUS VALIDATION METHOD
     # ---------------------------------
 
     def update_task_status(

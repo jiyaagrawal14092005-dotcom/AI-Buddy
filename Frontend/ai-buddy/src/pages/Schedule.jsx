@@ -1,4 +1,8 @@
-import { useRef, useState } from "react";
+// ==========================================
+// AI BUDDY SCHEDULE PAGE
+// ==========================================
+
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import {
@@ -11,37 +15,20 @@ import {
 
 import Sidebar from "../components/common/Sidebar";
 import Navbar from "../components/common/Navbar";
+import Timer from "../components/scheduler/Timer";
 
+import { useAuth } from "../context/AuthContext";
+import {
+    scheduleJob,
+    getScheduledJobs,
+    cancelJob,
+} from "../services/schedulerService";
 
 function Schedule() {
-
     const location = useLocation();
+    const { user, authenticated } = useAuth();
 
-
-    const [events, setEvents] = useState([
-        {
-            id: 1,
-            title: "React Learning",
-            date: "Today",
-            time: "10:30 AM",
-            location: "Study Desk",
-        },
-        {
-            id: 2,
-            title: "Work on Zarvis UI",
-            date: "Today",
-            time: "02:30 PM",
-            location: "Home",
-        },
-        {
-            id: 3,
-            title: "Review Progress",
-            date: "Today",
-            time: "05:00 PM",
-            location: "Study Desk",
-        },
-    ]);
-
+    const [events, setEvents] = useState([]);
 
     const [newEvent, setNewEvent] = useState(
         location.state?.eventType === "travel"
@@ -49,103 +36,265 @@ function Schedule() {
             : ""
     );
 
+    const [eventDate, setEventDate] = useState("");
+    const [eventTime, setEventTime] = useState("");
+    const [eventLocation, setEventLocation] = useState("");
+
+    const [loading, setLoading] = useState(false);
+    const [loadingEvents, setLoadingEvents] = useState(true);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
 
     const inputRef = useRef(null);
 
 
-    /* =================================================
-       OPEN ADD EVENT
-    ================================================= */
+    // ==========================================
+    // LOAD SCHEDULED EVENTS
+    // ==========================================
 
-    const openAddEvent = () => {
-
-        inputRef.current?.focus();
-
-    };
-
-
-    /* =================================================
-       ADD EVENT
-    ================================================= */
-
-    const addEvent = () => {
-
-        const title = newEvent.trim();
-
-
-        if (!title) {
-
-            inputRef.current?.focus();
-
+    const loadEvents = async () => {
+        if (!authenticated || !user?.id) {
+            setLoadingEvents(false);
             return;
-
         }
 
+        try {
+            setLoadingEvents(true);
+            setError("");
 
-        const event = {
+            const result = await getScheduledJobs(user.id);
 
-            id: Date.now(),
+            const jobs = Array.isArray(result?.jobs)
+                ? result.jobs
+                : [];
 
-            title: title,
+            const formattedEvents = jobs.map((job) => {
+                let date = "Scheduled";
+                let time = "Not specified";
 
-            date: "Today",
+                if (job.schedule) {
+                    const scheduledDate =
+                        new Date(job.schedule);
 
-            time: "Not scheduled",
+                    if (!Number.isNaN(
+                        scheduledDate.getTime()
+                    )) {
+                        date =
+                            scheduledDate.toLocaleDateString(
+                                "en-IN",
+                                {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric",
+                                }
+                            );
 
-            location:
-                location.state?.eventType === "travel"
-                    ? "Travel Plan"
-                    : "Not specified",
+                        time =
+                            scheduledDate.toLocaleTimeString(
+                                "en-IN",
+                                {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                }
+                            );
+                    }
+                }
 
-        };
+                return {
+                    id: job.id,
+                    databaseId: job.id,
+                    jobId: job.id,
+                    title: job.name,
+                    date,
+                    time,
+                    location: "Scheduled Event",
+                    status: job.status,
+                    schedule: job.schedule,
+                };
+            });
 
+            setEvents(formattedEvents);
+        } catch (requestError) {
+            console.error(
+                "Failed to load scheduled events:",
+                requestError
+            );
 
-        setEvents((currentEvents) => [
-
-            ...currentEvents,
-
-            event,
-
-        ]);
-
-
-        setNewEvent("");
-
-
-        // Keep cursor ready for another event
-        setTimeout(() => {
-
-            inputRef.current?.focus();
-
-        }, 0);
-
+            setError(
+                "Unable to load scheduled events."
+            );
+        } finally {
+            setLoadingEvents(false);
+        }
     };
 
 
-    /* =================================================
-       DELETE EVENT
-    ================================================= */
+    // ==========================================
+    // INITIAL LOAD
+    // ==========================================
 
-    const deleteEvent = (id) => {
+    useEffect(() => {
+        loadEvents();
+    }, [authenticated, user?.id]);
 
-        setEvents((currentEvents) =>
-            currentEvents.filter(
-                (event) => event.id !== id
-            )
+
+    // ==========================================
+    // FOCUS ADD EVENT INPUT
+    // ==========================================
+
+    const openAddEvent = () => {
+        inputRef.current?.focus();
+    };
+
+
+    // ==========================================
+    // ADD SCHEDULED EVENT
+    // ==========================================
+
+    const addEvent = async () => {
+        const title = newEvent.trim();
+
+        if (!title) {
+            setError("Please enter an event name.");
+            inputRef.current?.focus();
+            return;
+        }
+
+        if (!eventDate) {
+            setError("Please select a date.");
+            return;
+        }
+
+        if (!eventTime) {
+            setError("Please select a time.");
+            return;
+        }
+
+        if (!authenticated || !user?.id) {
+            setError(
+                "Please login before creating a schedule."
+            );
+            return;
+        }
+
+        const selectedDateTime = new Date(
+            `${eventDate}T${eventTime}`
         );
 
+        const currentTime = new Date();
+
+        const delaySeconds =
+            (
+                selectedDateTime.getTime() -
+                currentTime.getTime()
+            ) / 1000;
+
+        if (delaySeconds <= 0) {
+            setError(
+                "Please select a future date and time."
+            );
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError("");
+            setSuccess("");
+
+            const result = await scheduleJob(
+                user.id,
+                delaySeconds,
+                title
+            );
+
+            if (!result?.success) {
+                throw new Error(
+                    result?.message ||
+                    "Unable to schedule event."
+                );
+            }
+
+            setSuccess(
+                "Event scheduled successfully."
+            );
+
+            setNewEvent("");
+            setEventDate("");
+            setEventTime("");
+            setEventLocation("");
+
+            await loadEvents();
+
+            setTimeout(() => {
+                inputRef.current?.focus();
+            }, 0);
+
+        } catch (requestError) {
+            console.error(
+                "Schedule creation failed:",
+                requestError
+            );
+
+            setError(
+                requestError?.message ||
+                "Unable to schedule event."
+            );
+        } finally {
+            setLoading(false);
+        }
     };
 
 
-    /* =================================================
-       SUMMARY DATA
-    ================================================= */
+    // ==========================================
+    // CANCEL EVENT
+    // ==========================================
+
+    const deleteEvent = async (event) => {
+        if (!event?.jobId) {
+            return;
+        }
+
+        try {
+            setError("");
+            setSuccess("");
+
+            if (
+                event.status === "scheduled" ||
+                event.status === "SCHEDULED"
+            ) {
+                await cancelJob(event.jobId);
+            }
+
+            await loadEvents();
+
+            setSuccess(
+                "Scheduled event cancelled."
+            );
+
+        } catch (requestError) {
+            console.error(
+                "Failed to cancel scheduled event:",
+                requestError
+            );
+
+            setError(
+                requestError?.message ||
+                "Unable to cancel scheduled event."
+            );
+        }
+    };
+
+
+    // ==========================================
+    // SUMMARY COUNTS
+    // ==========================================
 
     const upcomingCount =
-        events.length > 1
-            ? events.length - 1
-            : 0;
-
+        events.filter(
+            (event) =>
+                event.status === "scheduled" ||
+                event.status === "SCHEDULED"
+        ).length;
 
     const onlineEvents = events.filter(
         (event) =>
@@ -154,83 +303,72 @@ function Schedule() {
     ).length;
 
 
+    // ==========================================
+    // RENDER
+    // ==========================================
+
     return (
-
         <div className="app">
-
-
-            {/* =================================================
-                SIDEBAR
-            ================================================= */}
-
             <Sidebar />
 
-
             <main className="main-content">
-
-
-                {/* =================================================
-                    NAVBAR
-                ================================================= */}
-
                 <Navbar />
-
 
                 <div className="schedule-page">
 
-
-                    {/* =================================================
+                    {/* ==========================================
                         PAGE HEADER
-                    ================================================= */}
+                    ========================================== */}
 
                     <div className="page-header">
-
                         <div>
-
                             <span className="page-label">
-
                                 ZARVIS PLANNER
-
                             </span>
 
-
-                            <h1>
-                                Schedule
-                            </h1>
-
+                            <h1>Schedule</h1>
 
                             <p>
                                 Organize your day and keep track
                                 of what is coming next.
                             </p>
-
                         </div>
-
 
                         <button
                             type="button"
                             className="primary-action"
                             onClick={openAddEvent}
                         >
-
                             <Plus size={17} />
-
                             Add Event
-
                         </button>
-
                     </div>
 
 
-                    {/* =================================================
-                        ADD EVENT INPUT
-                    ================================================= */}
+                    {/* ==========================================
+                        STATUS MESSAGES
+                    ========================================== */}
+
+                    {error && (
+                        <div className="schedule-message schedule-error">
+                            {error}
+                        </div>
+                    )}
+
+                    {success && (
+                        <div className="schedule-message schedule-success">
+                            {success}
+                        </div>
+                    )}
+
+
+                    {/* ==========================================
+                        EVENT INPUT
+                    ========================================== */}
 
                     <div className="schedule-input-card">
 
-
                         <CalendarDays size={19} />
-
 
                         <input
                             ref={inputRef}
@@ -242,69 +380,96 @@ function Schedule() {
                                 )
                             }
                             onKeyDown={(event) => {
-
                                 if (event.key === "Enter") {
-
                                     event.preventDefault();
-
-                                    addEvent();
-
                                 }
-
                             }}
                             placeholder="What would you like to schedule?"
                         />
 
+                    </div>
+
+
+                    {/* ==========================================
+                        DATE / TIME / LOCATION
+                    ========================================== */}
+
+                    <div className="schedule-input-card">
+
+                        <CalendarDays size={18} />
+
+                        <input
+                            type="date"
+                            value={eventDate}
+                            onChange={(event) =>
+                                setEventDate(
+                                    event.target.value
+                                )
+                            }
+                        />
+
+                        <Clock3 size={18} />
+
+                        <input
+                            type="time"
+                            value={eventTime}
+                            onChange={(event) =>
+                                setEventTime(
+                                    event.target.value
+                                )
+                            }
+                        />
+
+                        <MapPin size={18} />
+
+                        <input
+                            type="text"
+                            value={eventLocation}
+                            onChange={(event) =>
+                                setEventLocation(
+                                    event.target.value
+                                )
+                            }
+                            placeholder="Location"
+                        />
 
                         <button
                             type="button"
                             onClick={addEvent}
-                            aria-label="Add event"
+                            disabled={loading}
+                            aria-label="Schedule event"
                         >
-
                             <Plus size={18} />
-
                         </button>
 
                     </div>
 
 
-                    {/* =================================================
-                        SCHEDULE SUMMARY
-                    ================================================= */}
+                    {/* ==========================================
+                        SUMMARY
+                    ========================================== */}
 
                     <div className="schedule-summary">
 
-
-                        {/* TODAY'S EVENTS */}
-
                         <div className="schedule-stat">
-
                             <CalendarDays size={19} />
 
                             <div>
-
                                 <strong>
                                     {events.length}
                                 </strong>
 
                                 <span>
-                                    Today's Events
+                                    Scheduled Events
                                 </span>
-
                             </div>
-
                         </div>
 
 
-                        {/* UPCOMING */}
-
                         <div className="schedule-stat">
-
                             <Clock3 size={19} />
 
                             <div>
-
                                 <strong>
                                     {upcomingCount}
                                 </strong>
@@ -312,20 +477,14 @@ function Schedule() {
                                 <span>
                                     Upcoming
                                 </span>
-
                             </div>
-
                         </div>
 
 
-                        {/* ONLINE / TRAVEL */}
-
                         <div className="schedule-stat">
-
                             <MapPin size={19} />
 
                             <div>
-
                                 <strong>
                                     {onlineEvents}
                                 </strong>
@@ -333,38 +492,38 @@ function Schedule() {
                                 <span>
                                     Online / Travel
                                 </span>
-
                             </div>
-
                         </div>
-
 
                     </div>
 
 
-                    {/* =================================================
+                    {/* ==========================================
+                        TIMER
+                    ========================================== */}
+
+                    <section className="schedule-timer-section">
+                        <Timer />
+                    </section>
+
+
+                    {/* ==========================================
                         TODAY'S SCHEDULE
-                    ================================================= */}
+                    ========================================== */}
 
                     <section className="schedule-section">
-
-
-                        {/* SECTION HEADER */}
 
                         <div className="section-heading">
 
                             <div>
-
                                 <h2>
-                                    Today's Schedule
+                                    Scheduled Events
                                 </h2>
 
                                 <p>
                                     Your planned events and activities.
                                 </p>
-
                             </div>
-
 
                             <span>
                                 {events.length} events
@@ -373,17 +532,23 @@ function Schedule() {
                         </div>
 
 
-                        {/* =================================================
-                            EVENT LIST
-                        ================================================= */}
-
                         <div className="schedule-list">
 
+                            {loadingEvents ? (
 
-                            {events.length === 0 ? (
+                                <div className="empty-schedule">
+                                    <Clock3 size={30} />
 
+                                    <h3>
+                                        Loading schedule...
+                                    </h3>
 
-                                /* EMPTY STATE */
+                                    <p>
+                                        Fetching your scheduled events.
+                                    </p>
+                                </div>
+
+                            ) : events.length === 0 ? (
 
                                 <div className="empty-schedule">
 
@@ -400,11 +565,7 @@ function Schedule() {
 
                                 </div>
 
-
                             ) : (
-
-
-                                /* EVENTS */
 
                                 events.map((event) => (
 
@@ -412,11 +573,6 @@ function Schedule() {
                                         className="schedule-item"
                                         key={event.id}
                                     >
-
-
-                                        {/* =================================================
-                                            TIME
-                                        ================================================= */}
 
                                         <div className="schedule-time">
 
@@ -429,10 +585,6 @@ function Schedule() {
                                         </div>
 
 
-                                        {/* =================================================
-                                            EVENT ICON
-                                        ================================================= */}
-
                                         <div className="schedule-event-icon">
 
                                             <CalendarDays size={18} />
@@ -440,66 +592,44 @@ function Schedule() {
                                         </div>
 
 
-                                        {/* =================================================
-                                            EVENT DETAILS
-                                        ================================================= */}
-
                                         <div className="schedule-event-info">
-
 
                                             <h3>
                                                 {event.title}
                                             </h3>
 
-
                                             <div className="schedule-event-meta">
 
-
                                                 <span>
-
-                                                    <CalendarDays
-                                                        size={12}
-                                                    />
-
+                                                    <CalendarDays size={12} />
                                                     {event.date}
-
                                                 </span>
-
 
                                                 <span>
-
-                                                    <MapPin
-                                                        size={12}
-                                                    />
-
+                                                    <MapPin size={12} />
                                                     {event.location}
-
                                                 </span>
 
+                                                <span>
+                                                    {event.status}
+                                                </span>
 
                                             </div>
 
                                         </div>
 
 
-                                        {/* =================================================
-                                            DELETE
-                                        ================================================= */}
-
                                         <button
                                             type="button"
                                             className="schedule-delete"
                                             onClick={() =>
-                                                deleteEvent(event.id)
+                                                deleteEvent(event)
                                             }
-                                            title="Delete event"
-                                            aria-label="Delete event"
+                                            title="Cancel event"
+                                            aria-label="Cancel event"
                                         >
-
                                             <Trash2 size={16} />
-
                                         </button>
-
 
                                     </div>
 
@@ -511,16 +641,12 @@ function Schedule() {
 
                     </section>
 
-
                 </div>
 
             </main>
 
         </div>
-
     );
-
 }
-
 
 export default Schedule;

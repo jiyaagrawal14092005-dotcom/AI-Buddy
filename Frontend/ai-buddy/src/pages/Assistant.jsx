@@ -20,15 +20,16 @@ import {
 
 import Sidebar from "../components/common/Sidebar";
 import Navbar from "../components/common/Navbar";
+import { useAuth } from "../context/AuthContext";
+import { sendMessage } from "../services/chatService";
 
 function Assistant() {
     const navigate = useNavigate();
+    const { user, authenticated } = useAuth();
 
     const [isListening, setIsListening] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isThinking, setIsThinking] = useState(false);
-
-    // TEXT INPUT
     const [inputText, setInputText] = useState("");
 
     const [messages, setMessages] = useState([
@@ -42,68 +43,29 @@ function Assistant() {
     const recognitionRef = useRef(null);
     const shouldListenRef = useRef(true);
     const speakingRef = useRef(false);
+    const thinkingRef = useRef(false);
 
-    const getZarvisResponse = (text) => {
-        const command = text.toLowerCase();
+    // ==========================================
+    // KEEP LATEST AUTH STATE AVAILABLE TO VOICE
+    // ==========================================
 
-        if (command.includes("plan my day")) {
-            return "Sure! I'll help you plan your day with a balanced schedule.";
-        }
+    const userRef = useRef(user);
+    const authenticatedRef = useRef(authenticated);
 
-        if (
-            command.includes("create a task") ||
-            command.includes("add task") ||
-            command.includes("new task")
-        ) {
-            return "Sure. Tell me what task you want me to create.";
-        }
+    useEffect(() => {
+        userRef.current = user;
+        authenticatedRef.current = authenticated;
 
-        if (
-            command.includes("schedule") ||
-            command.includes("event")
-        ) {
-            return "Sure. Tell me what you want to schedule and when.";
-        }
+        console.log("Zarvis auth state updated:", {
+            authenticated,
+            user,
+            userId: user?.id,
+        });
+    }, [user, authenticated]);
 
-        if (
-            command.includes("remind") ||
-            command.includes("reminder")
-        ) {
-            return "Of course. Tell me what you want me to remind you about.";
-        }
-
-        if (
-            command.includes("focus") ||
-            command.includes("timer")
-        ) {
-            return "Focus mode is ready. Let's start a productive session.";
-        }
-
-        if (
-            command.includes("study") ||
-            command.includes("learn") ||
-            command.includes("explain")
-        ) {
-            return "Absolutely. Tell me the topic and I'll explain it simply.";
-        }
-
-        if (
-            command.includes("hello") ||
-            command.includes("hi") ||
-            command.includes("hey")
-        ) {
-            return "Hey! I'm Zarvis. What can I help you with?";
-        }
-
-        if (
-            command.includes("what's next") ||
-            command.includes("what is next")
-        ) {
-            return "Your next priority is to continue your planned tasks. I can organize them for you.";
-        }
-
-        return `I heard you say "${text}". I'm ready to help you with that.`;
-    };
+    // ==========================================
+    // SPEAK RESPONSE
+    // ==========================================
 
     const speak = (text) => {
         if (!window.speechSynthesis) {
@@ -118,6 +80,7 @@ function Assistant() {
         setIsSpeaking(true);
         setIsListening(false);
         setIsThinking(false);
+        thinkingRef.current = false;
 
         const speech = new SpeechSynthesisUtterance(text);
 
@@ -148,25 +111,78 @@ function Assistant() {
         window.speechSynthesis.speak(speech);
     };
 
-    const processCommand = (text) => {
-        if (!text.trim()) return;
+    // ==========================================
+    // PROCESS COMMAND
+    // ==========================================
+
+    const processCommand = async (text) => {
+        const cleanText = text?.trim();
+
+        if (!cleanText) return;
+
+        if (recognitionRef.current) {
+            try {
+                recognitionRef.current.stop();
+            } catch {
+                // Already stopped
+            }
+        }
 
         setIsListening(false);
         setIsThinking(true);
+        thinkingRef.current = true;
 
         setMessages((prev) => [
             ...prev,
             {
                 type: "user",
-                text,
+                text: cleanText,
                 time: "NOW",
             },
         ]);
 
-        const response = getZarvisResponse(text);
+        try {
+            // ==========================================
+            // GET LATEST AUTH STATE
+            // ==========================================
 
-        setTimeout(() => {
+            const currentUser = userRef.current;
+            const currentAuthenticated = authenticatedRef.current;
+
+            console.log("Zarvis command auth check:", {
+                authenticated: currentAuthenticated,
+                user: currentUser,
+                userId: currentUser?.id,
+            });
+
+            if (!currentAuthenticated || !currentUser?.id) {
+                throw new Error(
+                    "You are not logged in. Please login again."
+                );
+            }
+
+            // ==========================================
+            // REAL BACKEND REQUEST
+            // ==========================================
+
+            const result = await sendMessage(
+                cleanText,
+                currentUser.id
+            );
+
+            console.log(
+                "Zarvis backend response:",
+                result
+            );
+
+            const response =
+                result?.message ||
+                result?.response ||
+                result?.reply ||
+                "I received your request, but I could not generate a response.";
+
             setIsThinking(false);
+            thinkingRef.current = false;
 
             setMessages((prev) => [
                 ...prev,
@@ -178,17 +194,50 @@ function Assistant() {
             ]);
 
             speak(response);
-        }, 700);
+
+        } catch (error) {
+            console.error(
+                "Zarvis backend request failed:",
+                error
+            );
+
+            setIsThinking(false);
+            thinkingRef.current = false;
+
+            const errorMessage =
+                error?.message ||
+                "Sorry, I could not connect to AI Buddy.";
+
+            setMessages((prev) => [
+                ...prev,
+                {
+                    type: "zarvis",
+                    text: errorMessage,
+                    time: "NOW",
+                },
+            ]);
+
+            speak(errorMessage);
+        }
     };
+
+    // ==========================================
+    // START VOICE LISTENING
+    // ==========================================
 
     const startListening = () => {
         if (speakingRef.current) return;
+
+        if (thinkingRef.current) return;
 
         const SpeechRecognition =
             window.SpeechRecognition ||
             window.webkitSpeechRecognition;
 
         if (!SpeechRecognition) {
+            console.log(
+                "Speech Recognition is not supported by this browser."
+            );
             return;
         }
 
@@ -209,6 +258,7 @@ function Assistant() {
         recognition.onstart = () => {
             setIsListening(true);
             setIsThinking(false);
+            thinkingRef.current = false;
         };
 
         recognition.onresult = (event) => {
@@ -244,7 +294,7 @@ function Assistant() {
             if (
                 shouldListenRef.current &&
                 !speakingRef.current &&
-                !isThinking
+                !thinkingRef.current
             ) {
                 setTimeout(() => {
                     startListening();
@@ -264,19 +314,31 @@ function Assistant() {
         }
     };
 
+    // ==========================================
+    // QUICK COMMAND
+    // ==========================================
+
     const handleQuickCommand = (command) => {
         processCommand(command);
     };
 
-    // TEXT INPUT SUBMIT
+    // ==========================================
+    // TEXT INPUT
+    // ==========================================
+
     const handleTextSubmit = (e) => {
         e.preventDefault();
 
         if (!inputText.trim()) return;
 
         processCommand(inputText);
+
         setInputText("");
     };
+
+    // ==========================================
+    // INITIALIZE VOICE ASSISTANT
+    // ==========================================
 
     useEffect(() => {
         shouldListenRef.current = true;
@@ -311,8 +373,6 @@ function Assistant() {
 
                 <div className="assistant-page">
 
-                    {/* HEADER */}
-
                     <section className="assistant-header">
                         <div className="assistant-header-content">
                             <span className="assistant-eyebrow">
@@ -335,9 +395,6 @@ function Assistant() {
                             ZARVIS ONLINE
                         </div>
                     </section>
-
-
-                    {/* QUICK COMMANDS */}
 
                     <div className="assistant-quick-commands">
 
@@ -366,9 +423,7 @@ function Assistant() {
                         <button
                             type="button"
                             onClick={() =>
-                                handleQuickCommand(
-                                    "Set a reminder"
-                                )
+                                handleQuickCommand("Set a reminder")
                             }
                         >
                             <Bell size={15} />
@@ -389,12 +444,7 @@ function Assistant() {
 
                     </div>
 
-
-                    {/* MAIN LAYOUT */}
-
                     <div className="assistant-layout">
-
-                        {/* MAIN VOICE PANEL */}
 
                         <section className="assistant-main-panel">
 
@@ -419,6 +469,7 @@ function Assistant() {
                                 </div>
 
                                 <div className="assistant-panel-status">
+
                                     <span></span>
 
                                     {isListening
@@ -428,12 +479,10 @@ function Assistant() {
                                             : isThinking
                                                 ? "THINKING"
                                                 : "READY"}
+
                                 </div>
 
                             </div>
-
-
-                            {/* VOICE CENTER */}
 
                             <div className="assistant-voice-center">
 
@@ -473,7 +522,6 @@ function Assistant() {
 
                                 </div>
 
-
                                 <h2>
                                     {isListening
                                         ? "I'm listening..."
@@ -483,7 +531,6 @@ function Assistant() {
                                                 ? "Thinking..."
                                                 : "Ready for you"}
                                 </h2>
-
 
                                 <p>
                                     {isListening
@@ -495,9 +542,6 @@ function Assistant() {
                                                 : "Just speak naturally."}
                                 </p>
 
-
-                                {/* WAVEFORM */}
-
                                 <div
                                     className={`assistant-waveform ${
                                         isListening || isSpeaking
@@ -505,7 +549,6 @@ function Assistant() {
                                             : ""
                                     }`}
                                 >
-
                                     {Array.from({
                                         length: 25,
                                     }).map((_, index) => (
@@ -517,13 +560,9 @@ function Assistant() {
                                             }}
                                         ></span>
                                     ))}
-
                                 </div>
 
                             </div>
-
-
-                            {/* CONVERSATION */}
 
                             <div className="assistant-conversation">
 
@@ -532,11 +571,9 @@ function Assistant() {
                                     LIVE CONVERSATION
                                 </div>
 
-
                                 {messages
                                     .slice(-4)
                                     .map((message, index) => (
-
                                         <div
                                             key={index}
                                             className={`conversation-message ${
@@ -555,7 +592,6 @@ function Assistant() {
                                                 )}
 
                                             </div>
-
 
                                             <div className="conversation-content">
 
@@ -580,18 +616,15 @@ function Assistant() {
                                             </div>
 
                                         </div>
-
                                     ))}
 
                             </div>
-
-
-                            {/* TEXT CHAT INPUT */}
 
                             <form
                                 className="zarvis-chat-input"
                                 onSubmit={handleTextSubmit}
                             >
+
                                 <input
                                     type="text"
                                     value={inputText}
@@ -599,19 +632,27 @@ function Assistant() {
                                         setInputText(e.target.value)
                                     }
                                     placeholder="Ask Zarvis anything..."
+                                    disabled={isThinking}
                                 />
 
-                                <button type="submit">
-                                    Send
+                                <button
+                                    type="submit"
+                                    disabled={
+                                        isThinking ||
+                                        !inputText.trim()
+                                    }
+                                >
+                                    {isThinking
+                                        ? "Thinking..."
+                                        : "Send"}
                                 </button>
+
                             </form>
-
-
-                            {/* BOTTOM STATUS */}
 
                             <div className="assistant-bottom-bar">
 
                                 <div>
+
                                     <span className="bottom-status-dot"></span>
 
                                     {isListening
@@ -619,6 +660,7 @@ function Assistant() {
                                         : isSpeaking
                                             ? "VOICE OUTPUT ACTIVE"
                                             : "VOICE SYSTEM READY"}
+
                                 </div>
 
                                 <span>
@@ -633,12 +675,7 @@ function Assistant() {
 
                         </section>
 
-
-                        {/* RIGHT PANEL */}
-
                         <aside className="assistant-side-panel">
-
-                            {/* TODAY FOCUS */}
 
                             <section className="assistant-side-card">
 
@@ -664,13 +701,14 @@ function Assistant() {
 
                                     <button
                                         type="button"
-                                        onClick={() => navigate("/tasks")}
+                                        onClick={() =>
+                                            navigate("/tasks")
+                                        }
                                     >
                                         View all
                                     </button>
 
                                 </div>
-
 
                                 <div className="focus-list">
 
@@ -706,9 +744,6 @@ function Assistant() {
 
                             </section>
 
-
-                            {/* VOICE COMMANDS */}
-
                             <section className="assistant-side-card">
 
                                 <div className="side-card-header">
@@ -732,7 +767,6 @@ function Assistant() {
                                     </div>
 
                                 </div>
-
 
                                 <div className="voice-command-list">
 
@@ -788,9 +822,6 @@ function Assistant() {
 
                             </section>
 
-
-                            {/* SYSTEM STATUS */}
-
                             <section className="assistant-side-card assistant-system-card">
 
                                 <div className="system-card-title">
@@ -811,12 +842,10 @@ function Assistant() {
 
                                 </div>
 
-
                                 <div className="system-status-row">
                                     <span>
                                         Voice recognition
                                     </span>
-
                                     <strong>
                                         ACTIVE
                                     </strong>
@@ -826,7 +855,6 @@ function Assistant() {
                                     <span>
                                         Voice response
                                     </span>
-
                                     <strong>
                                         ACTIVE
                                     </strong>
@@ -836,7 +864,6 @@ function Assistant() {
                                     <span>
                                         Zarvis Core
                                     </span>
-
                                     <strong>
                                         ONLINE
                                     </strong>

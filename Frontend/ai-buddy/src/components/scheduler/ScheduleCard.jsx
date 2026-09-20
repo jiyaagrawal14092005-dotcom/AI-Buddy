@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -6,33 +7,104 @@ import {
     ArrowUpRight,
 } from "lucide-react";
 
-const schedule = [
-    {
-        time: "10:30 AM",
-        title: "React Learning",
-        category: "LEARNING",
-    },
-    {
-        time: "02:30 PM",
-        title: "Work on Zarvis UI",
-        category: "PROJECT",
-    },
-    {
-        time: "05:00 PM",
-        title: "Review Progress",
-        category: "PRODUCTIVITY",
-    },
-];
+import { useAuth } from "../../context/AuthContext";
+import { getScheduledJobs } from "../../services/schedulerService";
 
 function ScheduleCard() {
     const navigate = useNavigate();
+    const { user, authenticated } = useAuth();
+
+    const [schedule, setSchedule] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadSchedule = async () => {
+            if (!authenticated || !user?.id) {
+                setSchedule([]);
+                setLoading(false);
+                return;
+            }
+
+            try {
+                setLoading(true);
+
+                const result = await getScheduledJobs(user.id);
+
+                const jobs = Array.isArray(result?.jobs)
+                    ? result.jobs
+                    : [];
+
+                const activeJobs = jobs
+                    .filter(
+                        (job) =>
+                            job.status === "scheduled" ||
+                            job.status === "SCHEDULED"
+                    )
+                    .sort(
+                        (a, b) =>
+                            new Date(a.schedule) -
+                            new Date(b.schedule)
+                    )
+                    .slice(0, 3);
+
+                setSchedule(activeJobs);
+            } catch (error) {
+                console.error(
+                    "Failed to load dashboard schedule:",
+                    error
+                );
+
+                setSchedule([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadSchedule();
+    }, [authenticated, user?.id]);
+
+    const formatTime = (scheduleDate) => {
+        if (!scheduleDate) {
+            return "--:--";
+        }
+
+        const date = new Date(scheduleDate);
+
+        if (Number.isNaN(date.getTime())) {
+            return "--:--";
+        }
+
+        return date.toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    };
+
+    const getCategory = (name) => {
+        const title = String(name || "").toLowerCase();
+
+        if (
+            title.includes("learn") ||
+            title.includes("study") ||
+            title.includes("class")
+        ) {
+            return "LEARNING";
+        }
+
+        if (
+            title.includes("project") ||
+            title.includes("ai buddy") ||
+            title.includes("development")
+        ) {
+            return "PROJECT";
+        }
+
+        return "SCHEDULED";
+    };
 
     return (
         <section className="schedule-system">
-
-            {/* HEADER */}
             <div className="schedule-header">
-
                 <div className="schedule-heading">
                     <div className="schedule-icon">
                         <CalendarDays size={17} />
@@ -52,67 +124,101 @@ function ScheduleCard() {
                     VIEW ALL
                     <ArrowUpRight size={13} />
                 </button>
-
             </div>
 
-            {/* STATUS */}
             <div className="schedule-status">
                 <span>
                     <i></i>
                     TODAY
                 </span>
 
-                <span>03 EVENTS</span>
+                <span>
+                    {loading
+                        ? "LOADING..."
+                        : `${schedule.length
+                        .toString()
+                        .padStart(2, "0")} EVENTS`}
+                </span>
 
-                <strong>ON TRACK</strong>
+                <strong>
+                    {loading
+                        ? "SYNCING"
+                        : schedule.length > 0
+                            ? "ON TRACK"
+                            : "NO EVENTS"}
+                </strong>
             </div>
 
-            {/* SCHEDULE LIST */}
             <div className="schedule-list">
-
-                {schedule.map((item, index) => (
-                    <div
-                        className="schedule-item"
-                        key={index}
-                    >
-
-                        {/* TIME */}
+                {loading ? (
+                    <div className="schedule-item">
                         <div className="schedule-time">
                             <Clock3 size={13} />
-                            <span>{item.time}</span>
+                            <span>--:--</span>
                         </div>
 
-                        {/* DETAILS */}
                         <div className="schedule-details">
-                            <h4>{item.title}</h4>
-
-                            <span>
-                                {item.category}
-                            </span>
+                            <h4>Loading schedule...</h4>
+                            <span>SYNCING</span>
                         </div>
 
-                        {/* STATUS */}
                         <div className="schedule-marker">
                             <i></i>
                         </div>
-
                     </div>
-                ))}
+                ) : schedule.length === 0 ? (
+                    <div className="schedule-item">
+                        <div className="schedule-time">
+                            <Clock3 size={13} />
+                            <span>--:--</span>
+                        </div>
 
+                        <div className="schedule-details">
+                            <h4>No upcoming events</h4>
+                            <span>ADD FROM SCHEDULE</span>
+                        </div>
+
+                        <div className="schedule-marker">
+                            <i></i>
+                        </div>
+                    </div>
+                ) : (
+                    schedule.map((item) => (
+                        <div
+                            className="schedule-item"
+                            key={item.id}
+                        >
+                            <div className="schedule-time">
+                                <Clock3 size={13} />
+                                <span>
+                                    {formatTime(item.schedule)}
+                                </span>
+                            </div>
+
+                            <div className="schedule-details">
+                                <h4>{item.name}</h4>
+
+                                <span>
+                                    {getCategory(item.name)}
+                                </span>
+                            </div>
+
+                            <div className="schedule-marker">
+                                <i></i>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
 
-            {/* FOOTER */}
             <div className="schedule-footer">
-
                 <span>
                     <i></i>
                     ZARVIS SCHEDULE ENGINE
                 </span>
 
                 <span>SYNCED</span>
-
             </div>
-
         </section>
     );
 }

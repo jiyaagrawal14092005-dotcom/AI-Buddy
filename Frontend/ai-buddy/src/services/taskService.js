@@ -1,61 +1,172 @@
 // ==========================================
-// ZARVIS TASK SERVICE
+// AI BUDDY TASK SERVICE
 // ==========================================
 
 import api from "./api";
 
-// Get all tasks
-export async function getTasks() {
-    return api.get("/api/tasks");
+
+// ==========================================
+// GET ALL TASKS
+// ==========================================
+
+export async function getTasks(userId) {
+
+    if (!userId) {
+        throw new Error("User ID is required.");
+    }
+
+    return api.get(
+        `/api/tasks/?user_id=${userId}`
+    );
 }
 
-// Get a single task
-export async function getTask(taskId) {
-    return api.get(`/api/tasks/${taskId}`);
+
+// ==========================================
+// GET SINGLE TASK
+// ==========================================
+
+export async function getTask(taskId, userId) {
+
+    if (!taskId) {
+        throw new Error("Task ID is required.");
+    }
+
+    if (!userId) {
+        throw new Error("User ID is required.");
+    }
+
+    return api.get(
+        `/api/tasks/${taskId}?user_id=${userId}`
+    );
 }
 
-// Create a new task
-export async function createTask(task) {
+
+// ==========================================
+// CREATE TASK
+// ==========================================
+
+export async function createTask(task, userId) {
+
     if (!task || !task.title?.trim()) {
         throw new Error("Task title is required.");
     }
 
-    return api.post("/api/tasks", {
-        ...task,
-        title: task.title.trim(),
-    });
+    if (!userId) {
+        throw new Error("User ID is required.");
+    }
+
+    const taskName = encodeURIComponent(
+        task.title.trim()
+    );
+
+    return api.post(
+        `/api/tasks/create?task_name=${taskName}&user_id=${userId}`
+    );
 }
 
-// Update a task
-export async function updateTask(taskId, task) {
-    return api.put(`/api/tasks/${taskId}`, task);
+
+// ==========================================
+// DELETE TASK
+// ==========================================
+
+export async function deleteTask(taskId, userId) {
+
+    if (!taskId) {
+        throw new Error("Task ID is required.");
+    }
+
+    if (!userId) {
+        throw new Error("User ID is required.");
+    }
+
+    return api.delete(
+        `/api/tasks/${taskId}?user_id=${userId}`
+    );
 }
 
-// Mark task as completed
-export async function completeTask(taskId) {
-    return api.put(`/api/tasks/${taskId}`, {
-        completed: true,
-    });
+
+// ==========================================
+// UPDATE TASK STATUS
+// ==========================================
+
+export async function updateTaskStatus(
+    taskId,
+    userId,
+    status
+) {
+
+    if (!taskId) {
+        throw new Error("Task ID is required.");
+    }
+
+    if (!userId) {
+        throw new Error("User ID is required.");
+    }
+
+    if (!status) {
+        throw new Error("Task status is required.");
+    }
+
+    return api.put(
+        `/api/tasks/${taskId}/status?user_id=${userId}&status=${encodeURIComponent(status)}`
+    );
 }
 
-// Delete a task
-export async function deleteTask(taskId) {
-    return api.delete(`/api/tasks/${taskId}`);
+
+// ==========================================
+// UPDATE TASK
+// ==========================================
+
+export async function updateTask() {
+
+    throw new Error(
+        "General task update is not currently supported by the backend."
+    );
 }
 
-// Get today's tasks
-export async function getTodayTasks() {
-    return api.get("/api/tasks/today");
+
+// ==========================================
+// COMPLETE TASK
+// ==========================================
+
+export async function completeTask(
+    taskId,
+    userId
+) {
+
+    return updateTaskStatus(
+        taskId,
+        userId,
+        "completed"
+    );
 }
+
+
+// ==========================================
+// GET TODAY'S TASKS
+// ==========================================
+
+export async function getTodayTasks(userId) {
+
+    return getTasks(userId);
+}
+
+
+// ==========================================
+// EXPORT SERVICE
+// ==========================================
 
 const taskService = {
+
     getTasks,
     getTask,
     createTask,
     updateTask,
+    updateTaskStatus,
     completeTask,
     deleteTask,
     getTodayTasks,
+
 };
 
 export default taskService;
