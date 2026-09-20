@@ -9,6 +9,7 @@ class Planner:
         self.tool_map = {
 
             # Current executable tools
+            "STOP": "stop",
             "SET_TIMER": "timer",
             "CREATE_TASK": "task",
             "CREATE_REMINDER": "reminder",
@@ -21,6 +22,7 @@ class Planner:
             "SEARCH_INFORMATION": "search",
             "SEND_EMAIL": "email",
             "CHECK_CALENDAR": "calendar",
+            "BOOK_SERVICE": "booking",
             "MANAGE_FILE": "file",
             "SEND_NOTIFICATION": "notification",
 
@@ -781,3 +783,6 @@ class Planner:
                 intent_name
             ) is not None
         )
+
+
+

@@ -49,6 +49,10 @@ class ActionPolicy:
                 "approval_required": False
             },
             
+            "stop": {
+                "risk": "low",
+                "approval_required": False
+            },
             "search": {
                 "risk": "low",
                 "approval_required": False
@@ -76,6 +80,11 @@ class ActionPolicy:
             # =========================================
             # CALENDAR
             # =========================================
+
+            "booking": {
+                "risk": "medium",
+                "approval_required": True
+            },
 
             "calendar": {
                 "risk": "medium",
@@ -502,3 +511,4 @@ class ActionPolicy:
                 "Action policy system is ready."
             )
         }
+

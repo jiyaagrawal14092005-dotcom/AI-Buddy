@@ -1,6 +1,7 @@
 ﻿import json
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
+
 from google import genai
 
 
@@ -1436,7 +1437,6 @@ class IntentDetector:
             "BROWSE_WEB",
             "GET_TIME",
             "GET_DATE",
-            "STOP",
             "GENERAL_QUERY"
         }
 
@@ -2199,33 +2199,9 @@ class IntentDetector:
             return browser_result
 
         # =====================================
-        # STOP / CANCEL ZARVIS
-        # =====================================
-
-        stop_patterns = [
-            r"^\s*stop\s*$",
-            r"^\s*stop\s+listening\s*$",
-            r"^\s*stop\s+jarvis\s*$",
-            r"^\s*jarvis\s+stop\s*$",
-            r"^\s*zarvis\s+stop\s*$",
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in stop_patterns
-        ):
-            return {
-                "intent": "STOP",
-                "confidence": 0.99,
-                "parameters": {}
-            }
-        # =====================================
         # TIME / DATE
         # =====================================
-    
+
         time_patterns = [
             r"\bwhat\s+time\s+is\s+it\b",
             r"\bwhat(?:'s| is)\s+the\s+time\b",
@@ -2689,7 +2665,7 @@ class IntentDetector:
                 }
             }
 
-                # =====================================
+        # =====================================
         # CREATE REMINDER
         # =====================================
 
@@ -2709,233 +2685,25 @@ class IntentDetector:
         ):
 
             reminder_text = text
-            reminder_time = None
 
-            # -----------------------------------------
-            # REMOVE WAKE WORD
-            # -----------------------------------------
-
-            reminder_source = re.sub(
-                r"^\s*(?:zarvis|jarvis)\s*[,:\-]?\s*",
-                "",
-                text,
-                flags=re.IGNORECASE
-            ).strip()
-
-            # -----------------------------------------
-            # RELATIVE TIME:
-            # "in 30 minutes"
-            # "in 2 hours"
-            # -----------------------------------------
-
-            relative_match = re.search(
-                r"\bin\s+(\d+)\s*"
-                r"(minute|minutes|min|mins|hour|hours|hr|hrs)\b",
-                reminder_source,
-                flags=re.IGNORECASE
+            match = re.search(
+                r"remind\s+me\s+"
+                r"(?:to\s+)?(.+)",
+                lower_text
             )
 
-            if relative_match:
-
-                amount = int(
-                    relative_match.group(1)
-                )
-
-                unit = (
-                    relative_match.group(2)
-                    .lower()
-                )
-
-                now = datetime.now()
-
-                if unit.startswith("hour") or unit in (
-                    "hr",
-                    "hrs"
-                ):
-
-                    reminder_datetime = (
-                        now + timedelta(
-                            hours=amount
-                        )
-                    )
-
-                else:
-
-                    reminder_datetime = (
-                        now + timedelta(
-                            minutes=amount
-                        )
-                    )
-
-                reminder_time = (
-                    reminder_datetime.isoformat(
-                        timespec="seconds"
-                    )
-                )
-
-                reminder_text = re.sub(
-                    relative_match.group(0),
-                    "",
-                    reminder_source,
-                    flags=re.IGNORECASE
-                ).strip()
-
-            else:
-
-                # -----------------------------------------
-                # CLOCK TIME
-                # Examples:
-                # 8 AM
-                # 8:00 AM
-                # 8 a.m.
-                # 20:00
-                # -----------------------------------------
-
-                time_match = re.search(
-                    r"\b(\d{1,2})"
-                    r"(?:[:.](\d{2}))?"
-                    r"\s*"
-                    r"(a\.?m\.?|p\.?m\.?)\b",
-                    reminder_source,
-                    flags=re.IGNORECASE
-                )
-
-                if time_match:
-
-                    hour = int(
-                        time_match.group(1)
-                    )
-
-                    minute = int(
-                        time_match.group(2)
-                        or 0
-                    )
-
-                    meridiem = (
-                        time_match.group(3)
-                        .lower()
-                        .replace(".", "")
-                    )
-
-                    if not 1 <= hour <= 12:
-                        hour = None
-
-                    if hour is not None:
-
-                        if meridiem == "pm" and hour != 12:
-                            hour += 12
-
-                        elif meridiem == "am" and hour == 12:
-                            hour = 0
-
-                        now = datetime.now()
-
-                        reminder_datetime = now.replace(
-                            hour=hour,
-                            minute=minute,
-                            second=0,
-                            microsecond=0
-                        )
-
-                        # -----------------------------------------
-                        # TODAY / TOMORROW
-                        # -----------------------------------------
-
-                        if re.search(
-                            r"\btomorrow\b",
-                            reminder_source,
-                            flags=re.IGNORECASE
-                        ):
-
-                            reminder_datetime += timedelta(
-                                days=1
-                            )
-
-                        elif reminder_datetime <= now:
-
-                            reminder_datetime += timedelta(
-                                days=1
-                            )
-
-                        reminder_time = (
-                            reminder_datetime.isoformat(
-                                timespec="seconds"
-                            )
-                        )
-
-                        # -----------------------------------------
-                        # REMOVE TIME PHRASE FROM REMINDER TEXT
-                        # -----------------------------------------
-
-                        reminder_text = re.sub(
-                            time_match.group(0),
-                            "",
-                            reminder_source,
-                            flags=re.IGNORECASE
-                        )
-
-                        reminder_text = re.sub(
-                            r"\btomorrow\b",
-                            "",
-                            reminder_text,
-                            flags=re.IGNORECASE
-                        )
-
-                        reminder_text = re.sub(
-                            r"\btoday\b",
-                            "",
-                            reminder_text,
-                            flags=re.IGNORECASE
-                        )
-
-                        reminder_text = re.sub(
-                            r"\bat\s*$",
-                            "",
-                            reminder_text,
-                            flags=re.IGNORECASE
-                        )
-
-                        reminder_text = re.sub(
-                            r"\s+",
-                            " ",
-                            reminder_text
-                        ).strip(
-                            " ,.-:"
-                        )
-
-                else:
-
-                    # -----------------------------------------
-                    # NO TIME FOUND
-                    # -----------------------------------------
-
-                    reminder_text = re.sub(
-                        r"^\s*(?:remind\s+me|"
-                        r"create\s+(?:a\s+)?reminder|"
-                        r"set\s+(?:a\s+)?reminder|"
-                        r"add\s+(?:a\s+)?reminder)"
-                        r"\s*(?:to\s+)?",
-                        "",
-                        reminder_source,
-                        flags=re.IGNORECASE
-                    ).strip()
-
-            # -----------------------------------------
-            # FINAL CLEANUP
-            # -----------------------------------------
-
-            if not reminder_text:
+            if match:
 
                 reminder_text = (
-                    "Reminder"
+                    match.group(1)
+                    .strip()
                 )
 
             return {
                 "intent": "CREATE_REMINDER",
-                "confidence": 0.98,
+                "confidence": 0.9,
                 "parameters": {
-                    "reminder": reminder_text,
-                    "time": reminder_time
+                    "reminder": reminder_text
                 }
             }
 
@@ -3322,60 +3090,52 @@ class IntentDetector:
         # SEARCH INFORMATION
         # =====================================
 
-        # Explicit search/current-information requests
-        # should use SEARCH_INFORMATION.
-        #
-        # Ordinary educational/general questions such as:
-        # "What is AI?"
-        # "Explain machine learning."
-        # "Tell me about Python."
-        # remain GENERAL_QUERY so Gemini can answer them
-        # directly without unnecessary web grounding.
-
-        explicit_search_patterns = [
+        search_patterns = [
             r"\bsearch\s+for\b",
             r"\bsearch\b",
             r"\blook\s+up\b",
             r"\bfind\s+information\b",
             r"\bfind\s+out\b",
-            r"\bsearch\s+this\b",
-            r"\bgoogle\s+this\b",
-            r"\bcheck\s+online\b",
-            r"\blook\s+online\b"
-        ]
-
-        current_information_patterns = [
+            r"^\s*what\s+is\b",
+            r"^\s*what\s+are\b",
+            r"^\s*who\s+is\b",
+            r"^\s*who\s+are\b",
+            r"^\s*where\s+is\b",
+            r"^\s*where\s+are\b",
+            r"^\s*when\s+is\b",
+            r"^\s*when\s+was\b",
+            r"^\s*when\s+did\b",
+            r"^\s*why\s+is\b",
+            r"^\s*why\s+are\b",
+            r"^\s*why\s+was\b",
+            r"^\s*why\s+were\b",
+            r"^\s*how\s+does\b",
+            r"^\s*how\s+do\b",
+            r"^\s*how\s+is\b",
+            r"^\s*how\s+are\b",
+            r"^\s*how\s+can\b",
+            r"^\s*how\s+to\b",
             r"\blatest\b",
             r"\bcurrent\b",
-            r"\btoday(?:'s)?\b",
-            r"\bnews\b",
+            r"\btoday\b",
             r"\brecent\b",
+            r"\bnews\b",
+            r"\bupdate\b",
             r"\brecently\b",
-            r"\bthis\s+week\b",
-            r"\bthis\s+month\b",
-            r"\bthis\s+year\b",
-            r"\bup[\s-]?to[\s-]?date\b"
+            r"\btell\s+me\s+about\b",
+            r"\bexplain\b",
+            r"\b(?:technology|company|person|"
+            r"topic|concept)\b",
+            r"\binformation\s+about\b",
+            r"\bdetails\s+about\b"
         ]
 
-        has_explicit_search = any(
+        if any(
             re.search(
                 pattern,
                 lower_text
             )
-            for pattern in explicit_search_patterns
-        )
-
-        has_current_information = any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in current_information_patterns
-        )
-
-        if (
-            has_explicit_search
-            or has_current_information
+            for pattern in search_patterns
         ):
 
             query = text
@@ -3396,11 +3156,9 @@ class IntentDetector:
             else:
 
                 about_match = re.search(
-                    r"(?:find\s+information\s+about|"
-                    r"find\s+out\s+about|"
-                    r"tell\s+me\s+the\s+latest\s+about|"
-                    r"latest\s+information\s+about|"
-                    r"current\s+information\s+about)\s+(.+)",
+                    r"(?:tell\s+me\s+about|"
+                    r"information\s+about|"
+                    r"details\s+about)\s+(.+)",
                     lower_text
                 )
 
@@ -3418,7 +3176,6 @@ class IntentDetector:
                     "query": query
                 }
             }
-
 
         # =====================================
         # GENERAL QUERY
@@ -4248,22 +4005,6 @@ User message:
 
                     return local_result
 
-                local_confidence = local_result.get(
-                    "confidence",
-                    0.0
-                )
-
-                try:
-                    local_confidence = float(
-                        local_confidence
-                    )
-                except Exception:
-                    local_confidence = 0.0
-
-                if local_confidence >= 0.7:
-
-                    return local_result
-
         except Exception as error:
 
             print(
@@ -4337,5 +4078,4 @@ User message:
                     "confidence": 0.0,
                     "parameters": {}
                 }
-
 

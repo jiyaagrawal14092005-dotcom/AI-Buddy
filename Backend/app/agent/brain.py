@@ -17,6 +17,7 @@ from app.tools.weather import WeatherTool
 from app.tools.search_tool import SearchTool
 from app.tools.email_tool import EmailTool
 from app.tools.calendar_tool import CalendarTool
+from app.tools.booking_tool import BookingTool
 from app.tools.file_tool import FileTool
 from app.tools.browser_tool import BrowserTool
 from app.tools.application_launcher import ApplicationLauncher
@@ -86,6 +87,7 @@ class AIBrain:
             "search": SearchTool(),
             "email": EmailTool(),
             "calendar": CalendarTool(),
+            "booking": BookingTool(),
             "file": FileTool(),
             "browser": BrowserTool(),
 
@@ -234,6 +236,18 @@ class AIBrain:
         user_id: int,
         db: Session
     ) -> dict:
+
+        # =================================
+        # STOP COMMAND
+        # =================================
+
+        if tool_name == "stop":
+
+            return {
+                "success": True,
+                "message": "Zarvis stopped successfully.",
+                "action": "stop"
+            }
 
         tool = self.tools.get(
             tool_name
@@ -1024,7 +1038,7 @@ class AIBrain:
 
             response = (
                 self.client.models.generate_content(
-                    model="gemini-3.6-flash",
+                    model="gemini-flash-lite-latest",
                     contents=message
                 )
             )
@@ -2200,3 +2214,5 @@ class AIBrain:
             "approval_id": current_approval_id,
             "context": context
         }
+
+

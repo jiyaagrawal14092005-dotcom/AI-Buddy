@@ -5,6 +5,7 @@ class ReasoningEngine:
     # =========================================
 
     EXECUTABLE_INTENTS = {
+        "STOP",
         "SET_TIMER",
         "CREATE_TASK",
         "CREATE_REMINDER",
@@ -16,6 +17,7 @@ class ReasoningEngine:
         "SEND_EMAIL",
         "BROWSE_WEB",
         "CHECK_CALENDAR",
+        "BOOK_SERVICE",
 
         # Shopping
         "SHOPPING_SEARCH",
@@ -42,6 +44,7 @@ class ReasoningEngine:
     # =========================================
 
     EXPECTED_TOOLS = {
+        "STOP": "stop",
         "SET_TIMER": "timer",
         "CREATE_TASK": "task",
         "CREATE_REMINDER": "reminder",
@@ -53,6 +56,7 @@ class ReasoningEngine:
         "SEND_EMAIL": "email",
         "BROWSE_WEB": "browser",
         "CHECK_CALENDAR": "calendar",
+        "BOOK_SERVICE": "booking",
 
         # Shopping
         "SHOPPING_SEARCH": "shopping",
@@ -1053,3 +1057,10 @@ def re_match_time(
             value.strip()
         )
     )
+
+
+
+
+
+
+

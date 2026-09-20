@@ -554,6 +554,11 @@ class SecurityManager:
                 severity="low"
             )
 
+        result["requires_approval"] = result.get(
+            "approval_required",
+            False
+        )
+
         return result
 
     # =============================================================
@@ -618,6 +623,11 @@ class SecurityManager:
                 ),
                 severity="low"
             )
+
+        result["requires_approval"] = result.get(
+            "approval_required",
+            False
+        )
 
         return result
 

@@ -17,8 +17,10 @@ class ToolGuard:
             "search",
             "browser",
             "shopping",
+            "booking",
             "application_launcher",
             "time_tool",
+            "stop",
         }
 
         # Tools that normally require explicit user approval.
@@ -558,3 +560,4 @@ class ToolGuard:
             ),
             "message": "Tool guard is operational."
         }
+

@@ -35,15 +35,36 @@ function Assistant() {
     const [messages, setMessages] = useState([
         {
             type: "zarvis",
-            text: "Hey! I'm Zarvis. I'm listening.",
+            text: "Hey! I'm Zarvis. Say my name when you need me.",
             time: "NOW",
         },
     ]);
 
+    // ==========================================
+    // VOICE REFERENCES
+    // ==========================================
+
     const recognitionRef = useRef(null);
+    const stopRecognitionRef = useRef(null);
+
+    // Prevent the normal listener from restarting
+    // while a STOP command is being processed.
+    const stopRequestedRef = useRef(false);
+
     const shouldListenRef = useRef(true);
     const speakingRef = useRef(false);
     const thinkingRef = useRef(false);
+
+    // ==========================================
+    // WAKE WORD
+    // ==========================================
+
+    const WAKE_WORDS = [
+        "zarvis",
+        "jarvis",
+    ];
+
+    const wakeWordActiveRef = useRef(false);
 
     // ==========================================
     // KEEP LATEST AUTH STATE AVAILABLE TO VOICE
@@ -64,6 +85,213 @@ function Assistant() {
     }, [user, authenticated]);
 
     // ==========================================
+    // CHECK WAKE WORD
+    // ==========================================
+
+    const extractWakeWordCommand = (text) => {
+        if (!text) {
+            return {
+                wakeDetected: false,
+                command: "",
+            };
+        }
+
+        const normalizedText = text
+            .trim()
+            .replace(/[,.!?;:]+$/g, "")
+            .trim();
+
+        const lowerText = normalizedText.toLowerCase();
+
+        for (const wakeWord of WAKE_WORDS) {
+            const wakePattern = new RegExp(
+                `^(?:hey|okay|ok)?\\s*${wakeWord}\\b`,
+                "i"
+            );
+
+            if (wakePattern.test(lowerText)) {
+                const command = normalizedText
+                    .replace(wakePattern, "")
+                    .trim()
+                    .replace(/^[,.:;!?]+\s*/, "")
+                    .trim();
+
+                return {
+                    wakeDetected: true,
+                    command,
+                };
+            }
+        }
+
+        return {
+            wakeDetected: false,
+            command: "",
+        };
+    };
+
+    // ==========================================
+    // STOP-ONLY LISTENER
+    // ==========================================
+
+    const startStopListening = () => {
+        const SpeechRecognition =
+            window.SpeechRecognition ||
+            window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+            console.log(
+                "Speech Recognition is not supported by this browser."
+            );
+            return;
+        }
+
+        // If another STOP listener exists, stop it first.
+        if (stopRecognitionRef.current) {
+            try {
+                stopRecognitionRef.current.stop();
+            } catch {
+                // Already stopped
+            }
+        }
+
+        const stopRecognition = new SpeechRecognition();
+
+        stopRecognition.lang = "en-IN";
+        stopRecognition.continuous = true;
+        stopRecognition.interimResults = false;
+
+        stopRecognition.onstart = () => {
+            stopRecognitionRef.current = stopRecognition;
+
+            console.log(
+                "Zarvis STOP listener active."
+            );
+        };
+
+        stopRecognition.onresult = (event) => {
+            for (
+                let i = event.resultIndex;
+                i < event.results.length;
+                i++
+            ) {
+                const transcript =
+                    event.results[i][0].transcript
+                        .trim()
+                        .toLowerCase();
+
+                if (!transcript) {
+                    continue;
+                }
+
+                console.log(
+                    "Zarvis STOP listener heard:",
+                    transcript
+                );
+
+                const stopDetected =
+                    transcript.includes("zarvis stop") ||
+                    transcript.includes("jarvis stop") ||
+                    transcript === "stop" ||
+                    transcript.includes("stop listening") ||
+                    transcript.includes("stop jarvis") ||
+                    transcript.includes("stop zarvis");
+
+                if (!stopDetected) {
+                    continue;
+                }
+
+                console.log(
+                    "Zarvis STOP command detected."
+                );
+
+                // IMPORTANT:
+                // Tell every other voice callback that
+                // STOP is currently being processed.
+                stopRequestedRef.current = true;
+
+                speakingRef.current = false;
+
+                // Immediately cancel browser speech.
+                if (window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                }
+
+                setIsSpeaking(false);
+                setIsThinking(false);
+                thinkingRef.current = false;
+
+                // Stop only the STOP listener.
+                // Normal listener will start from onend().
+                try {
+                    stopRecognition.stop();
+                } catch {
+                    // Already stopped
+                }
+
+                return;
+            }
+        };
+
+        stopRecognition.onerror = (event) => {
+            console.log(
+                "Zarvis STOP listener error:",
+                event.error
+            );
+        };
+
+        stopRecognition.onend = () => {
+            if (
+                stopRecognitionRef.current ===
+                stopRecognition
+            ) {
+                stopRecognitionRef.current = null;
+            }
+
+            console.log(
+                "Zarvis STOP listener stopped."
+            );
+
+            /*
+             * IMPORTANT:
+             * Normal wake-word recognition starts ONLY
+             * after the STOP listener has completely ended.
+             */
+            if (shouldListenRef.current) {
+                setTimeout(() => {
+                    if (
+                        shouldListenRef.current &&
+                        !speakingRef.current &&
+                        !thinkingRef.current &&
+                        !stopRecognitionRef.current
+                    ) {
+                        console.log(
+                            "Zarvis restarting normal wake-word listener after STOP."
+                        );
+
+                        stopRequestedRef.current = false;
+
+                        startListening();
+                    }
+                }, 500);
+            } else {
+                stopRequestedRef.current = false;
+            }
+        };
+
+        try {
+            stopRecognition.start();
+
+            stopRecognitionRef.current =
+                stopRecognition;
+        } catch (error) {
+            console.log(
+                "STOP recognition start error:",
+                error
+            );
+        }
+    };
+
+    // ==========================================
     // SPEAK RESPONSE
     // ==========================================
 
@@ -73,16 +301,26 @@ function Assistant() {
             return;
         }
 
+        // Cancel any previous speech.
         window.speechSynthesis.cancel();
 
+        // A new response is starting, so STOP state
+        // must be reset before speech begins.
+        stopRequestedRef.current = false;
+
         speakingRef.current = true;
+
+        // Start a dedicated STOP-only microphone listener
+        // while Zarvis is speaking.
+        startStopListening();
 
         setIsSpeaking(true);
         setIsListening(false);
         setIsThinking(false);
         thinkingRef.current = false;
 
-        const speech = new SpeechSynthesisUtterance(text);
+        const speech =
+            new SpeechSynthesisUtterance(text);
 
         speech.lang = "en-IN";
         speech.rate = 0.95;
@@ -90,21 +328,78 @@ function Assistant() {
 
         speech.onend = () => {
             speakingRef.current = false;
+
             setIsSpeaking(false);
+
+            /*
+             * If STOP was requested, do NOT start the
+             * normal microphone here.
+             *
+             * STOP listener's onend() is responsible
+             * for restarting normal listening.
+             */
+            if (stopRequestedRef.current) {
+                return;
+            }
+
+            // Speech ended normally.
+            // Stop the STOP-only listener.
+            if (stopRecognitionRef.current) {
+                try {
+                    stopRecognitionRef.current.stop();
+                } catch {
+                    // Already stopped
+                }
+            }
 
             if (shouldListenRef.current) {
                 setTimeout(() => {
-                    startListening();
+                    if (
+                        shouldListenRef.current &&
+                        !speakingRef.current &&
+                        !thinkingRef.current &&
+                        !stopRecognitionRef.current &&
+                        !stopRequestedRef.current
+                    ) {
+                        startListening();
+                    }
                 }, 600);
             }
         };
 
         speech.onerror = () => {
             speakingRef.current = false;
+
             setIsSpeaking(false);
 
+            /*
+             * If STOP was requested, do not start
+             * the normal listener here.
+             */
+            if (stopRequestedRef.current) {
+                return;
+            }
+
+            if (stopRecognitionRef.current) {
+                try {
+                    stopRecognitionRef.current.stop();
+                } catch {
+                    // Already stopped
+                }
+            }
+
             if (shouldListenRef.current) {
-                startListening();
+                setTimeout(() => {
+                    if (
+                        shouldListenRef.current &&
+                        !speakingRef.current &&
+                        !thinkingRef.current &&
+                        !stopRecognitionRef.current &&
+                        !stopRequestedRef.current
+                    ) {
+                        startListening();
+                    }
+                }, 300);
             }
         };
 
@@ -147,15 +442,23 @@ function Assistant() {
             // ==========================================
 
             const currentUser = userRef.current;
-            const currentAuthenticated = authenticatedRef.current;
+            const currentAuthenticated =
+                authenticatedRef.current;
 
-            console.log("Zarvis command auth check:", {
-                authenticated: currentAuthenticated,
-                user: currentUser,
-                userId: currentUser?.id,
-            });
+            console.log(
+                "Zarvis command auth check:",
+                {
+                    authenticated:
+                        currentAuthenticated,
+                    user: currentUser,
+                    userId: currentUser?.id,
+                }
+            );
 
-            if (!currentAuthenticated || !currentUser?.id) {
+            if (
+                !currentAuthenticated ||
+                !currentUser?.id
+            ) {
                 throw new Error(
                     "You are not logged in. Please login again."
                 );
@@ -194,7 +497,6 @@ function Assistant() {
             ]);
 
             speak(response);
-
         } catch (error) {
             console.error(
                 "Zarvis backend request failed:",
@@ -226,9 +528,25 @@ function Assistant() {
     // ==========================================
 
     const startListening = () => {
+        // Never start normal listener while Zarvis
+        // is speaking.
         if (speakingRef.current) return;
 
+        // Never start normal listener while thinking.
         if (thinkingRef.current) return;
+
+        // Never start normal listener if listening
+        // has been disabled.
+        if (!shouldListenRef.current) return;
+
+        // Never start normal listener while STOP
+        // listener is still active.
+        if (stopRecognitionRef.current) return;
+
+        // IMPORTANT:
+        // If STOP is being processed, wait for STOP
+        // listener's onend() to restart us.
+        if (stopRequestedRef.current) return;
 
         const SpeechRecognition =
             window.SpeechRecognition ||
@@ -249,7 +567,8 @@ function Assistant() {
             }
         }
 
-        const recognition = new SpeechRecognition();
+        const recognition =
+            new SpeechRecognition();
 
         recognition.lang = "en-IN";
         recognition.continuous = false;
@@ -259,6 +578,10 @@ function Assistant() {
             setIsListening(true);
             setIsThinking(false);
             thinkingRef.current = false;
+
+            console.log(
+                "Zarvis microphone listening. Waiting for wake word..."
+            );
         };
 
         recognition.onresult = (event) => {
@@ -267,9 +590,90 @@ function Assistant() {
 
             setIsListening(false);
 
-            if (transcript) {
-                processCommand(transcript);
+            if (!transcript) {
+                return;
             }
+
+            console.log(
+                "Zarvis heard:",
+                transcript
+            );
+
+            // ==========================================
+            // WAKE WORD CHECK
+            // ==========================================
+
+            const {
+                wakeDetected,
+                command,
+            } =
+                extractWakeWordCommand(
+                    transcript
+                );
+
+            // ==========================================
+            // NO WAKE WORD
+            // ==========================================
+
+            if (!wakeDetected) {
+                console.log(
+                    "Wake word not detected. Ignoring:",
+                    transcript
+                );
+
+                wakeWordActiveRef.current =
+                    false;
+
+                return;
+            }
+
+            // ==========================================
+            // WAKE WORD DETECTED
+            // ==========================================
+
+            wakeWordActiveRef.current = true;
+
+            console.log(
+                "Zarvis wake word detected."
+            );
+
+            // ==========================================
+            // ONLY WAKE WORD
+            // Example: "Zarvis"
+            // ==========================================
+
+            if (!command) {
+                console.log(
+                    "Wake word detected. Waiting for command..."
+                );
+
+                setTimeout(() => {
+                    if (
+                        shouldListenRef.current &&
+                        !speakingRef.current &&
+                        !thinkingRef.current &&
+                        !stopRecognitionRef.current &&
+                        !stopRequestedRef.current
+                    ) {
+                        startListening();
+                    }
+                }, 300);
+
+                return;
+            }
+
+            // ==========================================
+            // WAKE WORD + COMMAND
+            // Example:
+            // "Zarvis what is Python?"
+            // ==========================================
+
+            console.log(
+                "Zarvis command accepted:",
+                command
+            );
+
+            processCommand(command);
         };
 
         recognition.onerror = (event) => {
@@ -282,14 +686,28 @@ function Assistant() {
 
             if (
                 event.error === "not-allowed" ||
-                event.error === "service-not-allowed"
+                event.error ===
+                    "service-not-allowed"
             ) {
-                shouldListenRef.current = false;
+                shouldListenRef.current =
+                    false;
             }
         };
 
         recognition.onend = () => {
             setIsListening(false);
+
+            /*
+             * IMPORTANT:
+             * Never restart the normal listener if
+             * STOP is currently being processed.
+             */
+            if (
+                stopRequestedRef.current ||
+                stopRecognitionRef.current
+            ) {
+                return;
+            }
 
             if (
                 shouldListenRef.current &&
@@ -297,12 +715,21 @@ function Assistant() {
                 !thinkingRef.current
             ) {
                 setTimeout(() => {
-                    startListening();
+                    if (
+                        shouldListenRef.current &&
+                        !speakingRef.current &&
+                        !thinkingRef.current &&
+                        !stopRecognitionRef.current &&
+                        !stopRequestedRef.current
+                    ) {
+                        startListening();
+                    }
                 }, 500);
             }
         };
 
-        recognitionRef.current = recognition;
+        recognitionRef.current =
+            recognition;
 
         try {
             recognition.start();
@@ -316,6 +743,8 @@ function Assistant() {
 
     // ==========================================
     // QUICK COMMAND
+    // These are manual UI commands, so they
+    // intentionally do NOT require wake word.
     // ==========================================
 
     const handleQuickCommand = (command) => {
@@ -324,6 +753,8 @@ function Assistant() {
 
     // ==========================================
     // TEXT INPUT
+    // Manual text commands do not require
+    // wake word.
     // ==========================================
 
     const handleTextSubmit = (e) => {
@@ -342,6 +773,8 @@ function Assistant() {
 
     useEffect(() => {
         shouldListenRef.current = true;
+        wakeWordActiveRef.current = false;
+        stopRequestedRef.current = false;
 
         const timer = setTimeout(() => {
             startListening();
@@ -349,12 +782,22 @@ function Assistant() {
 
         return () => {
             shouldListenRef.current = false;
+            wakeWordActiveRef.current = false;
+            stopRequestedRef.current = false;
 
             clearTimeout(timer);
 
             if (recognitionRef.current) {
                 try {
                     recognitionRef.current.stop();
+                } catch {
+                    // Already stopped
+                }
+            }
+
+            if (stopRecognitionRef.current) {
+                try {
+                    stopRecognitionRef.current.stop();
                 } catch {
                     // Already stopped
                 }
@@ -385,8 +828,8 @@ function Assistant() {
                             </h1>
 
                             <p>
-                                Speak naturally. Zarvis listens,
-                                thinks and responds automatically.
+                                Say "Zarvis" before your voice command.
+                                Zarvis listens, thinks and responds automatically.
                             </p>
                         </div>
 
@@ -401,7 +844,9 @@ function Assistant() {
                         <button
                             type="button"
                             onClick={() =>
-                                handleQuickCommand("Plan my day")
+                                handleQuickCommand(
+                                    "Plan my day"
+                                )
                             }
                         >
                             <CalendarDays size={15} />
@@ -423,7 +868,9 @@ function Assistant() {
                         <button
                             type="button"
                             onClick={() =>
-                                handleQuickCommand("Set a reminder")
+                                handleQuickCommand(
+                                    "Set a reminder"
+                                )
                             }
                         >
                             <Bell size={15} />
@@ -534,7 +981,7 @@ function Assistant() {
 
                                 <p>
                                     {isListening
-                                        ? "Tell me what you need."
+                                        ? 'Say "Zarvis" before your command.'
                                         : isSpeaking
                                             ? "Zarvis is responding."
                                             : isThinking
@@ -544,22 +991,25 @@ function Assistant() {
 
                                 <div
                                     className={`assistant-waveform ${
-                                        isListening || isSpeaking
+                                        isListening ||
+                                        isSpeaking
                                             ? "wave-active"
                                             : ""
                                     }`}
                                 >
                                     {Array.from({
                                         length: 25,
-                                    }).map((_, index) => (
-                                        <span
-                                            key={index}
-                                            style={{
-                                                animationDelay:
-                                                    `${index * 0.045}s`,
-                                            }}
-                                        ></span>
-                                    ))}
+                                    }).map(
+                                        (_, index) => (
+                                            <span
+                                                key={index}
+                                                style={{
+                                                    animationDelay:
+                                                        `${index * 0.045}s`,
+                                                }}
+                                            ></span>
+                                        )
+                                    )}
                                 </div>
 
                             </div>
@@ -573,66 +1023,82 @@ function Assistant() {
 
                                 {messages
                                     .slice(-4)
-                                    .map((message, index) => (
-                                        <div
-                                            key={index}
-                                            className={`conversation-message ${
-                                                message.type === "user"
-                                                    ? "conversation-user"
-                                                    : "conversation-zarvis"
-                                            }`}
-                                        >
+                                    .map(
+                                        (
+                                            message,
+                                            index
+                                        ) => (
+                                            <div
+                                                key={index}
+                                                className={`conversation-message ${
+                                                    message.type ===
+                                                    "user"
+                                                        ? "conversation-user"
+                                                        : "conversation-zarvis"
+                                                }`}
+                                            >
 
-                                            <div className="conversation-avatar">
+                                                <div className="conversation-avatar">
 
-                                                {message.type === "user" ? (
-                                                    <User size={14} />
-                                                ) : (
-                                                    <Bot size={14} />
-                                                )}
-
-                                            </div>
-
-                                            <div className="conversation-content">
-
-                                                <div className="conversation-heading">
-
-                                                    <strong>
-                                                        {message.type === "user"
-                                                            ? "YOU"
-                                                            : "ZARVIS"}
-                                                    </strong>
-
-                                                    <span>
-                                                        {message.time}
-                                                    </span>
+                                                    {message.type ===
+                                                    "user" ? (
+                                                        <User size={14} />
+                                                    ) : (
+                                                        <Bot size={14} />
+                                                    )}
 
                                                 </div>
 
-                                                <p>
-                                                    {message.text}
-                                                </p>
+                                                <div className="conversation-content">
+
+                                                    <div className="conversation-heading">
+
+                                                        <strong>
+                                                            {message.type ===
+                                                            "user"
+                                                                ? "YOU"
+                                                                : "ZARVIS"}
+                                                        </strong>
+
+                                                        <span>
+                                                            {message.time}
+                                                        </span>
+
+                                                    </div>
+
+                                                    <p>
+                                                        {
+                                                            message.text
+                                                        }
+                                                    </p>
+
+                                                </div>
 
                                             </div>
-
-                                        </div>
-                                    ))}
+                                        )
+                                    )}
 
                             </div>
 
                             <form
                                 className="zarvis-chat-input"
-                                onSubmit={handleTextSubmit}
+                                onSubmit={
+                                    handleTextSubmit
+                                }
                             >
 
                                 <input
                                     type="text"
                                     value={inputText}
                                     onChange={(e) =>
-                                        setInputText(e.target.value)
+                                        setInputText(
+                                            e.target.value
+                                        )
                                     }
                                     placeholder="Ask Zarvis anything..."
-                                    disabled={isThinking}
+                                    disabled={
+                                        isThinking
+                                    }
                                 />
 
                                 <button
@@ -702,7 +1168,9 @@ function Assistant() {
                                     <button
                                         type="button"
                                         onClick={() =>
-                                            navigate("/tasks")
+                                            navigate(
+                                                "/tasks"
+                                            )
                                         }
                                     >
                                         View all
@@ -846,6 +1314,7 @@ function Assistant() {
                                     <span>
                                         Voice recognition
                                     </span>
+
                                     <strong>
                                         ACTIVE
                                     </strong>
@@ -855,6 +1324,7 @@ function Assistant() {
                                     <span>
                                         Voice response
                                     </span>
+
                                     <strong>
                                         ACTIVE
                                     </strong>
@@ -864,6 +1334,7 @@ function Assistant() {
                                     <span>
                                         Zarvis Core
                                     </span>
+
                                     <strong>
                                         ONLINE
                                     </strong>
