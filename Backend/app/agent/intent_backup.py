@@ -1,7 +1,6 @@
-﻿import json
+import json
 import re
-from datetime import date, timedelta
-
+from datetime import date, datetime, timedelta
 from google import genai
 
 
@@ -135,29 +134,25 @@ class IntentDetector:
         text: str
     ) -> str:
 
-        time_match = re.search(
-            r"\b([01]?\d|2[0-3]):([0-5]\d)\b",
-            text
-        )
-
-        if time_match:
-
-            hour = int(
-                time_match.group(1)
-            )
-
-            minute = time_match.group(2)
-
-            return f"{hour:02d}:{minute}"
+        # -----------------------------------------
+        # 1. 12-hour format with AM/PM
+        #    8:00 AM
+        #    8:00 PM
+        #    8:00 a.m.
+        #    8:00 p.m.
+        #    8 AM
+        #    8 PM
+        # -----------------------------------------
 
         am_pm_match = re.search(
             r"\b("
             r"0?[1-9]|1[0-2]"
             r")"
-            r":"
+            r"(?:[:.]"
             r"([0-5]\d)"
+            r")?"
             r"\s*"
-            r"(AM|PM)"
+            r"(A\.?M\.?|P\.?M\.?)"
             r"\b",
             text,
             flags=re.IGNORECASE
@@ -169,12 +164,16 @@ class IntentDetector:
                 am_pm_match.group(1)
             )
 
-            minute = int(
-                am_pm_match.group(2)
-            )
+            minute = am_pm_match.group(2)
+
+            if minute is None:
+                minute = 0
+            else:
+                minute = int(minute)
 
             period = (
                 am_pm_match.group(3)
+                .replace(".", "")
                 .upper()
             )
 
@@ -190,39 +189,28 @@ class IntentDetector:
 
             return f"{hour:02d}:{minute:02d}"
 
-        hour_only_match = re.search(
-            r"\b("
-            r"0?[1-9]|1[0-2]"
-            r")"
-            r"\s*"
-            r"(AM|PM)"
-            r"\b",
-            text,
-            flags=re.IGNORECASE
+
+        # -----------------------------------------
+        # 2. 24-hour format
+        #    14:30
+        #    08:00
+        # -----------------------------------------
+
+        time_match = re.search(
+            r"\b([01]?\d|2[0-3]):([0-5]\d)\b",
+            text
         )
 
-        if hour_only_match:
+        if time_match:
 
             hour = int(
-                hour_only_match.group(1)
+                time_match.group(1)
             )
 
-            period = (
-                hour_only_match.group(2)
-                .upper()
-            )
+            minute = time_match.group(2)
 
-            if period == "AM":
+            return f"{hour:02d}:{minute}"
 
-                if hour == 12:
-                    hour = 0
-
-            else:
-
-                if hour != 12:
-                    hour += 12
-
-            return f"{hour:02d}:00"
 
         return ""
 
@@ -1437,6 +1425,7 @@ class IntentDetector:
             "BROWSE_WEB",
             "GET_TIME",
             "GET_DATE",
+            "STOP",
             "GENERAL_QUERY"
         }
 
@@ -1698,6 +1687,98 @@ class IntentDetector:
 
                 return "#message"
 
+        if action == "download":
+
+            direct_download_match = re.search(
+                r"\b(?:download|save)\s+"
+                r"(?:the\s+)?"
+                r"([#.][A-Za-z0-9_-]+)",
+                text,
+                flags=re.IGNORECASE
+            )
+
+            if direct_download_match:
+
+                selector = (
+                    direct_download_match.group(1)
+                    .strip()
+                )
+
+                if selector:
+                    return selector
+
+            natural_download_match = re.search(
+                r"(.+?)\s+"
+                r"(?:download|save)\b"
+                r"(?:\s+kar(?:o|na|do)|"
+                r"\s+please)?\s*[.!?]*$",
+                text,
+                flags=re.IGNORECASE
+            )
+
+            if natural_download_match:
+
+                target_text = (
+                    natural_download_match.group(1)
+                    .strip(" .,!? ")
+                )
+
+                target_text = re.sub(
+                    r"^(?:the|this|that)\s+",
+                    "",
+                    target_text,
+                    flags=re.IGNORECASE
+                ).strip()
+
+                if target_text:
+
+                    safe_target = (
+                        target_text
+                        .replace("\\", "\\\\")
+                        .replace("'", "\\'")
+                    )
+
+                    return (
+                        f"li:has-text('{safe_target}') a[download]"
+                    )
+
+            reverse_download_match = re.search(
+                r"\b(?:download|save)\s+"
+                r"(?:the\s+)?"
+                r"(.+?)"
+                r"(?:\s+kar(?:o|na|do))?"
+                r"\s*[.!?]*$",
+                text,
+                flags=re.IGNORECASE
+            )
+
+            if reverse_download_match:
+
+                target_text = (
+                    reverse_download_match.group(1)
+                    .strip(" .,!? ")
+                )
+
+                if target_text:
+
+                    safe_target = (
+                        target_text
+                        .replace("\\", "\\\\")
+                        .replace("'", "\\'")
+                    )
+
+                    return (
+                        f"li:has-text('{safe_target}') a[download]"
+                    )
+
+            if re.search(
+                r"\b(?:download|save)\s+"
+                r"(?:the\s+)?(?:file|document|notes?)\b",
+                lower_text
+            ):
+
+                return "a[download]"
+
         return ""
 
     # =========================================
@@ -1723,6 +1804,8 @@ class IntentDetector:
             "type",
             "read",
             "extract",
+            "download",
+            "save",
             "close"
         ]
 
@@ -1733,7 +1816,7 @@ class IntentDetector:
             return None
 
         parts = re.split(
-            r"\s+(?:and|then)\s+|"
+            r"\s+(?:and|then|aur)\s+|"
             r"\s*,\s*",
             text,
             flags=re.IGNORECASE
@@ -1784,7 +1867,10 @@ class IntentDetector:
 
             navigate_match = re.search(
                 r"\b(?:navigate\s+to|"
-                r"go\s+to|visit)\b",
+                r"go\s+to|visit|"
+                r"par\s+jao|"
+                r"par\s+jaiye|"
+                r"par\s+jana)\b",
                 lower_segment
             )
 
@@ -1908,6 +1994,39 @@ class IntentDetector:
                 )
 
                 continue
+
+            download_match = re.search(
+                r"\b(?:download|save)\b",
+                lower_segment
+            )
+
+            if download_match:
+
+                selector = (
+                    self._extract_browser_selector(
+                        segment,
+                        "download"
+                    )
+                )
+
+                if selector:
+
+                    download_parameters = {
+                        "action": "download",
+                        "selector": selector
+                    }
+
+                    if known_url:
+
+                        download_parameters[
+                            "use_current_page"
+                        ] = True
+
+                    steps.append(
+                        download_parameters
+                    )
+
+                    continue
 
             close_match = re.search(
                 r"\b(?:close|exit)\b"
@@ -2199,9 +2318,33 @@ class IntentDetector:
             return browser_result
 
         # =====================================
-        # TIME / DATE
+        # STOP / CANCEL ZARVIS
         # =====================================
 
+        stop_patterns = [
+            r"^\s*stop\s*$",
+            r"^\s*stop\s+listening\s*$",
+            r"^\s*stop\s+jarvis\s*$",
+            r"^\s*jarvis\s+stop\s*$",
+            r"^\s*zarvis\s+stop\s*$",
+        ]
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in stop_patterns
+        ):
+            return {
+                "intent": "STOP",
+                "confidence": 0.99,
+                "parameters": {}
+            }
+        # =====================================
+        # TIME / DATE
+        # =====================================
+    
         time_patterns = [
             r"\bwhat\s+time\s+is\s+it\b",
             r"\bwhat(?:'s| is)\s+the\s+time\b",
@@ -2665,7 +2808,7 @@ class IntentDetector:
                 }
             }
 
-        # =====================================
+                # =====================================
         # CREATE REMINDER
         # =====================================
 
@@ -2685,25 +2828,233 @@ class IntentDetector:
         ):
 
             reminder_text = text
+            reminder_time = None
 
-            match = re.search(
-                r"remind\s+me\s+"
-                r"(?:to\s+)?(.+)",
-                lower_text
+            # -----------------------------------------
+            # REMOVE WAKE WORD
+            # -----------------------------------------
+
+            reminder_source = re.sub(
+                r"^\s*(?:zarvis|jarvis)\s*[,:\-]?\s*",
+                "",
+                text,
+                flags=re.IGNORECASE
+            ).strip()
+
+            # -----------------------------------------
+            # RELATIVE TIME:
+            # "in 30 minutes"
+            # "in 2 hours"
+            # -----------------------------------------
+
+            relative_match = re.search(
+                r"\bin\s+(\d+)\s*"
+                r"(minute|minutes|min|mins|hour|hours|hr|hrs)\b",
+                reminder_source,
+                flags=re.IGNORECASE
             )
 
-            if match:
+            if relative_match:
+
+                amount = int(
+                    relative_match.group(1)
+                )
+
+                unit = (
+                    relative_match.group(2)
+                    .lower()
+                )
+
+                now = datetime.now()
+
+                if unit.startswith("hour") or unit in (
+                    "hr",
+                    "hrs"
+                ):
+
+                    reminder_datetime = (
+                        now + timedelta(
+                            hours=amount
+                        )
+                    )
+
+                else:
+
+                    reminder_datetime = (
+                        now + timedelta(
+                            minutes=amount
+                        )
+                    )
+
+                reminder_time = (
+                    reminder_datetime.isoformat(
+                        timespec="seconds"
+                    )
+                )
+
+                reminder_text = re.sub(
+                    relative_match.group(0),
+                    "",
+                    reminder_source,
+                    flags=re.IGNORECASE
+                ).strip()
+
+            else:
+
+                # -----------------------------------------
+                # CLOCK TIME
+                # Examples:
+                # 8 AM
+                # 8:00 AM
+                # 8 a.m.
+                # 20:00
+                # -----------------------------------------
+
+                time_match = re.search(
+                    r"\b(\d{1,2})"
+                    r"(?:[:.](\d{2}))?"
+                    r"\s*"
+                    r"(a\.?m\.?|p\.?m\.?)\b",
+                    reminder_source,
+                    flags=re.IGNORECASE
+                )
+
+                if time_match:
+
+                    hour = int(
+                        time_match.group(1)
+                    )
+
+                    minute = int(
+                        time_match.group(2)
+                        or 0
+                    )
+
+                    meridiem = (
+                        time_match.group(3)
+                        .lower()
+                        .replace(".", "")
+                    )
+
+                    if not 1 <= hour <= 12:
+                        hour = None
+
+                    if hour is not None:
+
+                        if meridiem == "pm" and hour != 12:
+                            hour += 12
+
+                        elif meridiem == "am" and hour == 12:
+                            hour = 0
+
+                        now = datetime.now()
+
+                        reminder_datetime = now.replace(
+                            hour=hour,
+                            minute=minute,
+                            second=0,
+                            microsecond=0
+                        )
+
+                        # -----------------------------------------
+                        # TODAY / TOMORROW
+                        # -----------------------------------------
+
+                        if re.search(
+                            r"\btomorrow\b",
+                            reminder_source,
+                            flags=re.IGNORECASE
+                        ):
+
+                            reminder_datetime += timedelta(
+                                days=1
+                            )
+
+                        elif reminder_datetime <= now:
+
+                            reminder_datetime += timedelta(
+                                days=1
+                            )
+
+                        reminder_time = (
+                            reminder_datetime.isoformat(
+                                timespec="seconds"
+                            )
+                        )
+
+                        # -----------------------------------------
+                        # REMOVE TIME PHRASE FROM REMINDER TEXT
+                        # -----------------------------------------
+
+                        reminder_text = re.sub(
+                            time_match.group(0),
+                            "",
+                            reminder_source,
+                            flags=re.IGNORECASE
+                        )
+
+                        reminder_text = re.sub(
+                            r"\btomorrow\b",
+                            "",
+                            reminder_text,
+                            flags=re.IGNORECASE
+                        )
+
+                        reminder_text = re.sub(
+                            r"\btoday\b",
+                            "",
+                            reminder_text,
+                            flags=re.IGNORECASE
+                        )
+
+                        reminder_text = re.sub(
+                            r"\bat\s*$",
+                            "",
+                            reminder_text,
+                            flags=re.IGNORECASE
+                        )
+
+                        reminder_text = re.sub(
+                            r"\s+",
+                            " ",
+                            reminder_text
+                        ).strip(
+                            " ,.-:"
+                        )
+
+                else:
+
+                    # -----------------------------------------
+                    # NO TIME FOUND
+                    # -----------------------------------------
+
+                    reminder_text = re.sub(
+                        r"^\s*(?:remind\s+me|"
+                        r"create\s+(?:a\s+)?reminder|"
+                        r"set\s+(?:a\s+)?reminder|"
+                        r"add\s+(?:a\s+)?reminder)"
+                        r"\s*(?:to\s+)?",
+                        "",
+                        reminder_source,
+                        flags=re.IGNORECASE
+                    ).strip()
+
+            # -----------------------------------------
+            # FINAL CLEANUP
+            # -----------------------------------------
+
+            if not reminder_text:
 
                 reminder_text = (
-                    match.group(1)
-                    .strip()
+                    "Reminder"
                 )
 
             return {
                 "intent": "CREATE_REMINDER",
-                "confidence": 0.9,
+                "confidence": 0.98,
                 "parameters": {
-                    "reminder": reminder_text
+                    "reminder": reminder_text,
+                    "time": reminder_time
                 }
             }
 
@@ -3596,7 +3947,7 @@ User message:
         except Exception as error:
 
             print(
-                "âš ï¸ Local browser detection failed:"
+                "⚠️ Local browser detection failed:"
             )
 
             print(
@@ -3650,7 +4001,7 @@ User message:
         except Exception as error:
 
             print(
-                "âš ï¸ Local calendar detection failed:"
+                "⚠️ Local calendar detection failed:"
             )
 
             print(
@@ -3704,7 +4055,7 @@ User message:
         except Exception as error:
 
             print(
-                "âš ï¸ Local booking detection failed:"
+                "⚠️ Local booking detection failed:"
             )
 
             print(
@@ -3768,7 +4119,7 @@ User message:
         except Exception as error:
 
             print(
-                "âš ï¸ Local timer detection failed:"
+                "⚠️ Local timer detection failed:"
             )
 
             print(
@@ -3931,7 +4282,7 @@ User message:
         except Exception as error:
 
             print(
-                "âš ï¸ Local shopping detection failed:"
+                "⚠️ Local shopping detection failed:"
             )
 
             print(
@@ -4016,6 +4367,22 @@ User message:
 
                     return local_result
 
+                local_confidence = local_result.get(
+                    "confidence",
+                    0.0
+                )
+
+                try:
+                    local_confidence = float(
+                        local_confidence
+                    )
+                except Exception:
+                    local_confidence = 0.0
+
+                if local_confidence >= 0.7:
+
+                    return local_result
+
         except Exception as error:
 
             print(
@@ -4089,4 +4456,6 @@ User message:
                     "confidence": 0.0,
                     "parameters": {}
                 }
+
+
 

@@ -7,7 +7,11 @@ import api from "./api";
 // ==========================================
 // Send a message to Zarvis
 // ==========================================
-export async function sendMessage(message, userId) {
+export async function sendMessage(
+    message,
+    userId,
+    approvalId = null
+) {
     if (!message || !message.trim()) {
         throw new Error("Message cannot be empty.");
     }
@@ -16,10 +20,18 @@ export async function sendMessage(message, userId) {
         throw new Error("User ID is required.");
     }
 
-    return api.post("/api/chat", {
+    const payload = {
         message: message.trim(),
         user_id: userId,
-    });
+    };
+
+    // Send approval_id only when the user has
+    // explicitly approved the pending action.
+    if (approvalId) {
+        payload.approval_id = approvalId;
+    }
+
+    return api.post("/api/chat", payload);
 }
 
 // ==========================================
@@ -39,7 +51,11 @@ export async function clearChatHistory() {
 // ==========================================
 // Send voice/text command
 // ==========================================
-export async function sendCommand(command, userId) {
+export async function sendCommand(
+    command,
+    userId,
+    approvalId = null
+) {
     if (!command || !command.trim()) {
         throw new Error("Command cannot be empty.");
     }
@@ -48,10 +64,16 @@ export async function sendCommand(command, userId) {
         throw new Error("User ID is required.");
     }
 
-    return api.post("/api/chat", {
+    const payload = {
         message: command.trim(),
         user_id: userId,
-    });
+    };
+
+    if (approvalId) {
+        payload.approval_id = approvalId;
+    }
+
+    return api.post("/api/chat", payload);
 }
 
 // ==========================================

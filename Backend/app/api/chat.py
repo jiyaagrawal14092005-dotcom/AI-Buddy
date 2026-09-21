@@ -143,7 +143,7 @@ async def chat(
     # SEND REQUEST TO AI BRAIN
     # =====================================================
 
-    result = brain.respond(
+    result = await brain.respond(
         message=sanitized_message,
         user_id=request.user_id,
         db=db,

@@ -970,7 +970,7 @@ class AIBrain:
     # WORKFLOW EXECUTION
     # =================================
 
-    async def _execute_workflow(
+    def _execute_workflow(
         self,
         plan: dict,
         user_id: int,
@@ -980,7 +980,7 @@ class AIBrain:
         try:
 
             workflow_result = (
-                await self.workflow_engine.create_workflow(
+                self.workflow_engine.create_workflow(
                     plan=plan,
                     user_id=user_id,
                     db=db
@@ -1242,7 +1242,7 @@ class AIBrain:
     # MAIN RESPONSE
     # =================================
 
-    async def respond(
+    def respond(
         self,
         message: str,
         user_id: int,
@@ -2067,7 +2067,7 @@ class AIBrain:
                         if tool_name == "browser":
 
                             workflow_result = (
-                                await self._execute_workflow(
+                                self._execute_workflow(
                                     plan=plan,
                                     user_id=user_id,
                                     db=db
@@ -2115,10 +2115,6 @@ class AIBrain:
 
                             else:
 
-                                # ---------------------------------
-                                # USER-FRIENDLY BROWSER ERROR
-                                # ---------------------------------
-
                                 response_message = (
                                     workflow_result.get(
                                         "message",
@@ -2126,107 +2122,6 @@ class AIBrain:
                                         "execution failed."
                                     )
                                 )
-
-                                workflow_data = (
-                                    workflow_result.get(
-                                        "workflow",
-                                        {}
-                                    )
-                                )
-
-                                workflow_results = (
-                                    workflow_data.get(
-                                        "results",
-                                        []
-                                    )
-                                )
-
-                                if workflow_results:
-
-                                    first_result = (
-                                        workflow_results[0]
-                                    )
-
-                                    step_result = (
-                                        first_result.get(
-                                            "result",
-                                            {}
-                                        )
-                                    )
-
-                                    error_message = (
-                                        step_result.get(
-                                            "error",
-                                            ""
-                                        )
-                                    )
-
-                                    error_lower = (
-                                        str(
-                                            error_message
-                                        ).lower()
-                                    )
-
-                                    if (
-                                        "err_connection_refused"
-                                        in error_lower
-                                    ):
-
-                                        response_message = (
-                                            "Website open nahi ho saki. "
-                                            "Server connection refused "
-                                            "kar raha hai. Please check "
-                                            "whether the website/server "
-                                            "is running."
-                                        )
-
-                                    elif (
-                                        "timeout"
-                                        in error_lower
-                                    ):
-
-                                        response_message = (
-                                            "Website open hone mein "
-                                            "bahut zyada time laga. "
-                                            "Please check the website "
-                                            "and try again."
-                                        )
-
-                                    elif (
-                                        "net::err_name_not_resolved"
-                                        in error_lower
-                                    ):
-
-                                        response_message = (
-                                            "Website ka address "
-                                            "resolve nahi ho saka. "
-                                            "Please check the URL."
-                                        )
-
-                                    elif (
-                                        "selector"
-                                        in error_lower
-                                        and (
-                                            "not found"
-                                            in error_lower
-                                            or "failed"
-                                            in error_lower
-                                        )
-                                    ):
-
-                                        response_message = (
-                                            "Requested element ya item "
-                                            "website par nahi mila."
-                                        )
-
-                                    elif error_message:
-
-                                        response_message = (
-                                            "Browser action complete "
-                                            "nahi ho saki. "
-                                            "Please check the website "
-                                            "and requested action."
-                                        )
 
                         # ---------------------------------
                         # OTHER TOOLS

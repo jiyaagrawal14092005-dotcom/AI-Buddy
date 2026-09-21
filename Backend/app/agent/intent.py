@@ -1,4 +1,4 @@
-﻿import json
+import json
 import re
 from datetime import date, datetime, timedelta
 from google import genai
@@ -134,29 +134,25 @@ class IntentDetector:
         text: str
     ) -> str:
 
-        time_match = re.search(
-            r"\b([01]?\d|2[0-3]):([0-5]\d)\b",
-            text
-        )
-
-        if time_match:
-
-            hour = int(
-                time_match.group(1)
-            )
-
-            minute = time_match.group(2)
-
-            return f"{hour:02d}:{minute}"
+        # -----------------------------------------
+        # 1. 12-hour format with AM/PM
+        #    8:00 AM
+        #    8:00 PM
+        #    8:00 a.m.
+        #    8:00 p.m.
+        #    8 AM
+        #    8 PM
+        # -----------------------------------------
 
         am_pm_match = re.search(
             r"\b("
             r"0?[1-9]|1[0-2]"
             r")"
-            r":"
+            r"(?:[:.]"
             r"([0-5]\d)"
+            r")?"
             r"\s*"
-            r"(AM|PM)"
+            r"(A\.?M\.?|P\.?M\.?)"
             r"\b",
             text,
             flags=re.IGNORECASE
@@ -168,12 +164,16 @@ class IntentDetector:
                 am_pm_match.group(1)
             )
 
-            minute = int(
-                am_pm_match.group(2)
-            )
+            minute = am_pm_match.group(2)
+
+            if minute is None:
+                minute = 0
+            else:
+                minute = int(minute)
 
             period = (
                 am_pm_match.group(3)
+                .replace(".", "")
                 .upper()
             )
 
@@ -189,39 +189,28 @@ class IntentDetector:
 
             return f"{hour:02d}:{minute:02d}"
 
-        hour_only_match = re.search(
-            r"\b("
-            r"0?[1-9]|1[0-2]"
-            r")"
-            r"\s*"
-            r"(AM|PM)"
-            r"\b",
-            text,
-            flags=re.IGNORECASE
+
+        # -----------------------------------------
+        # 2. 24-hour format
+        #    14:30
+        #    08:00
+        # -----------------------------------------
+
+        time_match = re.search(
+            r"\b([01]?\d|2[0-3]):([0-5]\d)\b",
+            text
         )
 
-        if hour_only_match:
+        if time_match:
 
             hour = int(
-                hour_only_match.group(1)
+                time_match.group(1)
             )
 
-            period = (
-                hour_only_match.group(2)
-                .upper()
-            )
+            minute = time_match.group(2)
 
-            if period == "AM":
+            return f"{hour:02d}:{minute}"
 
-                if hour == 12:
-                    hour = 0
-
-            else:
-
-                if hour != 12:
-                    hour += 12
-
-            return f"{hour:02d}:00"
 
         return ""
 
@@ -1497,6 +1486,18 @@ class IntentDetector:
         text: str
     ) -> str:
 
+        # Support Markdown-style URLs:
+        # [https://example.com](https://example.com)
+        markdown_url_match = re.search(
+            r"\[[^\]]*\]\((https?://[^)]+)\)",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        if markdown_url_match:
+            return markdown_url_match.group(1).rstrip(".,?!")
+
+        # Support normal URLs.
         url_match = re.search(
             r"https?://[^\s]+",
             text,
@@ -1504,13 +1505,22 @@ class IntentDetector:
         )
 
         if url_match:
-
             return (
                 url_match.group(0)
                 .rstrip(".,?!")
             )
 
         lower_text = text.lower()
+
+        # Localhost URL support
+        localhost_match = re.search(
+            r"\blocalhost(?:\s+|:)(\d{1,5})\b",
+            lower_text
+        )
+
+        if localhost_match:
+            port = localhost_match.group(1)
+            return f"http://127.0.0.1:{port}"
 
         if "google" in lower_text:
             return "https://www.google.com"
@@ -1698,6 +1708,106 @@ class IntentDetector:
 
                 return "#message"
 
+        if action == "download":
+
+            direct_download_match = re.search(
+                r"\b(?:download|save)\s+"
+                r"(?:the\s+)?"
+                r"([#.][A-Za-z0-9_-]+)",
+                text,
+                flags=re.IGNORECASE
+            )
+
+            if direct_download_match:
+
+                selector = (
+                    direct_download_match.group(1)
+                    .strip()
+                )
+
+                if selector:
+                    return selector
+
+            natural_download_match = re.search(
+                r"(.+?)\s+"
+                r"(?:download|save)\b"
+                r"(?:\s+(?:kar(?:o|na|do)|please))*\s*[.!?]*$",
+                text,
+                flags=re.IGNORECASE
+            )
+
+            if natural_download_match:
+
+                target_text = (
+                    natural_download_match.group(1)
+                    .strip(" .,!? ")
+                )
+
+                target_text = re.sub(
+                    r"^(?:the|this|that)\s+",
+                    "",
+                    target_text,
+                    flags=re.IGNORECASE
+                ).strip()
+
+                if target_text:
+
+                    safe_target = (
+                        target_text
+                        .replace("\\", "\\\\")
+                        .replace("'", "\\'")
+                    )
+
+                    return (
+                        f"li:has-text('{safe_target}') a[download]"
+                    )
+
+            reverse_download_match = re.search(
+                r"\b(?:download|save)\s+"
+                r"(?:the\s+)?"
+                r"(.+?)"
+                r"(?:\s+kar(?:o|na|do))?"
+                r"\s*[.!?]*$",
+                text,
+                flags=re.IGNORECASE
+            )
+
+            if reverse_download_match:
+
+                target_text = (
+                    reverse_download_match.group(1)
+                    .strip(" .,!? ")
+                )
+
+                # Remove trailing voice-command words accidentally
+                # captured as the download target.
+                target_text = re.sub(
+                    r"\s+(?:please|karo|karna|kardo|do)\s*$",
+                    "",
+                    target_text,
+                    flags=re.IGNORECASE
+                ).strip(" .,!? ")
+
+                if target_text:
+
+                    safe_target = (
+                        target_text
+                        .replace("\\", "\\\\")
+                        .replace("'", "\\'")
+                    )
+
+                    return (
+                        f"li:has-text('{safe_target}') a[download]"
+                    )
+
+            if re.search(
+                r"\b(?:download|save)\s+"
+                r"(?:the\s+)?(?:file|document|notes?)\b",
+                lower_text
+            ):
+
+                return "a[download]"
+
         return ""
 
     # =========================================
@@ -1723,6 +1833,8 @@ class IntentDetector:
             "type",
             "read",
             "extract",
+            "download",
+            "save",
             "close"
         ]
 
@@ -1733,8 +1845,12 @@ class IntentDetector:
             return None
 
         parts = re.split(
-            r"\s+(?:and|then)\s+|"
-            r"\s*,\s*",
+            r"\s+(?:and|then|aur)\s+|"
+            r"\s*,\s*|"
+            r"\s+(?=(?:please\s+)?"
+            r"(?:read|extract|"
+            r"click|press|select|fill|enter|"
+            r"type|put|close|exit)\b)",
             text,
             flags=re.IGNORECASE
         )
@@ -1784,7 +1900,13 @@ class IntentDetector:
 
             navigate_match = re.search(
                 r"\b(?:navigate\s+to|"
-                r"go\s+to|visit)\b",
+                r"go\s+to|visit|"
+                r"par\s+jao|"
+                r"par\s+jaiye|"
+                r"par\s+jana|"
+                r"per\s+jao|"
+                r"per\s+jaiye|"
+                r"per\s+jana)\b",
                 lower_segment
             )
 
@@ -1908,6 +2030,39 @@ class IntentDetector:
                 )
 
                 continue
+
+            download_match = re.search(
+                r"\b(?:download|save)\b",
+                lower_segment
+            )
+
+            if download_match:
+
+                selector = (
+                    self._extract_browser_selector(
+                        segment,
+                        "download"
+                    )
+                )
+
+                if selector:
+
+                    download_parameters = {
+                        "action": "download",
+                        "selector": selector
+                    }
+
+                    if known_url:
+
+                        download_parameters[
+                            "use_current_page"
+                        ] = True
+
+                    steps.append(
+                        download_parameters
+                    )
+
+                    continue
 
             close_match = re.search(
                 r"\b(?:close|exit)\b"
@@ -2121,7 +2276,10 @@ class IntentDetector:
             r"\bnavigate\s+to\b",
             r"\bgo\s+to\b",
             r"\bvisit\b",
-            r"\bopen\s+(?:the\s+)?website\b"
+            r"\bopen\s+(?:the\s+)?website\b",
+            r"\bpar\s+jao\b",
+            r"\bpar\s+jaiye\b",
+            r"\bpar\s+jana\b"
         ]
 
         if any(
@@ -3828,7 +3986,7 @@ User message:
         except Exception as error:
 
             print(
-                "âš ï¸ Local browser detection failed:"
+                "⚠️ Local browser detection failed:"
             )
 
             print(
@@ -3882,7 +4040,7 @@ User message:
         except Exception as error:
 
             print(
-                "âš ï¸ Local calendar detection failed:"
+                "⚠️ Local calendar detection failed:"
             )
 
             print(
@@ -3936,7 +4094,7 @@ User message:
         except Exception as error:
 
             print(
-                "âš ï¸ Local booking detection failed:"
+                "⚠️ Local booking detection failed:"
             )
 
             print(
@@ -4000,7 +4158,7 @@ User message:
         except Exception as error:
 
             print(
-                "âš ï¸ Local timer detection failed:"
+                "⚠️ Local timer detection failed:"
             )
 
             print(
@@ -4163,7 +4321,7 @@ User message:
         except Exception as error:
 
             print(
-                "âš ï¸ Local shopping detection failed:"
+                "⚠️ Local shopping detection failed:"
             )
 
             print(
@@ -4337,5 +4495,6 @@ User message:
                     "confidence": 0.0,
                     "parameters": {}
                 }
+
 
 

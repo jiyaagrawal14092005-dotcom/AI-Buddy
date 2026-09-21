@@ -1,6 +1,4 @@
 from urllib.parse import urlparse
-from pathlib import Path
-import re
 import traceback
 
 from app.tools.base_tool import BaseTool
@@ -25,20 +23,18 @@ class BrowserTool(BaseTool):
             description=(
                 "Execute safe browser actions such as opening "
                 "websites, navigating to URLs, clicking elements, "
-                "filling input fields, downloading files, reading "
-                "page content, and managing browser sessions."
+                "filling input fields, reading page content, "
+                "and managing browser sessions."
             )
         )
 
         self.user_id = (
-            self._validate_user_id(user_id)
+            str(user_id)
             if user_id is not None
             else None
         )
 
         self.session: BrowserSession | None = None
-
-        self.download_root = Path(__file__).resolve().parents[2] / "downloads"
 
         if self.user_id is not None:
             self.session = (
@@ -50,44 +46,6 @@ class BrowserTool(BaseTool):
     # =================================
     # USER SESSION MANAGEMENT
     # =================================
-
-    @staticmethod
-    def _validate_user_id(
-        user_id: int | str
-    ) -> str:
-
-        if user_id is None:
-            raise ValueError(
-                "User ID cannot be empty."
-            )
-
-        user_key = str(user_id).strip()
-
-        if not user_key:
-            raise ValueError(
-                "User ID cannot be empty."
-            )
-
-        if (
-            "/" in user_key
-            or "\\" in user_key
-            or user_key in {".", ".."}
-        ):
-            raise ValueError(
-                "Invalid user ID."
-            )
-
-        if Path(user_key).is_absolute():
-            raise ValueError(
-                "Invalid user ID."
-            )
-
-        if len(user_key) > 128:
-            raise ValueError(
-                "User ID is too long."
-            )
-
-        return user_key
 
     @classmethod
     def _get_or_create_session(
@@ -107,9 +65,12 @@ class BrowserTool(BaseTool):
         user_id: int | str
     ) -> None:
 
-        self.user_id = self._validate_user_id(
-            user_id
-        )
+        if user_id is None:
+            raise ValueError(
+                "User ID cannot be empty."
+            )
+
+        self.user_id = str(user_id)
 
         self.session = (
             self._get_or_create_session(
@@ -139,9 +100,7 @@ class BrowserTool(BaseTool):
         user_id: int | str
     ) -> dict:
 
-        user_key = cls._validate_user_id(
-            user_id
-        )
+        user_key = str(user_id)
 
         session = cls._user_sessions.get(
             user_key
@@ -185,9 +144,7 @@ class BrowserTool(BaseTool):
         user_id: int | str
     ) -> dict:
 
-        user_key = cls._validate_user_id(
-            user_id
-        )
+        user_key = str(user_id)
 
         session = cls._user_sessions.get(
             user_key
@@ -289,14 +246,13 @@ class BrowserTool(BaseTool):
             "click",
             "fill",
             "read",
-            "download",
             "close"
         }
 
         if action not in allowed_actions:
             raise ValueError(
                 "Unsupported browser action. "
-                "Use open, navigate, click, fill, read, download, or close."
+                "Use open, navigate, click, fill, read, or close."
             )
 
         return action
@@ -395,11 +351,10 @@ class BrowserTool(BaseTool):
             prepared_action["url"] = url
 
         # ---------------------------------
-        # DOWNLOAD / CLICK / FILL / READ
+        # CLICK / FILL / READ
         # ---------------------------------
 
         elif action in {
-            "download",
             "click",
             "fill",
             "read"
@@ -430,11 +385,10 @@ class BrowserTool(BaseTool):
                 )
 
         # ---------------------------------
-        # DOWNLOAD / CLICK / FILL REQUIRE SELECTOR
+        # CLICK / FILL REQUIRE SELECTOR
         # ---------------------------------
 
         if action in {
-            "download",
             "click",
             "fill"
         }:
@@ -631,132 +585,6 @@ class BrowserTool(BaseTool):
             "url": page.url,
             "title": await page.title(),
             "content": content
-        }
-
-    # =================================
-    # DOWNLOAD FILE
-    # =================================
-
-    def _safe_filename(self, filename: str | None) -> str:
-        if not filename:
-            filename = "download"
-
-        filename = Path(filename).name
-        filename = re.sub(r'[<>:"/\\\\|?*\\x00-\\x1f]', "_", filename)
-        filename = filename.strip().strip(".")
-
-        if not filename:
-            filename = "download"
-
-        return filename
-
-    async def _download_file(
-        self,
-        selector: str,
-        requested_url: str | None = None,
-        use_current_page: bool = True
-    ) -> dict:
-        selector = self._validate_selector(selector)
-        page = await self._get_page()
-
-        if (
-            requested_url
-            and not use_current_page
-            and page.url != requested_url
-        ):
-            await self._open_page(requested_url)
-            page = self._get_session().get_page()
-
-        download_root = self.download_root.resolve()
-        download_dir = download_root / str(self.user_id)
-
-        download_dir.mkdir(
-            parents=True,
-            exist_ok=True
-        )
-
-        resolved_download_dir = download_dir.resolve()
-
-        try:
-            resolved_download_dir.relative_to(
-                download_root
-            )
-        except ValueError:
-            raise ValueError(
-                "Download directory is outside the "
-                "configured download root."
-            )
-
-        element = page.locator(selector)
-        await element.first.wait_for(
-            state="visible",
-            timeout=10000
-        )
-
-        async with page.expect_download(timeout=15000) as download_info:
-            await element.first.click(timeout=10000)
-
-        download = await download_info.value
-        suggested_name = self._safe_filename(
-            download.suggested_filename
-        )
-        destination = download_dir / suggested_name
-
-        # Avoid silently overwriting an existing file.
-        if destination.exists():
-            stem = destination.stem
-            suffix = destination.suffix
-            counter = 1
-
-            while True:
-                candidate = (
-                    download_dir /
-                    f"{stem}_{counter}{suffix}"
-                )
-                if not candidate.exists():
-                    destination = candidate
-                    break
-                counter += 1
-
-        resolved_destination = destination.resolve()
-
-        try:
-            resolved_destination.relative_to(
-                resolved_download_dir
-            )
-        except ValueError:
-            raise ValueError(
-                "Download destination is outside "
-                "the user's download directory."
-            )
-
-        await download.save_as(
-            str(resolved_destination)
-        )
-
-        destination = resolved_destination
-
-        if not destination.exists():
-            raise FileNotFoundError(
-                "Downloaded file could not be verified on disk."
-            )
-
-        file_size = destination.stat().st_size
-        failure = await download.failure()
-
-        if failure:
-            raise RuntimeError(
-                f"Browser download failed: {failure}"
-            )
-
-        return {
-            "selector": selector,
-            "url": page.url,
-            "title": await page.title(),
-            "filename": destination.name,
-            "path": str(destination.resolve()),
-            "size": file_size,
-            "size_bytes": file_size,
         }
 
     # =================================
@@ -1106,88 +934,6 @@ class BrowserTool(BaseTool):
                     },
                     "message": (
                         "Browser input filled successfully."
-                    )
-                }
-
-            # =============================
-            # DOWNLOAD
-            # =============================
-
-            if action_name == "download":
-
-                await self._get_page()
-
-                current_page = (
-                    self._get_session().get_page()
-                )
-
-                requested_url = (
-                    browser_data.get(
-                        "url"
-                    )
-                )
-
-                use_current = (
-                    browser_data.get(
-                        "use_current_page",
-                        False
-                    )
-                )
-
-                # ---------------------------------
-                # NAVIGATE ONLY WHEN URL PROVIDED
-                # ---------------------------------
-
-                if (
-                    requested_url
-                    and not use_current
-                    and current_page.url
-                    != requested_url
-                ):
-
-                    await self._open_page(
-                        requested_url
-                    )
-
-                download_data = (
-                    await self._download_file(
-                        selector=browser_data[
-                            "selector"
-                        ],
-                        requested_url=requested_url,
-                        use_current_page=use_current
-                    )
-                )
-
-                return {
-                    "success": True,
-                    "status": "completed",
-                    "browser": {
-                        "action": "download",
-                        "user_id": self.user_id,
-                        "requested_url": requested_url,
-                        "used_current_page": use_current,
-                        "final_url": download_data[
-                            "url"
-                        ],
-                        "title": download_data[
-                            "title"
-                        ],
-                        "selector": download_data[
-                            "selector"
-                        ],
-                        "filename": download_data[
-                            "filename"
-                        ],
-                        "path": download_data[
-                            "path"
-                        ],
-                        "size_bytes": download_data[
-                            "size_bytes"
-                        ],
-                    },
-                    "message": (
-                        "Browser file downloaded successfully."
                     )
                 }
 

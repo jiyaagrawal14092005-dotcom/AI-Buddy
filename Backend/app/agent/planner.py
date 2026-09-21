@@ -67,6 +67,7 @@ class Planner:
             "click",
             "fill",
             "read",
+            "download",
             "close"
         }
 
@@ -189,7 +190,7 @@ class Planner:
                 validated,
                 (
                     f"Unsupported browser action '{action}'. "
-                    "Use open, navigate, click, fill, read, or close."
+                    "Use open, navigate, click, fill, read, download, or close."
                 )
             )
 
@@ -266,7 +267,8 @@ class Planner:
 
         if action in {
             "click",
-            "fill"
+            "fill",
+            "download"
         }:
 
             selector = validated.get(

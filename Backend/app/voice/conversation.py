@@ -273,7 +273,7 @@ class VoiceConversation:
         # method and returns a dictionary.
         # Therefore, do NOT use await here.
 
-        brain_result = self.ai_brain.respond(
+        brain_result = await self.ai_brain.respond(
             brain_input,
             user_id,
             db

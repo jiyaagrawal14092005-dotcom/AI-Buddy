@@ -22,6 +22,10 @@ import Sidebar from "../components/common/Sidebar";
 import Navbar from "../components/common/Navbar";
 import { useAuth } from "../context/AuthContext";
 import { sendMessage } from "../services/chatService";
+import {
+    approveAction,
+    rejectAction,
+} from "../services/approvalService";
 
 function Assistant() {
     const navigate = useNavigate();
@@ -31,6 +35,8 @@ function Assistant() {
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isThinking, setIsThinking] = useState(false);
     const [inputText, setInputText] = useState("");
+    const [pendingApproval, setPendingApproval] = useState(null);
+    const [isApprovalProcessing, setIsApprovalProcessing] = useState(false);
 
     const [messages, setMessages] = useState([
         {
@@ -478,6 +484,51 @@ function Assistant() {
                 result
             );
 
+            // ==========================================
+            // CHECK FOR ACTION APPROVAL
+            // ==========================================
+
+            if (
+                result?.approval_required &&
+                result?.approval_id
+            ) {
+                setIsThinking(false);
+                thinkingRef.current = false;
+
+                const approvalParameters =
+                    result?.parameters ||
+                    result?.plan?.parameters ||
+                    result?.plan?.details ||
+                    {};
+
+                setPendingApproval({
+                    approvalId: result.approval_id,
+                    command: cleanText,
+                    intent: result.intent,
+                    parameters: approvalParameters,
+                    message:
+                        result.message ||
+                        "This action requires your approval before execution.",
+                });
+
+                const approvalMessage =
+                    result.message ||
+                    "This booking requires your approval before I can confirm it.";
+
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        type: "zarvis",
+                        text: approvalMessage,
+                        time: "NOW",
+                    },
+                ]);
+
+                speak(approvalMessage);
+
+                return;
+            }
+
             const response =
                 result?.message ||
                 result?.response ||
@@ -520,6 +571,93 @@ function Assistant() {
             ]);
 
             speak(errorMessage);
+        }
+    };
+
+    // ==========================================
+    // APPROVE PENDING ACTION
+    // ==========================================
+
+    const handleApprove = async () => {
+        if (!pendingApproval?.approvalId) return;
+
+        const approvalId = pendingApproval.approvalId;
+        const originalCommand = pendingApproval.command;
+        const currentUser = userRef.current;
+
+        if (!currentUser?.id) {
+            const message =
+                "You are not logged in. Please login again.";
+            setMessages((prev) => [...prev, { type: "zarvis", text: message, time: "NOW" }]);
+            speak(message);
+            return;
+        }
+
+        try {
+            setIsApprovalProcessing(true);
+
+            const approvalResult = await approveAction(approvalId);
+            console.log("Zarvis approval result:", approvalResult);
+
+            if (!approvalResult?.success && approvalResult?.status !== "APPROVED") {
+                throw new Error(approvalResult?.message || "Approval could not be completed.");
+            }
+
+            const result = await sendMessage(
+                originalCommand,
+                currentUser.id,
+                approvalId
+            );
+
+            console.log("Approved action execution result:", result);
+            setPendingApproval(null);
+
+            const response =
+                result?.message ||
+                result?.response ||
+                result?.reply ||
+                "The action was completed successfully.";
+
+            setMessages((prev) => [...prev, { type: "zarvis", text: response, time: "NOW" }]);
+            speak(response);
+        } catch (error) {
+            console.error("Zarvis approval execution failed:", error);
+            setPendingApproval(null);
+
+            const errorMessage =
+                error?.message ||
+                "I could not complete the approved action.";
+
+            setMessages((prev) => [...prev, { type: "zarvis", text: errorMessage, time: "NOW" }]);
+            speak(errorMessage);
+        } finally {
+            setIsApprovalProcessing(false);
+        }
+    };
+
+    // ==========================================
+    // REJECT PENDING ACTION
+    // ==========================================
+
+    const handleReject = async () => {
+        if (!pendingApproval?.approvalId) return;
+
+        try {
+            setIsApprovalProcessing(true);
+            const result = await rejectAction(pendingApproval.approvalId);
+            console.log("Zarvis rejection result:", result);
+
+            setPendingApproval(null);
+            const message = result?.message || "Okay. I cancelled the booking request.";
+            setMessages((prev) => [...prev, { type: "zarvis", text: message, time: "NOW" }]);
+            speak(message);
+        } catch (error) {
+            console.error("Zarvis rejection failed:", error);
+            const errorMessage = error?.message || "I could not reject the booking request.";
+            setMessages((prev) => [...prev, { type: "zarvis", text: errorMessage, time: "NOW" }]);
+            speak(errorMessage);
+        } finally {
+            setIsApprovalProcessing(false);
         }
     };
 
@@ -1077,6 +1215,61 @@ function Assistant() {
                                             </div>
                                         )
                                     )}
+
+                                {pendingApproval && (
+                                    <div
+                                        style={{
+                                            marginTop: "16px",
+                                            padding: "18px",
+                                            borderRadius: "16px",
+                                            border: "1px solid rgba(124, 92, 255, 0.35)",
+                                            background: "rgba(124, 92, 255, 0.08)",
+                                            boxShadow: "0 10px 30px rgba(0, 0, 0, 0.15)",
+                                        }}
+                                    >
+                                        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
+                                            <div style={{ width: "38px", height: "38px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(124, 92, 255, 0.16)", fontSize: "18px" }}>🔐</div>
+                                            <div>
+                                                <strong style={{ display: "block", fontSize: "14px", letterSpacing: "0.04em" }}>BOOKING APPROVAL</strong>
+                                                <span style={{ display: "block", marginTop: "3px", fontSize: "12px", opacity: 0.7 }}>Your permission is required</span>
+                                            </div>
+                                        </div>
+
+                                        <p style={{ margin: "0 0 14px", fontSize: "13px", lineHeight: 1.6, opacity: 0.85 }}>
+                                            Zarvis is ready to confirm this booking, but needs your permission first.
+                                        </p>
+
+                                        <div style={{ display: "grid", gap: "8px", marginBottom: "16px" }}>
+                                            {pendingApproval.parameters?.service && (
+                                                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", padding: "9px 11px", borderRadius: "10px", background: "rgba(255, 255, 255, 0.04)" }}>
+                                                    <span style={{ fontSize: "12px", opacity: 0.65 }}>Service</span>
+                                                    <strong style={{ fontSize: "12px", textAlign: "right" }}>{pendingApproval.parameters.service}</strong>
+                                                </div>
+                                            )}
+                                            {pendingApproval.parameters?.date && (
+                                                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", padding: "9px 11px", borderRadius: "10px", background: "rgba(255, 255, 255, 0.04)" }}>
+                                                    <span style={{ fontSize: "12px", opacity: 0.65 }}>Date</span>
+                                                    <strong style={{ fontSize: "12px" }}>{pendingApproval.parameters.date}</strong>
+                                                </div>
+                                            )}
+                                            {pendingApproval.parameters?.time && (
+                                                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", padding: "9px 11px", borderRadius: "10px", background: "rgba(255, 255, 255, 0.04)" }}>
+                                                    <span style={{ fontSize: "12px", opacity: 0.65 }}>Time</span>
+                                                    <strong style={{ fontSize: "12px" }}>{pendingApproval.parameters.time}</strong>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                                            <button type="button" onClick={handleReject} disabled={isApprovalProcessing} style={{ minHeight: "42px", padding: "0 16px", borderRadius: "10px", border: "1px solid rgba(255, 255, 255, 0.16)", background: "transparent", color: "inherit", cursor: isApprovalProcessing ? "not-allowed" : "pointer", opacity: isApprovalProcessing ? 0.5 : 1 }}>
+                                                Reject
+                                            </button>
+                                            <button type="button" onClick={handleApprove} disabled={isApprovalProcessing} style={{ minHeight: "42px", padding: "0 18px", borderRadius: "10px", border: "1px solid rgba(124, 92, 255, 0.5)", background: "rgba(124, 92, 255, 0.9)", color: "#ffffff", fontWeight: 600, cursor: isApprovalProcessing ? "not-allowed" : "pointer", opacity: isApprovalProcessing ? 0.6 : 1 }}>
+                                                {isApprovalProcessing ? "Processing..." : "Approve Booking"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
 
                             </div>
 

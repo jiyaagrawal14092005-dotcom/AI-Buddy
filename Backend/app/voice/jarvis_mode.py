@@ -635,7 +635,7 @@ class JarvisMode:
         # AI BRAIN
         # -------------------------------------------------
 
-        brain_result = self.ai_brain.respond(
+        brain_result = await self.ai_brain.respond(
             command_text,
             self.user_id,
             db

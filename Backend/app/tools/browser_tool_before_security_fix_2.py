@@ -31,7 +31,7 @@ class BrowserTool(BaseTool):
         )
 
         self.user_id = (
-            self._validate_user_id(user_id)
+            str(user_id)
             if user_id is not None
             else None
         )
@@ -51,44 +51,6 @@ class BrowserTool(BaseTool):
     # USER SESSION MANAGEMENT
     # =================================
 
-    @staticmethod
-    def _validate_user_id(
-        user_id: int | str
-    ) -> str:
-
-        if user_id is None:
-            raise ValueError(
-                "User ID cannot be empty."
-            )
-
-        user_key = str(user_id).strip()
-
-        if not user_key:
-            raise ValueError(
-                "User ID cannot be empty."
-            )
-
-        if (
-            "/" in user_key
-            or "\\" in user_key
-            or user_key in {".", ".."}
-        ):
-            raise ValueError(
-                "Invalid user ID."
-            )
-
-        if Path(user_key).is_absolute():
-            raise ValueError(
-                "Invalid user ID."
-            )
-
-        if len(user_key) > 128:
-            raise ValueError(
-                "User ID is too long."
-            )
-
-        return user_key
-
     @classmethod
     def _get_or_create_session(
         cls,
@@ -107,9 +69,12 @@ class BrowserTool(BaseTool):
         user_id: int | str
     ) -> None:
 
-        self.user_id = self._validate_user_id(
-            user_id
-        )
+        if user_id is None:
+            raise ValueError(
+                "User ID cannot be empty."
+            )
+
+        self.user_id = str(user_id)
 
         self.session = (
             self._get_or_create_session(
@@ -139,9 +104,7 @@ class BrowserTool(BaseTool):
         user_id: int | str
     ) -> dict:
 
-        user_key = cls._validate_user_id(
-            user_id
-        )
+        user_key = str(user_id)
 
         session = cls._user_sessions.get(
             user_key
@@ -185,9 +148,7 @@ class BrowserTool(BaseTool):
         user_id: int | str
     ) -> dict:
 
-        user_key = cls._validate_user_id(
-            user_id
-        )
+        user_key = str(user_id)
 
         session = cls._user_sessions.get(
             user_key
@@ -641,8 +602,15 @@ class BrowserTool(BaseTool):
         if not filename:
             filename = "download"
 
+    # Keep only the filename part and prevent path traversal.
         filename = Path(filename).name
-        filename = re.sub(r'[<>:"/\\\\|?*\\x00-\\x1f]', "_", filename)
+
+    # Replace Windows-invalid filename characters.
+    # The dot (.) is intentionally NOT replaced so file extensions
+    # such as .txt, .pdf, .docx, .xlsx remain intact.
+        filename = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", filename)
+
+    # Prevent empty names and names consisting only of dots.
         filename = filename.strip().strip(".")
 
         if not filename:
@@ -667,25 +635,13 @@ class BrowserTool(BaseTool):
             await self._open_page(requested_url)
             page = self._get_session().get_page()
 
-        download_root = self.download_root.resolve()
-        download_dir = download_root / str(self.user_id)
-
+        download_dir = (
+            self.download_root / str(self.user_id)
+        )
         download_dir.mkdir(
             parents=True,
             exist_ok=True
         )
-
-        resolved_download_dir = download_dir.resolve()
-
-        try:
-            resolved_download_dir.relative_to(
-                download_root
-            )
-        except ValueError:
-            raise ValueError(
-                "Download directory is outside the "
-                "configured download root."
-            )
 
         element = page.locator(selector)
         await element.first.wait_for(
@@ -718,23 +674,7 @@ class BrowserTool(BaseTool):
                     break
                 counter += 1
 
-        resolved_destination = destination.resolve()
-
-        try:
-            resolved_destination.relative_to(
-                resolved_download_dir
-            )
-        except ValueError:
-            raise ValueError(
-                "Download destination is outside "
-                "the user's download directory."
-            )
-
-        await download.save_as(
-            str(resolved_destination)
-        )
-
-        destination = resolved_destination
+        await download.save_as(str(destination))
 
         if not destination.exists():
             raise FileNotFoundError(
