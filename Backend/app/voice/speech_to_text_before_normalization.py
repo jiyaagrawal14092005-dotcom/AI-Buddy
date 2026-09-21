@@ -1,5 +1,4 @@
 import io
-import re
 import wave
 
 import speech_recognition as sr
@@ -17,64 +16,6 @@ class SpeechToText:
         self.recognizer.operation_timeout = 10
 
         self.available = True
-
-    def _normalize_transcript(
-        self,
-        text: str
-    ) -> str:
-        """
-        Normalize a small set of high-confidence project-specific
-        speech-recognition mistakes.
-
-        This does NOT perform general spelling correction.
-        Only known variations of the AI Buddy project name are
-        normalized.
-        """
-
-        if not text:
-            return text
-
-        normalized = text.strip()
-
-        # -------------------------------------------------
-        # AI Buddy - common STT misrecognitions
-        # -------------------------------------------------
-        replacements = {
-            "yahi badi": "AI Buddy",
-            "yahi buddy": "AI Buddy",
-            "yehi badi": "AI Buddy",
-            "yehi buddy": "AI Buddy",
-            "ayi buddy": "AI Buddy",
-            "ai badi": "AI Buddy",
-            "i buddy": "AI Buddy",
-            "aye buddy": "AI Buddy",
-        }
-
-        for incorrect, correct in replacements.items():
-            normalized = re.sub(
-                rf"\b{re.escape(incorrect)}\b",
-                correct,
-                normalized,
-                flags=re.IGNORECASE
-            )
-
-        # -------------------------------------------------
-        # Zarvis/Jarvis common STT variations
-        # -------------------------------------------------
-        assistant_name_replacements = {
-            "jarvis": "Zarvis",
-            "zarvis": "Zarvis",
-        }
-
-        for incorrect, correct in assistant_name_replacements.items():
-            normalized = re.sub(
-                rf"\b{re.escape(incorrect)}\b",
-                correct,
-                normalized,
-                flags=re.IGNORECASE
-            )
-
-        return normalized.strip()
 
     def transcribe(
         self,
@@ -168,21 +109,9 @@ class SpeechToText:
                     "message": "No speech was recognized."
                 }
 
-            # =========================================
-            # TRANSCRIPT NORMALIZATION
-            # =========================================
-
-            original_text = text
-
-            text = self._normalize_transcript(
-                text
-            )
-
             return {
                 "success": True,
                 "text": text,
-                "original_text": original_text,
-                "normalized": text != original_text,
                 "message": (
                     "Speech converted to text successfully."
                 )
