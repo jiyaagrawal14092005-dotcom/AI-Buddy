@@ -768,8 +768,8 @@
 
     color: #aaa5c3;
 
-    font-size: 8px;
-    line-height: 1.5;
+    font-size: 16px;
+    line-height: 1.6;
 
     overflow-wrap: anywhere;
 }
@@ -839,7 +839,7 @@
     color: #f8f5ff;
 
     font-family: inherit;
-    font-size: 10px;
+    font-size: 13px;
 }
 
 .zarvis-chat-input input::placeholder {
