@@ -765,6 +765,23 @@ function Dashboard() {
             });
 
     };
+    const getGreeting = () => {
+    const hour = new Date().getHours();
+
+    if (hour >= 5 && hour < 12) {
+        return "GOOD MORNING";
+    }
+
+    if (hour >= 12 && hour < 17) {
+        return "GOOD AFTERNOON";
+    }
+
+    if (hour >= 17 && hour < 21) {
+        return "GOOD EVENING";
+    }
+
+    return "GOOD NIGHT";
+};
 
 
     return (
@@ -794,7 +811,7 @@ function Dashboard() {
                                     ✦
                                 </span>
 
-                                GOOD MORNING
+                                {getGreeting()}
 
                             </div>
 
