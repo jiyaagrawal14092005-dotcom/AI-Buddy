@@ -38,7 +38,19 @@ class BrowserTool(BaseTool):
 
         self.session: BrowserSession | None = None
 
-        self.download_root = Path(__file__).resolve().parents[2] / "downloads"
+        # =================================
+        # WINDOWS DOWNLOADS FOLDER
+        # =================================
+        # Files downloaded by AI Buddy will be saved directly to:
+        # C:\Users\Daksh\Downloads
+        #
+        # Path.home() automatically resolves to:
+        # C:\Users\Daksh
+        # on the current Windows system.
+
+        self.download_root = (
+            Path.home() / "Downloads"
+        )
 
         if self.user_id is not None:
             self.session = (
@@ -367,16 +379,8 @@ class BrowserTool(BaseTool):
             "action": action
         }
 
-        # ---------------------------------
-        # CLOSE DOES NOT REQUIRE URL
-        # ---------------------------------
-
         if action == "close":
             return prepared_action
-
-        # ---------------------------------
-        # OPEN / NAVIGATE REQUIRE URL
-        # ---------------------------------
 
         if action in {
             "open",
@@ -393,10 +397,6 @@ class BrowserTool(BaseTool):
             )
 
             prepared_action["url"] = url
-
-        # ---------------------------------
-        # DOWNLOAD / CLICK / FILL / READ
-        # ---------------------------------
 
         elif action in {
             "download",
@@ -429,10 +429,6 @@ class BrowserTool(BaseTool):
                     or url is None
                 )
 
-        # ---------------------------------
-        # DOWNLOAD / CLICK / FILL REQUIRE SELECTOR
-        # ---------------------------------
-
         if action in {
             "download",
             "click",
@@ -450,10 +446,6 @@ class BrowserTool(BaseTool):
                 )
             )
 
-        # ---------------------------------
-        # FILL REQUIRES VALUE
-        # ---------------------------------
-
         if action == "fill":
 
             if value is None:
@@ -466,10 +458,6 @@ class BrowserTool(BaseTool):
                     value
                 )
             )
-
-        # ---------------------------------
-        # READ SELECTOR IS OPTIONAL
-        # ---------------------------------
 
         if (
             action == "read"
@@ -637,12 +625,22 @@ class BrowserTool(BaseTool):
     # DOWNLOAD FILE
     # =================================
 
-    def _safe_filename(self, filename: str | None) -> str:
+    def _safe_filename(
+        self,
+        filename: str | None
+    ) -> str:
+
         if not filename:
             filename = "download"
 
         filename = Path(filename).name
-        filename = re.sub(r'[<>:"/\\\\|?*\\x00-\\x1f]', "_", filename)
+
+        filename = re.sub(
+            r'[<>:"/\\|?*\x00-\x1f]',
+            "_",
+            filename
+        )
+
         filename = filename.strip().strip(".")
 
         if not filename:
@@ -656,7 +654,11 @@ class BrowserTool(BaseTool):
         requested_url: str | None = None,
         use_current_page: bool = True
     ) -> dict:
-        selector = self._validate_selector(selector)
+
+        selector = self._validate_selector(
+            selector
+        )
+
         page = await self._get_page()
 
         if (
@@ -664,71 +666,138 @@ class BrowserTool(BaseTool):
             and not use_current_page
             and page.url != requested_url
         ):
-            await self._open_page(requested_url)
+
+            await self._open_page(
+                requested_url
+            )
+
             page = self._get_session().get_page()
 
-        download_root = self.download_root.resolve()
-        download_dir = download_root / str(self.user_id)
+        # =================================
+        # WINDOWS DOWNLOADS DIRECTORY
+        # =================================
+        #
+        # Example:
+        # C:\Users\Daksh\Downloads
+        #
+        # Files are saved directly here.
+        # No user_id subfolder is created.
+
+        download_root = (
+            self.download_root.resolve()
+        )
+
+        download_dir = download_root
 
         download_dir.mkdir(
             parents=True,
             exist_ok=True
         )
 
-        resolved_download_dir = download_dir.resolve()
+        resolved_download_dir = (
+            download_dir.resolve()
+        )
+
+        # =================================
+        # SECURITY CHECK
+        # =================================
+        # Make sure the configured download
+        # directory itself is inside the
+        # expected Downloads directory.
 
         try:
+
             resolved_download_dir.relative_to(
                 download_root
             )
+
         except ValueError:
+
             raise ValueError(
-                "Download directory is outside the "
-                "configured download root."
+                "Download directory is outside "
+                "the configured download root."
             )
 
-        element = page.locator(selector)
+        element = page.locator(
+            selector
+        )
+
         await element.first.wait_for(
             state="visible",
             timeout=10000
         )
 
-        async with page.expect_download(timeout=15000) as download_info:
-            await element.first.click(timeout=10000)
+        async with page.expect_download(
+            timeout=15000
+        ) as download_info:
+
+            await element.first.click(
+                timeout=10000
+            )
 
         download = await download_info.value
-        suggested_name = self._safe_filename(
-            download.suggested_filename
-        )
-        destination = download_dir / suggested_name
 
-        # Avoid silently overwriting an existing file.
+        suggested_name = (
+            self._safe_filename(
+                download.suggested_filename
+            )
+        )
+
+        destination = (
+            download_dir /
+            suggested_name
+        )
+
+        # =================================
+        # AVOID OVERWRITING EXISTING FILE
+        # =================================
+
         if destination.exists():
+
             stem = destination.stem
             suffix = destination.suffix
             counter = 1
 
             while True:
+
                 candidate = (
                     download_dir /
                     f"{stem}_{counter}{suffix}"
                 )
+
                 if not candidate.exists():
+
                     destination = candidate
                     break
+
                 counter += 1
 
-        resolved_destination = destination.resolve()
+        resolved_destination = (
+            destination.resolve()
+        )
+
+        # =================================
+        # FINAL SECURITY CHECK
+        # =================================
+        # Prevent the final destination from
+        # escaping the Windows Downloads folder.
 
         try:
+
             resolved_destination.relative_to(
                 resolved_download_dir
             )
+
         except ValueError:
+
             raise ValueError(
                 "Download destination is outside "
-                "the user's download directory."
+                "the user's Downloads directory."
             )
+
+        # =================================
+        # SAVE FILE
+        # =================================
 
         await download.save_as(
             str(resolved_destination)
@@ -736,15 +805,24 @@ class BrowserTool(BaseTool):
 
         destination = resolved_destination
 
+        # =================================
+        # VERIFY FILE EXISTS
+        # =================================
+
         if not destination.exists():
+
             raise FileNotFoundError(
                 "Downloaded file could not be verified on disk."
             )
 
-        file_size = destination.stat().st_size
+        file_size = (
+            destination.stat().st_size
+        )
+
         failure = await download.failure()
 
         if failure:
+
             raise RuntimeError(
                 f"Browser download failed: {failure}"
             )
@@ -754,7 +832,9 @@ class BrowserTool(BaseTool):
             "url": page.url,
             "title": await page.title(),
             "filename": destination.name,
-            "path": str(destination.resolve()),
+            "path": str(
+                destination.resolve()
+            ),
             "size": file_size,
             "size_bytes": file_size,
         }
@@ -763,9 +843,12 @@ class BrowserTool(BaseTool):
     # CLOSE CURRENT USER SESSION
     # =================================
 
-    async def _close_session(self) -> dict:
+    async def _close_session(
+        self
+    ) -> dict:
 
         if not self.user_id:
+
             return {
                 "was_active": False
             }
@@ -799,6 +882,7 @@ class BrowserTool(BaseTool):
             parameters,
             dict
         ):
+
             return {
                 "success": False,
                 "message": (
@@ -806,9 +890,9 @@ class BrowserTool(BaseTool):
                 )
             }
 
-        # ---------------------------------
+        # =================================
         # USER ID
-        # ---------------------------------
+        # =================================
 
         parameter_user_id = parameters.get(
             "user_id"
@@ -817,6 +901,7 @@ class BrowserTool(BaseTool):
         if parameter_user_id is not None:
 
             try:
+
                 self.set_user_id(
                     parameter_user_id
                 )
@@ -976,10 +1061,6 @@ class BrowserTool(BaseTool):
                     )
                 )
 
-                # ---------------------------------
-                # NAVIGATE ONLY WHEN URL PROVIDED
-                # ---------------------------------
-
                 if (
                     requested_url
                     and not use_current
@@ -1050,10 +1131,6 @@ class BrowserTool(BaseTool):
                         False
                     )
                 )
-
-                # ---------------------------------
-                # NAVIGATE ONLY WHEN URL PROVIDED
-                # ---------------------------------
 
                 if (
                     requested_url
@@ -1134,10 +1211,6 @@ class BrowserTool(BaseTool):
                     )
                 )
 
-                # ---------------------------------
-                # NAVIGATE ONLY WHEN URL PROVIDED
-                # ---------------------------------
-
                 if (
                     requested_url
                     and not use_current
@@ -1215,10 +1288,6 @@ class BrowserTool(BaseTool):
                         False
                     )
                 )
-
-                # ---------------------------------
-                # NAVIGATE ONLY WHEN URL PROVIDED
-                # ---------------------------------
 
                 if (
                     requested_url
@@ -1332,7 +1401,9 @@ class BrowserTool(BaseTool):
     # SESSION STATUS
     # =================================
 
-    def is_session_active(self) -> bool:
+    def is_session_active(
+        self
+    ) -> bool:
 
         if not self.user_id:
             return False

@@ -1,6 +1,11 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+    BrowserRouter,
+    Routes,
+    Route,
+    Navigate,
+} from "react-router-dom";
 
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { BuddyProvider } from "./context/BuddyContext";
 
 import Dashboard from "./pages/Dashboard";
@@ -21,84 +26,276 @@ import Chat from "./pages/chat";
 import GlobalVoiceAssistant from "./components/voice/GlobalVoiceAssistant";
 
 
+
+/* ==========================================
+   PROTECTED ROUTE
+========================================== */
+
+function ProtectedRoute({ children }) {
+
+    const {
+        authenticated,
+        loading,
+    } = useAuth();
+
+
+    if (loading) {
+
+        return (
+            <div
+                style={{
+                    minHeight: "100vh",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}
+            >
+                Checking authentication...
+            </div>
+        );
+    }
+
+
+    if (!authenticated) {
+
+        return (
+            <Navigate
+                to="/login"
+                replace
+            />
+        );
+    }
+
+
+    return children;
+}
+
+
+
+/* ==========================================
+   PUBLIC ROUTE
+========================================== */
+
+function PublicRoute({ children }) {
+
+    const {
+        authenticated,
+        loading,
+    } = useAuth();
+
+
+    if (loading) {
+
+        return (
+            <div
+                style={{
+                    minHeight: "100vh",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}
+            >
+                Loading...
+            </div>
+        );
+    }
+
+
+    if (authenticated) {
+
+        return (
+            <Navigate
+                to="/"
+                replace
+            />
+        );
+    }
+
+
+    return children;
+}
+
+
+
+/* ==========================================
+   APP
+========================================== */
+
 function App() {
+
     return (
+
         <AuthProvider>
+
             <BuddyProvider>
+
                 <BrowserRouter>
 
-    <GlobalVoiceAssistant />
+                    <GlobalVoiceAssistant />
 
-    <Routes>
+
+                    <Routes>
+
+
+                        {/* ==========================================
+                            PUBLIC ROUTES
+                        ========================================== */}
+
                         <Route
                             path="/login"
-                            element={<Login />}
+                            element={
+                                <PublicRoute>
+                                    <Login />
+                                </PublicRoute>
+                            }
                         />
+
 
                         <Route
                             path="/signup"
-                            element={<Signup />}
+                            element={
+                                <PublicRoute>
+                                    <Signup />
+                                </PublicRoute>
+                            }
                         />
 
-                        <Route
-                            path="/chat"
-                            element={<Chat />}
-                        />
+
+
+                        {/* ==========================================
+                            PROTECTED ROUTES
+                        ========================================== */}
 
                         <Route
                             path="/"
-                            element={<Dashboard />}
+                            element={
+                                <ProtectedRoute>
+                                    <Dashboard />
+                                </ProtectedRoute>
+                            }
                         />
+
 
                         <Route
                             path="/assistant"
-                            element={<Assistant />}
+                            element={
+                                <ProtectedRoute>
+                                    <Assistant />
+                                </ProtectedRoute>
+                            }
                         />
+
 
                         <Route
                             path="/tasks"
-                            element={<Tasks />}
+                            element={
+                                <ProtectedRoute>
+                                    <Tasks />
+                                </ProtectedRoute>
+                            }
                         />
+
 
                         <Route
                             path="/schedule"
-                            element={<Schedule />}
+                            element={
+                                <ProtectedRoute>
+                                    <Schedule />
+                                </ProtectedRoute>
+                            }
                         />
+
 
                         <Route
                             path="/workflows"
-                            element={<Workflows />}
+                            element={
+                                <ProtectedRoute>
+                                    <Workflows />
+                                </ProtectedRoute>
+                            }
                         />
+
 
                         <Route
                             path="/activity"
-                            element={<Activity />}
+                            element={
+                                <ProtectedRoute>
+                                    <Activity />
+                                </ProtectedRoute>
+                            }
                         />
+
 
                         <Route
                             path="/integrations"
-                            element={<Integrations />}
+                            element={
+                                <ProtectedRoute>
+                                    <Integrations />
+                                </ProtectedRoute>
+                            }
                         />
+
 
                         <Route
                             path="/memory"
-                            element={<Memory />}
+                            element={
+                                <ProtectedRoute>
+                                    <Memory />
+                                </ProtectedRoute>
+                            }
                         />
+
 
                         <Route
                             path="/security"
-                            element={<Security />}
+                            element={
+                                <ProtectedRoute>
+                                    <Security />
+                                </ProtectedRoute>
+                            }
                         />
+
 
                         <Route
                             path="/settings"
-                            element={<Settings />}
+                            element={
+                                <ProtectedRoute>
+                                    <Settings />
+                                </ProtectedRoute>
+                            }
+                        />
+
+
+                        <Route
+                            path="/chat"
+                            element={
+                                <ProtectedRoute>
+                                    <Chat />
+                                </ProtectedRoute>
+                            }
+                        />
+
+
+                        {/* ==========================================
+                            UNKNOWN ROUTE
+                        ========================================== */}
+
+                        <Route
+                            path="*"
+                            element={
+                                <Navigate
+                                    to="/"
+                                    replace
+                                />
+                            }
                         />
 
                     </Routes>
 
                 </BrowserRouter>
+
             </BuddyProvider>
+
         </AuthProvider>
     );
 }
