@@ -1,19 +1,23 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
     Activity as ActivityIcon,
     CheckCircle2,
     Clock3,
-    XCircle,
-    Search,
     Trash2,
     Bot,
     Zap,
     CalendarDays,
     Brain,
+    Download,
+    Bell,
+    Info,
+    XCircle,
 } from "lucide-react";
 
 import Sidebar from "../components/common/Sidebar";
 import Navbar from "../components/common/Navbar";
+import { useBuddy } from "../context/BuddyContext";
+
 
 const initialActivities = [
     {
@@ -72,7 +76,22 @@ const initialActivities = [
     },
 ];
 
+
 function Activity() {
+
+    // ==========================================
+    // GLOBAL NOTIFICATIONS
+    // ==========================================
+
+    const {
+        notifications,
+    } = useBuddy();
+
+
+    // ==========================================
+    // LOCAL ACTIVITY STATE
+    // ==========================================
+
     const [activities, setActivities] =
         useState(initialActivities);
 
@@ -80,47 +99,347 @@ function Activity() {
 
     const [filter, setFilter] = useState("ALL");
 
-    const filteredActivities = activities.filter(
-        (activity) => {
-            const searchText =
-                `${activity.title} ${activity.description} ${activity.type}`
-                    .toLowerCase();
 
-            const matchesSearch =
-                searchText.includes(
-                    search.toLowerCase()
-                );
+    // ==========================================
+    // NOTIFICATION ICON
+    // ==========================================
 
-            const matchesFilter =
-                filter === "ALL" ||
-                activity.type === filter;
+    const getNotificationIcon = (
+        notification
+    ) => {
 
-            return (
-                matchesSearch &&
-                matchesFilter
-            );
+        const iconType =
+            notification?.icon ||
+            notification?.type ||
+            "info";
+
+
+        if (
+            iconType === "download"
+        ) {
+            return Download;
         }
+
+
+        if (
+            iconType === "success" ||
+            notification?.type === "success"
+        ) {
+            return CheckCircle2;
+        }
+
+
+        if (
+            iconType === "error" ||
+            notification?.type === "error" ||
+            notification?.type === "failed"
+        ) {
+            return XCircle;
+        }
+
+
+        if (
+            iconType === "workflow" ||
+            notification?.type === "workflow"
+        ) {
+            return Zap;
+        }
+
+
+        if (
+            iconType === "reminder" ||
+            notification?.type === "reminder"
+        ) {
+            return CalendarDays;
+        }
+
+
+        return Info;
+    };
+
+
+    // ==========================================
+    // NOTIFICATION TYPE
+    // ==========================================
+
+    const getNotificationType = (
+        notification
+    ) => {
+
+        const type =
+            notification?.type ||
+            notification?.icon ||
+            "info";
+
+
+        if (
+            type === "download" ||
+            type === "success"
+        ) {
+            return "COMPLETED";
+        }
+
+
+        if (
+            type === "workflow"
+        ) {
+            return "WORKFLOW";
+        }
+
+
+        if (
+            type === "reminder"
+        ) {
+            return "SCHEDULE";
+        }
+
+
+        if (
+            type === "error" ||
+            type === "failed"
+        ) {
+            return "ASSISTANT";
+        }
+
+
+        return "ASSISTANT";
+    };
+
+
+    // ==========================================
+    // FORMAT NOTIFICATION TIME
+    // ==========================================
+
+    const formatNotificationTime = (
+        createdAt
+    ) => {
+
+        if (!createdAt) {
+            return {
+                time: "NOW",
+                date: "Today",
+            };
+        }
+
+
+        const date =
+            new Date(createdAt);
+
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+            return {
+                time: "NOW",
+                date: "Today",
+            };
+        }
+
+
+        const now =
+            new Date();
+
+
+        const isToday =
+            date.toDateString() ===
+            now.toDateString();
+
+
+        const yesterday =
+            new Date();
+
+        yesterday.setDate(
+            yesterday.getDate() - 1
+        );
+
+
+        const isYesterday =
+            date.toDateString() ===
+            yesterday.toDateString();
+
+
+        const time =
+            date.toLocaleTimeString(
+                [],
+                {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                }
+            );
+
+
+        let dateLabel = "Earlier";
+
+
+        if (isToday) {
+            dateLabel = "Today";
+        } else if (isYesterday) {
+            dateLabel = "Yesterday";
+        } else {
+            dateLabel =
+                date.toLocaleDateString(
+                    [],
+                    {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                    }
+                );
+        }
+
+
+        return {
+            time,
+            date: dateLabel,
+        };
+    };
+
+
+    // ==========================================
+    // CONVERT GLOBAL NOTIFICATIONS
+    // TO ACTIVITY RECORDS
+    // ==========================================
+
+    const notificationActivities =
+        useMemo(() => {
+
+            return notifications.map(
+                (notification) => {
+
+                    const {
+                        time,
+                        date,
+                    } =
+                        formatNotificationTime(
+                            notification.createdAt
+                        );
+
+
+                    return {
+                        id:
+                            `notification-${notification.id}`,
+
+                        time,
+
+                        date,
+
+                        title:
+                            notification.title ||
+                            "Zarvis Update",
+
+                        description:
+                            notification.message ||
+                            "",
+
+                        type:
+                            getNotificationType(
+                                notification
+                            ),
+
+                        icon:
+                            getNotificationIcon(
+                                notification
+                            ),
+
+                        isNotification: true,
+
+                        notificationId:
+                            notification.id,
+
+                        read:
+                            notification.read,
+                    };
+                }
+            );
+
+        }, [notifications]);
+
+
+    // ==========================================
+    // COMBINE ACTIVITY + NOTIFICATIONS
+    // ==========================================
+
+    const allActivities = useMemo(
+        () => {
+
+            return [
+                ...notificationActivities,
+                ...activities,
+            ];
+
+        },
+        [
+            notificationActivities,
+            activities,
+        ]
     );
 
+
+    // ==========================================
+    // FILTER ACTIVITIES
+    // ==========================================
+
+    const filteredActivities =
+        allActivities.filter(
+            (activity) => {
+
+                const searchText =
+                    `${activity.title} ${activity.description} ${activity.type}`
+                        .toLowerCase();
+
+
+                const matchesSearch =
+                    searchText.includes(
+                        search.toLowerCase()
+                    );
+
+
+                const matchesFilter =
+                    filter === "ALL" ||
+                    activity.type === filter;
+
+
+                return (
+                    matchesSearch &&
+                    matchesFilter
+                );
+            }
+        );
+
+
+    // ==========================================
+    // STATS
+    // ==========================================
+
     const completedCount =
-        activities.filter(
+        allActivities.filter(
             (item) =>
                 item.type === "COMPLETED"
         ).length;
 
+
     const workflowCount =
-        activities.filter(
+        allActivities.filter(
             (item) =>
                 item.type === "WORKFLOW"
         ).length;
 
+
     const assistantCount =
-        activities.filter(
+        allActivities.filter(
             (item) =>
                 item.type === "ASSISTANT"
         ).length;
 
+
+    // ==========================================
+    // DELETE LOCAL ACTIVITY
+    // ==========================================
+
     const clearActivity = (id) => {
+
         setActivities((current) =>
             current.filter(
                 (activity) =>
@@ -129,11 +448,21 @@ function Activity() {
         );
     };
 
+
+    // ==========================================
+    // CLEAR LOCAL ACTIVITY
+    //
+    // Global notifications are intentionally
+    // NOT deleted here.
+    // ==========================================
+
     const clearAllActivities = () => {
         setActivities([]);
     };
 
+
     return (
+
         <div className="app">
 
             <Sidebar />
@@ -142,7 +471,9 @@ function Activity() {
 
                 <Navbar />
 
+
                 <div className="activity-page-final">
+
 
                     {/* ================= HEADER ================= */}
 
@@ -151,16 +482,22 @@ function Activity() {
                         <div className="activity-header-info-final">
 
                             <div className="activity-eyebrow-final">
-                                <ActivityIcon size={14} />
+
+                                <ActivityIcon
+                                    size={14}
+                                />
 
                                 <span>
                                     ZARVIS ACTIVITY SYSTEM
                                 </span>
+
                             </div>
+
 
                             <h1>
                                 Activity
                             </h1>
+
 
                             <p>
                                 Track everything Zarvis has
@@ -169,16 +506,22 @@ function Activity() {
 
                         </div>
 
+
                         <button
                             type="button"
                             className="activity-clear-final"
-                            onClick={clearAllActivities}
+                            onClick={
+                                clearAllActivities
+                            }
                             disabled={
                                 activities.length === 0
                             }
                         >
+
                             <Trash2 size={15} />
+
                             Clear Activity
+
                         </button>
 
                     </div>
@@ -195,7 +538,7 @@ function Activity() {
                             </span>
 
                             <strong>
-                                {activities.length}
+                                {allActivities.length}
                             </strong>
 
                         </div>
@@ -248,7 +591,9 @@ function Activity() {
 
                         <div className="activity-search-final">
 
-                            <Search size={17} />
+                            <ActivityIcon
+                                size={17}
+                            />
 
                             <input
                                 type="text"
@@ -280,6 +625,7 @@ function Activity() {
                                 ALL
                             </button>
 
+
                             <button
                                 type="button"
                                 className={
@@ -295,6 +641,7 @@ function Activity() {
                             >
                                 COMPLETED
                             </button>
+
 
                             <button
                                 type="button"
@@ -312,6 +659,7 @@ function Activity() {
                                 WORKFLOW
                             </button>
 
+
                             <button
                                 type="button"
                                 className={
@@ -328,6 +676,7 @@ function Activity() {
                                 SCHEDULE
                             </button>
 
+
                             <button
                                 type="button"
                                 className={
@@ -343,6 +692,7 @@ function Activity() {
                             >
                                 ASSISTANT
                             </button>
+
 
                             <button
                                 type="button"
@@ -377,14 +727,19 @@ function Activity() {
                                     SYSTEM LOG //{" "}
                                     {String(
                                         filteredActivities.length
-                                    ).padStart(2, "0")}
+                                    ).padStart(
+                                        2,
+                                        "0"
+                                    )}
                                 </span>
+
 
                                 <h2>
                                     Recent Activity
                                 </h2>
 
                             </div>
+
 
                             <div className="activity-live-final">
 
@@ -405,7 +760,9 @@ function Activity() {
 
                                 <div className="activity-empty-final">
 
-                                    <ActivityIcon size={34} />
+                                    <ActivityIcon
+                                        size={34}
+                                    />
 
                                     <h3>
                                         No activity found
@@ -426,6 +783,7 @@ function Activity() {
                                         const Icon =
                                             activity.icon;
 
+
                                         const typeClass =
                                             activity.type ===
                                                 "COMPLETED"
@@ -441,13 +799,21 @@ function Activity() {
                                                             ? "activity-type-assistant"
                                                             : "activity-type-memory";
 
+
                                         return (
+
                                             <div
-                                                className="activity-row-final"
+                                                className={`activity-row-final ${
+                                                    activity.isNotification &&
+                                                    !activity.read
+                                                        ? "activity-notification-unread"
+                                                        : ""
+                                                }`}
                                                 key={
                                                     activity.id
                                                 }
                                             >
+
 
                                                 {/* TIME */}
 
@@ -497,6 +863,7 @@ function Activity() {
                                                             }
                                                         </h3>
 
+
                                                         <span
                                                             className={
                                                                 typeClass
@@ -520,26 +887,42 @@ function Activity() {
                                                     <div className="activity-meta-final">
 
                                                         <span>
+
                                                             <Clock3
-                                                                size={
-                                                                    12
-                                                                }
+                                                                size={12}
                                                             />
 
                                                             {
                                                                 activity.time
                                                             }
+
                                                         </span>
 
+
                                                         <span>
+
                                                             <Bot
-                                                                size={
-                                                                    12
-                                                                }
+                                                                size={12}
                                                             />
 
                                                             Zarvis Core
+
                                                         </span>
+
+
+                                                        {activity.isNotification && (
+
+                                                            <span>
+
+                                                                <Bell
+                                                                    size={12}
+                                                                />
+
+                                                                Notification
+
+                                                            </span>
+
+                                                        )}
 
                                                     </div>
 
@@ -548,20 +931,26 @@ function Activity() {
 
                                                 {/* DELETE */}
 
-                                                <button
-                                                    type="button"
-                                                    className="activity-delete-final"
-                                                    title="Remove activity"
-                                                    onClick={() =>
-                                                        clearActivity(
-                                                            activity.id
-                                                        )
-                                                    }
-                                                >
-                                                    <Trash2
-                                                        size={15}
-                                                    />
-                                                </button>
+                                                {!activity.isNotification && (
+
+                                                    <button
+                                                        type="button"
+                                                        className="activity-delete-final"
+                                                        title="Remove activity"
+                                                        onClick={() =>
+                                                            clearActivity(
+                                                                activity.id
+                                                            )
+                                                        }
+                                                    >
+
+                                                        <Trash2
+                                                            size={15}
+                                                        />
+
+                                                    </button>
+
+                                                )}
 
                                             </div>
                                         );
@@ -593,6 +982,7 @@ function Activity() {
 
                         </div>
 
+
                         <span>
 
                             <Bot size={12} />
@@ -610,5 +1000,6 @@ function Activity() {
         </div>
     );
 }
+
 
 export default Activity;

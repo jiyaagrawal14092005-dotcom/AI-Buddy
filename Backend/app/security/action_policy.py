@@ -1,3 +1,4 @@
+
 class ActionPolicy:
     """
     Defines security policies for AI Buddy actions.
@@ -48,11 +49,12 @@ class ActionPolicy:
                 "risk": "low",
                 "approval_required": False
             },
-            
+
             "stop": {
                 "risk": "low",
                 "approval_required": False
             },
+
             "search": {
                 "risk": "low",
                 "approval_required": False
@@ -78,7 +80,7 @@ class ActionPolicy:
             },
 
             # =========================================
-            # CALENDAR
+            # CALENDAR / BOOKING
             # =========================================
 
             "booking": {
@@ -144,6 +146,11 @@ class ActionPolicy:
             },
 
             "browser.fill": {
+                "risk": "medium",
+                "approval_required": True
+            },
+
+            "browser.download": {
                 "risk": "medium",
                 "approval_required": True
             },

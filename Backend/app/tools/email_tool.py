@@ -1,6 +1,7 @@
 import re
 
 from app.tools.base_tool import BaseTool
+from app.integrations.email.gmail_service import GmailService
 
 
 class EmailTool(BaseTool):
@@ -10,10 +11,44 @@ class EmailTool(BaseTool):
         super().__init__(
             name="email",
             description=(
-                "Prepare an email action with a recipient, "
-                "subject, and message."
+                "Send an email through the connected Gmail account "
+                "using a recipient, subject, and message."
             )
         )
+
+        self.gmail_service = GmailService()
+
+    # =================================
+    # VALIDATE USER ID
+    # =================================
+
+    def _validate_user_id(
+        self,
+        user_id
+    ) -> int:
+
+        if user_id is None:
+            raise ValueError(
+                "user_id is required for sending email."
+            )
+
+        try:
+            user_id = int(user_id)
+
+        except (
+            TypeError,
+            ValueError
+        ):
+            raise ValueError(
+                "user_id must be a valid integer."
+            )
+
+        if user_id <= 0:
+            raise ValueError(
+                "user_id must be greater than zero."
+            )
+
+        return user_id
 
     # =================================
     # VALIDATE EMAIL
@@ -130,10 +165,40 @@ class EmailTool(BaseTool):
         ):
             return {
                 "success": False,
+                "status": "failed",
                 "message": (
                     "Email parameters must be a dictionary."
                 )
             }
+
+        # ---------------------------------
+        # USER ID
+        # ---------------------------------
+
+        user_id = parameters.get(
+            "user_id"
+        )
+
+        try:
+
+            user_id = self._validate_user_id(
+                user_id
+            )
+
+        except (
+            TypeError,
+            ValueError
+        ) as error:
+
+            return {
+                "success": False,
+                "status": "failed",
+                "message": str(error)
+            }
+
+        # ---------------------------------
+        # EMAIL PARAMETERS
+        # ---------------------------------
 
         recipient = parameters.get(
             "recipient",
@@ -153,6 +218,10 @@ class EmailTool(BaseTool):
             ""
         )
 
+        # ---------------------------------
+        # VALIDATE EMAIL DATA
+        # ---------------------------------
+
         try:
 
             email_data = self.prepare_email(
@@ -164,20 +233,85 @@ class EmailTool(BaseTool):
         except (
             TypeError,
             ValueError
-        ) as e:
+        ) as error:
 
             return {
                 "success": False,
-                "message": str(e)
+                "status": "failed",
+                "message": str(error)
             }
+
+        # ---------------------------------
+        # SEND THROUGH GMAIL SERVICE
+        # ---------------------------------
+
+        try:
+
+            result = self.gmail_service.send_email(
+                user_id=user_id,
+                recipient=email_data["recipient"],
+                subject=email_data["subject"],
+                message=email_data["message"]
+            )
+
+        except Exception as error:
+
+            return {
+                "success": False,
+                "status": "failed",
+                "action": "send",
+                "recipient": email_data["recipient"],
+                "subject": email_data["subject"],
+                "message": (
+                    "Email sending failed."
+                ),
+                "error": str(error)
+            }
+
+        # ---------------------------------
+        # GMAIL SERVICE FAILURE
+        # ---------------------------------
+
+        if not result.get(
+            "success",
+            False
+        ):
+
+            return {
+                "success": False,
+                "status": "failed",
+                "action": "send",
+                "recipient": email_data["recipient"],
+                "subject": email_data["subject"],
+                "message": result.get(
+                    "message",
+                    "Failed to send email."
+                ),
+                "error": result.get(
+                    "error"
+                )
+            }
+
+        # ---------------------------------
+        # SUCCESS
+        # ---------------------------------
 
         return {
             "success": True,
-            "status": "prepared",
-            "email": email_data,
+            "status": "sent",
+            "action": "send",
+            "recipient": email_data["recipient"],
+            "subject": email_data["subject"],
             "message": (
-                "Email action prepared successfully."
-            )
+                "Email sent successfully through Gmail."
+            ),
+            "message_id": result.get(
+                "message_id"
+            ),
+            "thread_id": result.get(
+                "thread_id"
+            ),
+            "email": email_data
         }
 
     # =================================
@@ -186,4 +320,17 @@ class EmailTool(BaseTool):
 
     def is_available(self) -> bool:
 
-        return True
+        try:
+
+            return (
+                self.gmail_service
+                .get_status()
+                .get(
+                    "available",
+                    False
+                )
+            )
+
+        except Exception:
+
+            return False

@@ -1,3 +1,4 @@
+
 class Planner:
 
     def __init__(self):
@@ -81,6 +82,7 @@ class Planner:
     ) -> dict:
 
         if not isinstance(intent, dict):
+
             return {
                 "intent": "UNKNOWN",
                 "parameters": {}
@@ -109,6 +111,7 @@ class Planner:
             parameters,
             dict
         ):
+
             parameters = {}
 
         return {
@@ -133,9 +136,56 @@ class Planner:
         )
 
         if action:
+
             validated["action"] = action
 
         return validated
+
+    # =================================
+    # NORMALIZE BROWSER ACTION
+    # =================================
+
+    def _normalize_browser_action(
+        self,
+        action
+    ) -> str | None:
+
+        if not isinstance(
+            action,
+            str
+        ):
+
+            return None
+
+        action = action.strip().lower()
+
+        if not action:
+
+            return None
+
+        # ---------------------------------
+        # SUPPORTED BROWSER ACTIONS
+        # ---------------------------------
+
+        if action in self.browser_actions:
+
+            return action
+
+        # ---------------------------------
+        # DOWNLOAD ALIASES
+        # ---------------------------------
+
+        download_aliases = {
+            "download_file",
+            "save_file",
+            "save"
+        }
+
+        if action in download_aliases:
+
+            return "download"
+
+        return None
 
     # =================================
     # VALIDATE BROWSER PARAMETERS
@@ -150,6 +200,7 @@ class Planner:
             parameters,
             dict
         ):
+
             return (
                 False,
                 {},
@@ -166,33 +217,30 @@ class Planner:
         # ACTION REQUIRED
         # ---------------------------------
 
-        if not isinstance(
-            action,
-            str
-        ) or not action.strip():
+        normalized_action = self._normalize_browser_action(
+            action
+        )
 
-            return (
-                False,
-                validated,
-                "Browser action is required."
+        if normalized_action is None:
+
+            action_display = (
+                str(action).strip().lower()
+                if isinstance(action, str)
+                else str(action)
             )
-
-        action = action.strip().lower()
-
-        # ---------------------------------
-        # ACTION VALIDATION
-        # ---------------------------------
-
-        if action not in self.browser_actions:
 
             return (
                 False,
                 validated,
                 (
-                    f"Unsupported browser action '{action}'. "
-                    "Use open, navigate, click, fill, read, download, or close."
+                    f"Unsupported browser action "
+                    f"'{action_display}'. "
+                    "Use open, navigate, click, fill, read, "
+                    "download, or close."
                 )
             )
+
+        action = normalized_action
 
         validated["action"] = action
 
@@ -209,35 +257,156 @@ class Planner:
             )
 
         # ---------------------------------
-        # OPEN / NAVIGATE REQUIRE URL
+        # URL
         # ---------------------------------
 
         url = validated.get(
             "url"
         )
 
+        # ---------------------------------
+        # WEBSITE DISCOVERY PARAMETERS
+        # ---------------------------------
+
+        website_name = validated.get(
+            "website_name"
+        )
+
+        page_target = validated.get(
+            "page_target"
+        )
+
+        has_website_name = (
+            isinstance(
+                website_name,
+                str
+            )
+            and bool(
+                website_name.strip()
+            )
+        )
+
+        has_page_target = (
+            isinstance(
+                page_target,
+                str
+            )
+            and bool(
+                page_target.strip()
+            )
+        )
+
+        has_website_discovery = (
+            has_website_name
+            or has_page_target
+        )
+
+        # ---------------------------------
+        # OPEN / NAVIGATE
+        #
+        # Supports TWO routes:
+        #
+        # 1. Direct URL
+        #
+        #    {
+        #        "action": "open",
+        #        "url": "https://example.com"
+        #    }
+        #
+        # 2. Generic website discovery
+        #
+        #    {
+        #        "action": "open",
+        #        "url": "",
+        #        "website_name": "GeeksforGeeks",
+        #        "page_target": "Ring Topology"
+        #    }
+        #
+        # BrowserTool will use WebsiteDiscovery
+        # for route 2.
+        # ---------------------------------
+
         if action in {
             "open",
             "navigate"
         }:
 
-            if not isinstance(
-                url,
-                str
-            ) or not url.strip():
+            # ---------------------------------
+            # DIRECT URL
+            # ---------------------------------
+
+            if (
+                isinstance(
+                    url,
+                    str
+                )
+                and url.strip()
+            ):
+
+                validated["url"] = url.strip()
+
+                # Clean discovery fields only if
+                # they are not needed for a direct URL.
+                if has_website_name:
+
+                    validated["website_name"] = (
+                        website_name.strip()
+                    )
+
+                if has_page_target:
+
+                    validated["page_target"] = (
+                        page_target.strip()
+                    )
 
                 return (
-                    False,
+                    True,
                     validated,
-                    f"URL is required for browser action '{action}'."
+                    "Browser parameters validated."
                 )
 
-            validated["url"] = url.strip()
+            # ---------------------------------
+            # GENERIC WEBSITE DISCOVERY
+            # ---------------------------------
+
+            if has_website_discovery:
+
+                # Keep URL empty.
+                #
+                # BrowserTool will detect the empty URL
+                # together with website_name/page_target
+                # and call WebsiteDiscovery.
+                validated["url"] = ""
+
+                if has_website_name:
+
+                    validated["website_name"] = (
+                        website_name.strip()
+                    )
+
+                if has_page_target:
+
+                    validated["page_target"] = (
+                        page_target.strip()
+                    )
+
+                return (
+                    True,
+                    validated,
+                    "Browser discovery parameters validated."
+                )
+
+            # ---------------------------------
+            # NOTHING PROVIDED
+            # ---------------------------------
 
             return (
-                True,
+                False,
                 validated,
-                "Browser parameters validated."
+                (
+                    f"URL or website discovery information "
+                    f"is required for browser action '{action}'."
+                )
             )
 
         # ---------------------------------
@@ -250,6 +419,7 @@ class Planner:
         ) and url.strip():
 
             validated["url"] = url.strip()
+
             validated["use_current_page"] = False
 
         else:
@@ -262,7 +432,8 @@ class Planner:
             validated["use_current_page"] = True
 
         # ---------------------------------
-        # CLICK / FILL REQUIRE SELECTOR
+        # CLICK / FILL / DOWNLOAD REQUIRE
+        # SELECTOR OR TARGET
         # ---------------------------------
 
         if action in {
@@ -275,21 +446,50 @@ class Planner:
                 "selector"
             )
 
-            if not isinstance(
-                selector,
-                str
-            ) or not selector.strip():
+            target = validated.get(
+                "target"
+            )
+
+            has_selector = (
+                isinstance(
+                    selector,
+                    str
+                )
+                and bool(
+                    selector.strip()
+                )
+            )
+
+            has_target = (
+                isinstance(
+                    target,
+                    str
+                )
+                and bool(
+                    target.strip()
+                )
+            )
+
+            # Generic browser actions can use
+            # either a CSS selector or a semantic target.
+            if not has_selector and not has_target:
 
                 return (
                     False,
                     validated,
                     (
-                        f"Selector is required for "
-                        f"browser action '{action}'."
+                        f"Selector or target is required "
+                        f"for browser action '{action}'."
                     )
                 )
 
-            validated["selector"] = selector.strip()
+            if has_selector:
+
+                validated["selector"] = selector.strip()
+
+            if has_target:
+
+                validated["target"] = target.strip()
 
         # ---------------------------------
         # FILL REQUIRES VALUE
@@ -414,7 +614,10 @@ class Planner:
             return (
                 False,
                 {},
-                f"Browser step {step_number} parameters must be a dictionary."
+                (
+                    f"Browser step {step_number} "
+                    "parameters must be a dictionary."
+                )
             )
 
         valid, validated, message = (
@@ -636,6 +839,7 @@ class Planner:
         )
 
         intent_name = validated["intent"]
+
         parameters = validated["parameters"]
 
         # ---------------------------------
@@ -785,6 +989,3 @@ class Planner:
                 intent_name
             ) is not None
         )
-
-
-

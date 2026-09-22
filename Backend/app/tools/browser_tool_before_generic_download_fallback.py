@@ -1,0 +1,1645 @@
+from urllib.parse import urlparse
+from pathlib import Path
+import re
+import traceback
+
+from app.tools.base_tool import BaseTool
+from app.tools.browser_session import BrowserSession
+
+
+class BrowserTool(BaseTool):
+
+    # =================================
+    # PER-USER BROWSER SESSIONS
+    # =================================
+
+    _user_sessions: dict[str, BrowserSession] = {}
+
+    def __init__(
+        self,
+        user_id: int | str | None = None
+    ):
+
+        super().__init__(
+            name="browser",
+            description=(
+                "Execute safe browser actions such as opening "
+                "websites, navigating to URLs, clicking elements, "
+                "filling input fields, downloading files, reading "
+                "page content, and managing browser sessions."
+            )
+        )
+
+        self.user_id = (
+            self._validate_user_id(user_id)
+            if user_id is not None
+            else None
+        )
+
+        self.session: BrowserSession | None = None
+
+        # =================================
+        # WINDOWS DOWNLOADS FOLDER
+        # =================================
+        # Files downloaded by AI Buddy will be saved directly to:
+        # C:\Users\Daksh\Downloads
+        #
+        # Path.home() automatically resolves to:
+        # C:\Users\Daksh
+        # on the current Windows system.
+
+        self.download_root = (
+            Path.home() / "Downloads"
+        )
+
+        if self.user_id is not None:
+            self.session = (
+                self._get_or_create_session(
+                    self.user_id
+                )
+            )
+
+    # =================================
+    # USER SESSION MANAGEMENT
+    # =================================
+
+    @staticmethod
+    def _validate_user_id(
+        user_id: int | str
+    ) -> str:
+
+        if user_id is None:
+            raise ValueError(
+                "User ID cannot be empty."
+            )
+
+        user_key = str(user_id).strip()
+
+        if not user_key:
+            raise ValueError(
+                "User ID cannot be empty."
+            )
+
+        if (
+            "/" in user_key
+            or "\\" in user_key
+            or user_key in {".", ".."}
+        ):
+            raise ValueError(
+                "Invalid user ID."
+            )
+
+        if Path(user_key).is_absolute():
+            raise ValueError(
+                "Invalid user ID."
+            )
+
+        if len(user_key) > 128:
+            raise ValueError(
+                "User ID is too long."
+            )
+
+        return user_key
+
+    @classmethod
+    def _get_or_create_session(
+        cls,
+        user_id: str
+    ) -> BrowserSession:
+
+        if user_id not in cls._user_sessions:
+            cls._user_sessions[user_id] = (
+                BrowserSession()
+            )
+
+        return cls._user_sessions[user_id]
+
+    def set_user_id(
+        self,
+        user_id: int | str
+    ) -> None:
+
+        self.user_id = self._validate_user_id(
+            user_id
+        )
+
+        self.session = (
+            self._get_or_create_session(
+                self.user_id
+            )
+        )
+
+    def _get_session(self) -> BrowserSession:
+
+        if not self.user_id:
+            raise ValueError(
+                "Browser user ID is required."
+            )
+
+        if self.session is None:
+            self.session = (
+                self._get_or_create_session(
+                    self.user_id
+                )
+            )
+
+        return self.session
+
+    @classmethod
+    async def close_user_session(
+        cls,
+        user_id: int | str
+    ) -> dict:
+
+        user_key = cls._validate_user_id(
+            user_id
+        )
+
+        session = cls._user_sessions.get(
+            user_key
+        )
+
+        if session is None:
+            return {
+                "success": True,
+                "status": "completed",
+                "user_id": user_key,
+                "was_active": False,
+                "message": (
+                    "No browser session exists "
+                    "for this user."
+                )
+            }
+
+        was_active = session.is_active()
+
+        try:
+            await session.close()
+        finally:
+            cls._user_sessions.pop(
+                user_key,
+                None
+            )
+
+        return {
+            "success": True,
+            "status": "completed",
+            "user_id": user_key,
+            "was_active": was_active,
+            "message": (
+                "User browser session closed successfully."
+            )
+        }
+
+    @classmethod
+    def get_user_session_status(
+        cls,
+        user_id: int | str
+    ) -> dict:
+
+        user_key = cls._validate_user_id(
+            user_id
+        )
+
+        session = cls._user_sessions.get(
+            user_key
+        )
+
+        if session is None:
+            return {
+                "success": True,
+                "user_id": user_key,
+                "exists": False,
+                "active": False
+            }
+
+        return {
+            "success": True,
+            "user_id": user_key,
+            "exists": True,
+            "active": session.is_active()
+        }
+
+    @classmethod
+    def get_active_user_sessions(
+        cls
+    ) -> list[str]:
+
+        active_users = []
+
+        for user_id, session in (
+            cls._user_sessions.items()
+        ):
+            if session.is_active():
+                active_users.append(user_id)
+
+        return sorted(active_users)
+
+    # =================================
+    # URL VALIDATION
+    # =================================
+
+    def _validate_url(
+        self,
+        url: str
+    ) -> str:
+
+        if not isinstance(
+            url,
+            str
+        ):
+            raise TypeError(
+                "URL must be a string."
+            )
+
+        url = url.strip()
+
+        if not url:
+            raise ValueError(
+                "URL cannot be empty."
+            )
+
+        parsed_url = urlparse(url)
+
+        if parsed_url.scheme not in {
+            "http",
+            "https"
+        }:
+            raise ValueError(
+                "URL must start with http:// or https://."
+            )
+
+        if not parsed_url.netloc:
+            raise ValueError(
+                "Invalid URL."
+            )
+
+        return url
+
+    # =================================
+    # ACTION VALIDATION
+    # =================================
+
+    def _validate_action(
+        self,
+        action: str
+    ) -> str:
+
+        if not isinstance(
+            action,
+            str
+        ):
+            raise TypeError(
+                "Browser action must be a string."
+            )
+
+        action = action.strip().lower()
+
+        allowed_actions = {
+            "open",
+            "navigate",
+            "click",
+            "fill",
+            "read",
+            "download",
+            "close"
+        }
+
+        print("DEBUG BROWSER ACTION:", repr(action))
+
+        if action not in allowed_actions:
+            raise ValueError(
+                "Unsupported browser action. "
+                "Use open, navigate, click, fill, read, download, or close."
+            )
+
+        return action
+
+    # =================================
+    # SELECTOR VALIDATION
+    # =================================
+
+    def _validate_selector(
+        self,
+        selector: str
+    ) -> str:
+
+        if not isinstance(
+            selector,
+            str
+        ):
+            raise TypeError(
+                "Selector must be a string."
+            )
+
+        selector = selector.strip()
+
+        if not selector:
+            raise ValueError(
+                "Selector cannot be empty."
+            )
+
+        return selector
+
+    # =================================
+    # VALUE VALIDATION
+    # =================================
+
+    def _validate_value(
+        self,
+        value: str
+    ) -> str:
+
+        if not isinstance(
+            value,
+            str
+        ):
+            raise TypeError(
+                "Value must be a string."
+            )
+
+        return value
+
+    # =================================
+    # PREPARE ACTION
+    # =================================
+
+    def prepare_action(
+        self,
+        action: str,
+        url: str | None = None,
+        selector: str | None = None,
+        target: str | None = None,
+        value: str | None = None,
+        use_current_page: bool = False
+    ) -> dict:
+
+        action = self._validate_action(
+            action
+        )
+
+        prepared_action = {
+            "action": action
+        }
+
+        if action == "close":
+            return prepared_action
+
+        if action in {
+            "open",
+            "navigate"
+        }:
+
+            if url is None:
+                raise ValueError(
+                    f"URL is required for '{action}' action."
+                )
+
+            url = self._validate_url(
+                url
+            )
+
+            prepared_action["url"] = url
+
+        elif action in {
+            "download",
+            "click",
+            "fill",
+            "read"
+        }:
+
+            if isinstance(
+                url,
+                str
+            ) and url.strip():
+
+                prepared_action["url"] = (
+                    self._validate_url(
+                        url
+                    )
+                )
+
+                prepared_action[
+                    "use_current_page"
+                ] = False
+
+            else:
+
+                prepared_action[
+                    "use_current_page"
+                ] = bool(
+                    use_current_page
+                    or url is None
+                )
+
+        if action in {
+            "download",
+            "click",
+            "fill"
+        }:
+
+            if selector is None and target is None:
+                raise ValueError(
+                    f"Selector or target is required for '{action}' action."
+                )
+
+            if selector is not None:
+                prepared_action["selector"] = (
+                    self._validate_selector(
+                        selector
+                    )
+                )
+
+            if target is not None:
+                prepared_action["target"] = str(target).strip()
+
+        if action == "fill":
+
+            if value is None:
+                raise ValueError(
+                    "Value is required for 'fill' action."
+                )
+
+            prepared_action["value"] = (
+                self._validate_value(
+                    value
+                )
+            )
+
+        if (
+            action == "read"
+            and selector is not None
+        ):
+
+            prepared_action["selector"] = (
+                self._validate_selector(
+                    selector
+                )
+            )
+
+        return prepared_action
+
+    # =================================
+    # GET SESSION PAGE
+    # =================================
+
+    async def _get_page(self):
+
+        session = self._get_session()
+
+        if not session.is_active():
+            await session.start()
+
+        return session.get_page()
+
+    # =================================
+    # OPEN PAGE
+    # =================================
+
+    async def _open_page(
+        self,
+        url: str
+    ) -> dict:
+
+        session = self._get_session()
+
+        return await session.open(
+            url
+        )
+
+    # =================================
+    # CLICK ELEMENT
+    # =================================
+
+    async def _resolve_clickable_element(
+        self,
+        selector: str | None = None,
+        target: str | None = None
+    ):
+        """
+        Resolve a clickable element from either an explicit selector or
+        natural-language target text.
+
+        Resolution order:
+        1. Explicit selector, when it points to a visible element.
+        2. Natural-language "X Download button/link" target.
+        3. Exact/near text target + nearest card action.
+        4. Accessible button/link name.
+        5. Visible Download button fallback.
+        """
+        page = await self._get_page()
+
+        # 1. Explicit selector
+        if selector:
+            selector = self._validate_selector(selector)
+            try:
+                locator = page.locator(selector)
+                if await locator.count() > 0:
+                    for i in range(min(await locator.count(), 10)):
+                        candidate = locator.nth(i)
+                        try:
+                            if await candidate.is_visible():
+                                return candidate, selector, "selector"
+                        except Exception:
+                            continue
+            except Exception:
+                pass
+
+        # Normalize target
+        target_text = (target or "").strip()
+
+        # If selector itself contains a simple :has-text('...') target,
+        # extract that text as a useful semantic hint.
+        if not target_text and selector:
+            match = re.search(
+                r":has-text\(['\"]([^'\"]+)['\"]\)",
+                selector,
+                flags=re.IGNORECASE
+            )
+            if match:
+                target_text = match.group(1).strip()
+
+        # 2. Parse natural language:
+        # "Python CheatSheet Download button"
+        # "Python CheatSheet ka Download button"
+        item_text = None
+        if target_text:
+            semantic_match = re.match(
+                r"^(.+?)\s+(?:ka\s+)?download(?:\s+(?:button|link))?$",
+                target_text,
+                flags=re.IGNORECASE
+            )
+            if semantic_match:
+                item_text = semantic_match.group(1).strip()
+
+        # 3. Find the requested item and its nearest clickable action.
+        if item_text:
+            try:
+                item = page.get_by_text(
+                    re.compile(re.escape(item_text), re.IGNORECASE)
+                ).first
+
+                if await item.count() > 0:
+                    await item.wait_for(
+                        state="visible",
+                        timeout=5000
+                    )
+
+                    # Walk up a few ancestors and search inside the
+                    # corresponding card/container for Download.
+                    for level in range(1, 7):
+                        ancestor = item.locator(
+                            "xpath=" + "/.." * level
+                        )
+
+                        controls = ancestor.locator(
+                            "button, [role='button'], a"
+                        )
+
+                        count = await controls.count()
+
+                        for i in range(count):
+                            control = controls.nth(i)
+                            try:
+                                if not await control.is_visible():
+                                    continue
+
+                                control_text = (
+                                    await control.inner_text()
+                                ).strip()
+
+                                aria = (
+                                    await control.get_attribute("aria-label")
+                                    or ""
+                                )
+
+                                combined = (
+                                    f"{control_text} {aria}"
+                                ).strip()
+
+                                if re.search(
+                                    r"\bdownload\b",
+                                    combined,
+                                    flags=re.IGNORECASE
+                                ):
+                                    return (
+                                        control,
+                                        "semantic-download",
+                                        "natural-language-target"
+                                    )
+                            except Exception:
+                                continue
+            except Exception:
+                pass
+
+        # 4. Direct visible text target.
+        if target_text:
+            try:
+                exact_text = page.get_by_text(
+                    target_text,
+                    exact=True
+                )
+                for i in range(min(await exact_text.count(), 10)):
+                    candidate = exact_text.nth(i)
+                    if await candidate.is_visible():
+                        return (
+                            candidate,
+                            f"text={target_text!r}",
+                            "exact-text"
+                        )
+            except Exception:
+                pass
+
+            try:
+                named_button = page.get_by_role(
+                    "button",
+                    name=re.compile(
+                        re.escape(target_text),
+                        re.IGNORECASE
+                    )
+                )
+                for i in range(min(await named_button.count(), 10)):
+                    candidate = named_button.nth(i)
+                    if await candidate.is_visible():
+                        return (
+                            candidate,
+                            f"button-name={target_text!r}",
+                            "accessible-name"
+                        )
+            except Exception:
+                pass
+
+            try:
+                named_link = page.get_by_role(
+                    "link",
+                    name=re.compile(
+                        re.escape(target_text),
+                        re.IGNORECASE
+                    )
+                )
+                for i in range(min(await named_link.count(), 10)):
+                    candidate = named_link.nth(i)
+                    if await candidate.is_visible():
+                        return (
+                            candidate,
+                            f"link-name={target_text!r}",
+                            "accessible-name"
+                        )
+            except Exception:
+                pass
+
+        # 5. Generic Download control fallback.
+        try:
+            download_controls = page.locator(
+                "button, [role='button'], a"
+            ).filter(
+                has_text=re.compile(
+                    r"\bdownload\b",
+                    re.IGNORECASE
+                )
+            )
+
+            for i in range(min(await download_controls.count(), 30)):
+                candidate = download_controls.nth(i)
+                try:
+                    if await candidate.is_visible():
+                        return (
+                            candidate,
+                            "download-control",
+                            "generic-download-fallback"
+                        )
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+        raise ValueError(
+            "Could not find a visible clickable element for "
+            f"target={target_text!r}, selector={selector!r}."
+        )
+
+    async def _click_element(
+        self,
+        selector: str | None = None,
+        target: str | None = None
+    ) -> dict:
+
+        element, resolved_selector, resolved_by = (
+            await self._resolve_clickable_element(
+                selector=selector,
+                target=target
+            )
+        )
+
+        await element.click(
+            timeout=10000
+        )
+
+        page = await self._get_page()
+
+        return {
+            "selector": resolved_selector,
+            "target": target,
+            "resolved_by": resolved_by,
+            "url": page.url,
+            "title": await page.title()
+        }
+
+    # =================================
+    # FILL INPUT
+    # =================================
+
+    async def _fill_input(
+        self,
+        selector: str,
+        value: str
+    ) -> dict:
+
+        selector = self._validate_selector(
+            selector
+        )
+
+        value = self._validate_value(
+            value
+        )
+
+        page = await self._get_page()
+
+        element = page.locator(
+            selector
+        )
+
+        await element.first.wait_for(
+            state="visible",
+            timeout=10000
+        )
+
+        await element.first.fill(
+            value,
+            timeout=10000
+        )
+
+        return {
+            "selector": selector,
+            "value_length": len(value),
+            "url": page.url,
+            "title": await page.title()
+        }
+
+    # =================================
+    # READ PAGE
+    # =================================
+
+    async def _read_page(
+        self,
+        selector: str | None = None
+    ) -> dict:
+
+        page = await self._get_page()
+
+        if selector is not None:
+
+            selector = self._validate_selector(
+                selector
+            )
+
+            element = page.locator(
+                selector
+            )
+
+            if await element.count() == 0:
+                raise ValueError(
+                    f"Element not found for selector '{selector}'."
+                )
+
+            content = await element.first.inner_text(
+                timeout=10000
+            )
+
+        else:
+
+            content = await page.locator(
+                "body"
+            ).inner_text(
+                timeout=10000
+            )
+
+        content = content.strip()
+
+        return {
+            "url": page.url,
+            "title": await page.title(),
+            "content": content
+        }
+
+    # =================================
+    # DOWNLOAD FILE
+    # =================================
+
+    def _safe_filename(
+        self,
+        filename: str | None
+    ) -> str:
+
+        if not filename:
+            filename = "download"
+
+        filename = Path(filename).name
+
+        filename = re.sub(
+            r'[<>:"/\\|?*\x00-\x1f]',
+            "_",
+            filename
+        )
+
+        filename = filename.strip().strip(".")
+
+        if not filename:
+            filename = "download"
+
+        return filename
+
+    async def _download_file(
+        self,
+        selector: str | None = None,
+        target: str | None = None,
+        requested_url: str | None = None,
+        use_current_page: bool = True
+    ) -> dict:
+
+        page = await self._get_page()
+
+        element, resolved_selector, resolved_by = (
+            await self._resolve_clickable_element(
+                selector=selector,
+                target=target
+            )
+        )
+
+        if (
+            requested_url
+            and not use_current_page
+            and page.url != requested_url
+        ):
+
+            await self._open_page(
+                requested_url
+            )
+
+            page = self._get_session().get_page()
+
+        # =================================
+        # WINDOWS DOWNLOADS DIRECTORY
+        # =================================
+        #
+        # Example:
+        # C:\Users\Daksh\Downloads
+        #
+        # Files are saved directly here.
+        # No user_id subfolder is created.
+
+        download_root = (
+            self.download_root.resolve()
+        )
+
+        download_dir = download_root
+
+        download_dir.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+        resolved_download_dir = (
+            download_dir.resolve()
+        )
+
+        # =================================
+        # SECURITY CHECK
+        # =================================
+        # Make sure the configured download
+        # directory itself is inside the
+        # expected Downloads directory.
+
+        try:
+
+            resolved_download_dir.relative_to(
+                download_root
+            )
+
+        except ValueError:
+
+            raise ValueError(
+                "Download directory is outside "
+                "the configured download root."
+            )
+
+        async with page.expect_download(
+            timeout=15000
+        ) as download_info:
+
+            await element.click(
+                timeout=10000
+            )
+
+        download = await download_info.value
+
+        suggested_name = (
+            self._safe_filename(
+                download.suggested_filename
+            )
+        )
+
+        destination = (
+            download_dir /
+            suggested_name
+        )
+
+        # =================================
+        # AVOID OVERWRITING EXISTING FILE
+        # =================================
+
+        if destination.exists():
+
+            stem = destination.stem
+            suffix = destination.suffix
+            counter = 1
+
+            while True:
+
+                candidate = (
+                    download_dir /
+                    f"{stem}_{counter}{suffix}"
+                )
+
+                if not candidate.exists():
+
+                    destination = candidate
+                    break
+
+                counter += 1
+
+        resolved_destination = (
+            destination.resolve()
+        )
+
+        # =================================
+        # FINAL SECURITY CHECK
+        # =================================
+        # Prevent the final destination from
+        # escaping the Windows Downloads folder.
+
+        try:
+
+            resolved_destination.relative_to(
+                resolved_download_dir
+            )
+
+        except ValueError:
+
+            raise ValueError(
+                "Download destination is outside "
+                "the user's Downloads directory."
+            )
+
+        # =================================
+        # SAVE FILE
+        # =================================
+
+        await download.save_as(
+            str(resolved_destination)
+        )
+
+        destination = resolved_destination
+
+        # =================================
+        # VERIFY FILE EXISTS
+        # =================================
+
+        if not destination.exists():
+
+            raise FileNotFoundError(
+                "Downloaded file could not be verified on disk."
+            )
+
+        file_size = (
+            destination.stat().st_size
+        )
+
+        failure = await download.failure()
+
+        if failure:
+
+            raise RuntimeError(
+                f"Browser download failed: {failure}"
+            )
+
+        return {
+            "selector": resolved_selector,
+            "target": target,
+            "resolved_by": resolved_by,
+            "url": page.url,
+            "title": await page.title(),
+            "filename": destination.name,
+            "path": str(
+                destination.resolve()
+            ),
+            "size": file_size,
+            "size_bytes": file_size,
+        }
+
+    # =================================
+    # CLOSE CURRENT USER SESSION
+    # =================================
+
+    async def _close_session(
+        self
+    ) -> dict:
+
+        if not self.user_id:
+
+            return {
+                "was_active": False
+            }
+
+        result = await self.close_user_session(
+            self.user_id
+        )
+
+        self.session = None
+
+        return {
+            "was_active": result.get(
+                "was_active",
+                False
+            )
+        }
+
+    # =================================
+    # EXECUTE
+    # =================================
+
+    async def execute(
+        self,
+        parameters: dict | None = None
+    ) -> dict:
+
+        if parameters is None:
+            parameters = {}
+
+        if not isinstance(
+            parameters,
+            dict
+        ):
+
+            return {
+                "success": False,
+                "message": (
+                    "Browser parameters must be a dictionary."
+                )
+            }
+
+        # =================================
+        # USER ID
+        # =================================
+
+        parameter_user_id = parameters.get(
+            "user_id"
+        )
+
+        if parameter_user_id is not None:
+
+            try:
+
+                self.set_user_id(
+                    parameter_user_id
+                )
+
+            except ValueError as e:
+
+                return {
+                    "success": False,
+                    "message": str(e)
+                }
+
+        if not self.user_id:
+
+            return {
+                "success": False,
+                "message": (
+                    "Browser user ID is required."
+                )
+            }
+
+        action = parameters.get(
+            "action",
+            "open"
+        )
+
+        url = parameters.get(
+            "url"
+        )
+
+        selector = parameters.get(
+            "selector"
+        )
+
+        target = parameters.get(
+            "target"
+        )
+
+        value = parameters.get(
+            "value"
+        )
+
+        use_current_page = parameters.get(
+            "use_current_page",
+            False
+        )
+
+        try:
+
+            browser_data = self.prepare_action(
+                action=action,
+                url=url,
+                selector=selector,
+                target=target,
+                value=value,
+                use_current_page=use_current_page
+            )
+
+        except (
+            TypeError,
+            ValueError
+        ) as e:
+
+            return {
+                "success": False,
+                "message": str(e)
+            }
+
+        action_name = browser_data[
+            "action"
+        ]
+
+        print("DEBUG BROWSER DATA:", browser_data)
+        print("DEBUG ACTION NAME:", repr(action_name))
+
+        try:
+
+            # =============================
+            # CLOSE
+            # =============================
+
+            if action_name == "close":
+
+                close_data = (
+                    await self._close_session()
+                )
+
+                return {
+                    "success": True,
+                    "status": "completed",
+                    "browser": {
+                        "action": "close",
+                        "user_id": self.user_id,
+                        "was_active": (
+                            close_data[
+                                "was_active"
+                            ]
+                        )
+                    },
+                    "message": (
+                        "Browser session closed successfully."
+                    )
+                }
+
+            # =============================
+            # OPEN / NAVIGATE
+            # =============================
+
+            if action_name in {
+                "open",
+                "navigate"
+            }:
+
+                await self._get_page()
+
+                page_data = await self._open_page(
+                    browser_data["url"]
+                )
+
+                return {
+                    "success": True,
+                    "status": "completed",
+                    "browser": {
+                        "action": action_name,
+                        "user_id": self.user_id,
+                        "requested_url": (
+                            browser_data["url"]
+                        ),
+                        "final_url": (
+                            page_data["url"]
+                        ),
+                        "title": (
+                            page_data["title"]
+                        ),
+                        "status_code": (
+                            page_data["status_code"]
+                        )
+                    },
+                    "message": (
+                        "Browser action executed successfully."
+                    )
+                }
+
+            # =============================
+            # CLICK
+            # =============================
+
+            if action_name == "click":
+
+                await self._get_page()
+
+                current_page = (
+                    self._get_session().get_page()
+                )
+
+                requested_url = (
+                    browser_data.get(
+                        "url"
+                    )
+                )
+
+                use_current = (
+                    browser_data.get(
+                        "use_current_page",
+                        False
+                    )
+                )
+
+                if (
+                    requested_url
+                    and not use_current
+                    and current_page.url
+                    != requested_url
+                ):
+
+                    await self._open_page(
+                        requested_url
+                    )
+
+                click_data = (
+                    await self._click_element(
+                        selector=browser_data.get(
+                            "selector"
+                        ),
+                        target=browser_data.get(
+                            "target"
+                        )
+                    )
+                )
+
+                return {
+                    "success": True,
+                    "status": "completed",
+                    "browser": {
+                        "action": "click",
+                        "user_id": self.user_id,
+                        "requested_url": (
+                            requested_url
+                        ),
+                        "used_current_page": (
+                            use_current
+                        ),
+                        "final_url": (
+                            click_data["url"]
+                        ),
+                        "title": (
+                            click_data["title"]
+                        ),
+                        "selector": (
+                            click_data["selector"]
+                        ),
+                        "target": (
+                            click_data.get("target")
+                        ),
+                        "resolved_by": (
+                            click_data.get("resolved_by")
+                        )
+                    },
+                    "message": (
+                        "Browser click executed successfully."
+                    )
+                }
+
+            # =============================
+            # FILL
+            # =============================
+
+            if action_name == "fill":
+
+                await self._get_page()
+
+                current_page = (
+                    self._get_session().get_page()
+                )
+
+                requested_url = (
+                    browser_data.get(
+                        "url"
+                    )
+                )
+
+                use_current = (
+                    browser_data.get(
+                        "use_current_page",
+                        False
+                    )
+                )
+
+                if (
+                    requested_url
+                    and not use_current
+                    and current_page.url
+                    != requested_url
+                ):
+
+                    await self._open_page(
+                        requested_url
+                    )
+
+                fill_data = (
+                    await self._fill_input(
+                        selector=browser_data[
+                            "selector"
+                        ],
+                        value=browser_data[
+                            "value"
+                        ]
+                    )
+                )
+
+                return {
+                    "success": True,
+                    "status": "completed",
+                    "browser": {
+                        "action": "fill",
+                        "user_id": self.user_id,
+                        "requested_url": (
+                            requested_url
+                        ),
+                        "used_current_page": (
+                            use_current
+                        ),
+                        "final_url": (
+                            fill_data["url"]
+                        ),
+                        "title": (
+                            fill_data["title"]
+                        ),
+                        "selector": (
+                            fill_data["selector"]
+                        ),
+                        "value_length": (
+                            fill_data[
+                                "value_length"
+                            ]
+                        )
+                    },
+                    "message": (
+                        "Browser input filled successfully."
+                    )
+                }
+
+            # =============================
+            # DOWNLOAD
+            # =============================
+
+            if action_name == "download":
+
+                await self._get_page()
+
+                current_page = (
+                    self._get_session().get_page()
+                )
+
+                requested_url = (
+                    browser_data.get(
+                        "url"
+                    )
+                )
+
+                use_current = (
+                    browser_data.get(
+                        "use_current_page",
+                        False
+                    )
+                )
+
+                if (
+                    requested_url
+                    and not use_current
+                    and current_page.url
+                    != requested_url
+                ):
+
+                    await self._open_page(
+                        requested_url
+                    )
+
+                download_data = (
+                    await self._download_file(
+                        selector=browser_data.get(
+                            "selector"
+                        ),
+                        target=browser_data.get(
+                            "target"
+                        ),
+                        requested_url=requested_url,
+                        use_current_page=use_current
+                    )
+                )
+
+                return {
+                    "success": True,
+                    "status": "completed",
+                    "browser": {
+                        "action": "download",
+                        "user_id": self.user_id,
+                        "requested_url": requested_url,
+                        "used_current_page": use_current,
+                        "final_url": download_data[
+                            "url"
+                        ],
+                        "title": download_data[
+                            "title"
+                        ],
+                        "selector": download_data[
+                            "selector"
+                        ],
+                        "target": download_data.get(
+                            "target"
+                        ),
+                        "resolved_by": download_data.get(
+                            "resolved_by"
+                        ),
+                        "filename": download_data[
+                            "filename"
+                        ],
+                        "path": download_data[
+                            "path"
+                        ],
+                        "size_bytes": download_data[
+                            "size_bytes"
+                        ],
+                    },
+                    "message": (
+                        "Browser file downloaded successfully."
+                    )
+                }
+
+            # =============================
+            # READ
+            # =============================
+
+            if action_name == "read":
+
+                await self._get_page()
+
+                current_page = (
+                    self._get_session().get_page()
+                )
+
+                requested_url = (
+                    browser_data.get(
+                        "url"
+                    )
+                )
+
+                use_current = (
+                    browser_data.get(
+                        "use_current_page",
+                        False
+                    )
+                )
+
+                if (
+                    requested_url
+                    and not use_current
+                    and current_page.url
+                    != requested_url
+                ):
+
+                    await self._open_page(
+                        requested_url
+                    )
+
+                read_data = (
+                    await self._read_page(
+                        selector=browser_data.get(
+                            "selector"
+                        )
+                    )
+                )
+
+                return {
+                    "success": True,
+                    "status": "completed",
+                    "browser": {
+                        "action": "read",
+                        "user_id": self.user_id,
+                        "requested_url": (
+                            requested_url
+                        ),
+                        "used_current_page": (
+                            use_current
+                        ),
+                        "final_url": (
+                            read_data["url"]
+                        ),
+                        "title": (
+                            read_data["title"]
+                        ),
+                        "content": (
+                            read_data["content"]
+                        )
+                    },
+                    "message": (
+                        "Browser page read successfully."
+                    )
+                }
+
+            return {
+                "success": False,
+                "status": "failed",
+                "message": (
+                    "Unsupported browser action."
+                )
+            }
+
+        except Exception as e:
+
+            print(
+                "\n"
+                "========================================\n"
+                "BROWSER TOOL FULL TRACEBACK\n"
+                "========================================"
+            )
+
+            print(
+                "ERROR TYPE:",
+                type(e).__name__
+            )
+
+            print(
+                "ERROR REPR:",
+                repr(e)
+            )
+
+            print(
+                "ERROR STRING:",
+                str(e)
+            )
+
+            print(
+                "TRACEBACK:"
+            )
+
+            traceback.print_exc()
+
+            print(
+                "========================================\n"
+            )
+
+            return {
+                "success": False,
+                "status": "failed",
+                "browser": browser_data,
+                "error_type": type(e).__name__,
+                "error": repr(e),
+                "message": (
+                    f"Browser action failed: "
+                    f"{type(e).__name__}: {repr(e)}"
+                )
+            }
+
+    # =================================
+    # AVAILABILITY
+    # =================================
+
+    def is_available(self) -> bool:
+
+        return True
+
+    # =================================
+    # SESSION STATUS
+    # =================================
+
+    def is_session_active(
+        self
+    ) -> bool:
+
+        if not self.user_id:
+            return False
+
+        return self._get_session().is_active()

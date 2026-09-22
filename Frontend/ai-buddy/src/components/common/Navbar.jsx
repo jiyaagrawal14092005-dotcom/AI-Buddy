@@ -12,55 +12,94 @@ import {
     CheckCircle2,
     CalendarClock,
     Workflow,
+    Info,
+    XCircle,
+    Download,
+    LoaderCircle,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
+import { useBuddy } from "../../context/BuddyContext";
 
 
 function Navbar() {
+
     const navigate = useNavigate();
 
     const { user, logout } = useAuth();
 
-    const [showNotifications, setShowNotifications] = useState(false);
-    const [showAccount, setShowAccount] = useState(false);
-    const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const {
+        notifications,
+        unreadNotificationCount,
+        markNotificationRead,
+        markAllNotificationsRead,
+    } = useBuddy();
+
+
+    const [showNotifications, setShowNotifications] =
+        useState(false);
+
+    const [showAccount, setShowAccount] =
+        useState(false);
+
+    const [isLoggingOut, setIsLoggingOut] =
+        useState(false);
+
 
     const notificationRef = useRef(null);
     const accountRef = useRef(null);
 
 
+    // ==========================================
+    // CLOSE DROPDOWNS WHEN CLICKING OUTSIDE
+    // ==========================================
+
     useEffect(() => {
+
         function handleOutsideClick(event) {
 
             if (
                 notificationRef.current &&
-                !notificationRef.current.contains(event.target)
+                !notificationRef.current.contains(
+                    event.target
+                )
             ) {
                 setShowNotifications(false);
             }
 
+
             if (
                 accountRef.current &&
-                !accountRef.current.contains(event.target)
+                !accountRef.current.contains(
+                    event.target
+                )
             ) {
                 setShowAccount(false);
             }
         }
+
 
         document.addEventListener(
             "mousedown",
             handleOutsideClick
         );
 
+
         return () => {
+
             document.removeEventListener(
                 "mousedown",
                 handleOutsideClick
             );
+
         };
+
     }, []);
 
+
+    // ==========================================
+    // TOGGLE NOTIFICATIONS
+    // ==========================================
 
     function toggleNotifications() {
 
@@ -72,6 +111,10 @@ function Navbar() {
     }
 
 
+    // ==========================================
+    // TOGGLE ACCOUNT
+    // ==========================================
+
     function toggleAccount() {
 
         setShowAccount(
@@ -82,6 +125,10 @@ function Navbar() {
     }
 
 
+    // ==========================================
+    // NAVIGATION
+    // ==========================================
+
     function goToPage(path) {
 
         setShowNotifications(false);
@@ -91,24 +138,35 @@ function Navbar() {
     }
 
 
+    // ==========================================
+    // LOGOUT
+    // ==========================================
+
     async function handleLogout() {
 
         if (isLoggingOut) {
             return;
         }
 
+
         setIsLoggingOut(true);
+
 
         try {
 
             await logout();
 
+
             setShowAccount(false);
             setShowNotifications(false);
 
-            navigate("/login", {
-                replace: true,
-            });
+
+            navigate(
+                "/login",
+                {
+                    replace: true,
+                }
+            );
 
         } catch (error) {
 
@@ -124,10 +182,166 @@ function Navbar() {
     }
 
 
+    // ==========================================
+    // NOTIFICATION ICON
+    // ==========================================
+
+    function getNotificationIcon(notification) {
+
+        const iconType =
+            notification?.icon ||
+            notification?.type ||
+            "info";
+
+
+        if (
+            iconType === "download"
+        ) {
+            return (
+                <Download size={17} />
+            );
+        }
+
+
+        if (
+            iconType === "success" ||
+            notification?.type === "success"
+        ) {
+            return (
+                <CheckCircle2 size={17} />
+            );
+        }
+
+
+        if (
+            iconType === "error" ||
+            notification?.type === "error" ||
+            notification?.type === "failed"
+        ) {
+            return (
+                <XCircle size={17} />
+            );
+        }
+
+
+        if (
+            iconType === "workflow" ||
+            notification?.type === "workflow"
+        ) {
+            return (
+                <Workflow size={17} />
+            );
+        }
+
+
+        if (
+            iconType === "reminder" ||
+            notification?.type === "reminder"
+        ) {
+            return (
+                <CalendarClock size={17} />
+            );
+        }
+
+
+        if (
+            iconType === "loading" ||
+            notification?.type === "loading"
+        ) {
+            return (
+                <LoaderCircle size={17} />
+            );
+        }
+
+
+        return (
+            <Info size={17} />
+        );
+    }
+
+
+    // ==========================================
+    // NOTIFICATION TIME
+    //
+    // IMPORTANT:
+    // Do not use Date.now() here because this
+    // function is called while rendering.
+    // ==========================================
+
+    function formatNotificationTime(createdAt) {
+
+        if (!createdAt) {
+            return "";
+        }
+
+
+        const date =
+            new Date(createdAt);
+
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+            return "";
+        }
+
+
+        return new Intl.DateTimeFormat(
+            "en-IN",
+            {
+                day: "2-digit",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+            }
+        ).format(date);
+    }
+
+
+    // ==========================================
+    // LATEST / CURRENT NOTIFICATION
+    //
+    // Only ONE notification is shown
+    // inside the bell dropdown.
+    // ==========================================
+
+    const latestNotification =
+        notifications.length > 0
+            ? notifications[0]
+            : null;
+
+
+    // ==========================================
+    // NOTIFICATION CLICK
+    // ==========================================
+
+    function handleNotificationClick(
+        notification
+    ) {
+
+        if (
+            notification?.id
+        ) {
+
+            markNotificationRead(
+                notification.id
+            );
+
+        }
+    }
+
+
+    // ==========================================
+    // ACCOUNT DISPLAY
+    // ==========================================
+
     const displayName =
         user?.username ||
         user?.email ||
         "User";
+
 
     const avatarLetter =
         displayName
@@ -136,6 +350,7 @@ function Navbar() {
 
 
     return (
+
         <header className="zarvis-navbar">
 
             <div className="zarvis-navbar-actions">
@@ -154,11 +369,26 @@ function Navbar() {
                         type="button"
                         className="zarvis-notification-button"
                         aria-label="Notifications"
-                        onClick={toggleNotifications}
+                        onClick={
+                            toggleNotifications
+                        }
                     >
+
                         <Bell size={18} />
 
-                        <span className="zarvis-notification-dot"></span>
+
+                        {unreadNotificationCount > 0 && (
+
+                            <span className="zarvis-notification-dot">
+
+                                {unreadNotificationCount > 9
+                                    ? "9+"
+                                    : unreadNotificationCount}
+
+                            </span>
+
+                        )}
+
                     </button>
 
 
@@ -166,117 +396,153 @@ function Navbar() {
 
                         <div className="zarvis-notification-panel">
 
+
+                            {/* ==========================================
+                                NOTIFICATION HEADER
+                            ========================================== */}
+
                             <div className="notification-panel-header">
 
                                 <div>
+
                                     <strong>
                                         Notifications
                                     </strong>
 
                                     <span>
-                                        Recent updates
-                                    </span>
-                                </div>
-
-                                <button
-                                    type="button"
-                                >
-                                    Mark all read
-                                </button>
-
-                            </div>
-
-
-                            <div className="notification-item">
-
-                                <div className="notification-icon">
-                                    <CheckCircle2 size={17} />
-                                </div>
-
-                                <div className="notification-content">
-
-                                    <strong>
-                                        Task completed
-                                    </strong>
-
-                                    <span>
-                                        Your study task was completed.
+                                        {unreadNotificationCount > 0
+                                            ? `${unreadNotificationCount} unread`
+                                            : "You're all caught up"}
                                     </span>
 
                                 </div>
 
-                                <small>
-                                    8 min ago
-                                </small>
+
+                                {notifications.length > 0 && (
+
+                                    <button
+                                        type="button"
+                                        onClick={
+                                            markAllNotificationsRead
+                                        }
+                                    >
+                                        Mark all read
+                                    </button>
+
+                                )}
 
                             </div>
 
 
-                            <div className="notification-item">
+                            {/* ==========================================
+                                ONLY CURRENT / LATEST NOTIFICATION
+                            ========================================== */}
 
-                                <div className="notification-icon">
-                                    <CalendarClock size={17} />
-                                </div>
+                            <div className="zarvis-notification-list">
 
-                                <div className="notification-content">
+                                {latestNotification ? (
 
-                                    <strong>
-                                        Reminder
-                                    </strong>
+                                    <button
+                                        type="button"
+                                        className={`notification-item ${
+                                            latestNotification.read
+                                                ? "notification-read"
+                                                : "notification-unread"
+                                        }`}
+                                        onClick={() =>
+                                            handleNotificationClick(
+                                                latestNotification
+                                            )
+                                        }
+                                    >
 
-                                    <span>
-                                        Your upcoming schedule is ready.
-                                    </span>
+                                        <div className="notification-icon">
 
-                                </div>
+                                            {getNotificationIcon(
+                                                latestNotification
+                                            )}
 
-                                <small>
-                                    20 min ago
-                                </small>
+                                        </div>
+
+
+                                        <div className="notification-content">
+
+                                            <strong>
+                                                {
+                                                    latestNotification.title
+                                                }
+                                            </strong>
+
+
+                                            <span>
+                                                {
+                                                    latestNotification.message
+                                                }
+                                            </span>
+
+                                        </div>
+
+
+                                        <small>
+                                            {
+                                                formatNotificationTime(
+                                                    latestNotification.createdAt
+                                                )
+                                            }
+                                        </small>
+
+                                    </button>
+
+                                ) : (
+
+                                    <div className="notification-empty">
+
+                                        <div className="notification-empty-icon">
+
+                                            <Bell
+                                                size={20}
+                                            />
+
+                                        </div>
+
+
+                                        <strong>
+                                            No notifications
+                                        </strong>
+
+
+                                        <span>
+                                            Zarvis updates will appear here.
+                                        </span>
+
+                                    </div>
+
+                                )}
 
                             </div>
 
 
-                            <div className="notification-item">
-
-                                <div className="notification-icon">
-                                    <Workflow size={17} />
-                                </div>
-
-                                <div className="notification-content">
-
-                                    <strong>
-                                        Workflow update
-                                    </strong>
-
-                                    <span>
-                                        Your workflow has been updated.
-                                    </span>
-
-                                </div>
-
-                                <small>
-                                    1 hr ago
-                                </small>
-
-                            </div>
-
+                            {/* ==========================================
+                                VIEW ALL NOTIFICATIONS
+                            ========================================== */}
 
                             <button
                                 type="button"
                                 className="notification-view-all"
                                 onClick={() =>
-                                    goToPage("/activity")
+                                    goToPage(
+                                        "/activity"
+                                    )
                                 }
                             >
                                 View all notifications →
                             </button>
 
                         </div>
+
                     )}
 
                 </div>
-
 
 
                 {/* ==========================================
@@ -291,7 +557,9 @@ function Navbar() {
                     <button
                         type="button"
                         className="zarvis-account-button"
-                        onClick={toggleAccount}
+                        onClick={
+                            toggleAccount
+                        }
                     >
 
                         <div className="zarvis-avatar">
@@ -304,6 +572,7 @@ function Navbar() {
                             <strong>
                                 {displayName}
                             </strong>
+
 
                             <span>
                                 Personal Workspace
@@ -329,17 +598,23 @@ function Navbar() {
                         <div className="zarvis-account-menu">
 
 
+                            {/* ==========================================
+                                ACCOUNT PROFILE
+                            ========================================== */}
+
                             <div className="account-menu-profile">
 
                                 <div className="account-menu-avatar">
                                     {avatarLetter}
                                 </div>
 
+
                                 <div>
 
                                     <strong>
                                         {displayName}
                                     </strong>
+
 
                                     <span>
                                         Personal Workspace
@@ -350,12 +625,19 @@ function Navbar() {
                             </div>
 
 
+                            {/* ==========================================
+                                PROFILE
+                            ========================================== */}
+
                             <button
                                 type="button"
                                 onClick={() =>
-                                    goToPage("/settings")
+                                    goToPage(
+                                        "/settings"
+                                    )
                                 }
                             >
+
                                 <User size={17} />
 
                                 <span>
@@ -365,12 +647,19 @@ function Navbar() {
                             </button>
 
 
+                            {/* ==========================================
+                                SETTINGS
+                            ========================================== */}
+
                             <button
                                 type="button"
                                 onClick={() =>
-                                    goToPage("/settings")
+                                    goToPage(
+                                        "/settings"
+                                    )
                                 }
                             >
+
                                 <Settings size={17} />
 
                                 <span>
@@ -380,12 +669,19 @@ function Navbar() {
                             </button>
 
 
+                            {/* ==========================================
+                                INTEGRATIONS
+                            ========================================== */}
+
                             <button
                                 type="button"
                                 onClick={() =>
-                                    goToPage("/integrations")
+                                    goToPage(
+                                        "/integrations"
+                                    )
                                 }
                             >
+
                                 <Plug size={17} />
 
                                 <span>
@@ -395,12 +691,19 @@ function Navbar() {
                             </button>
 
 
+                            {/* ==========================================
+                                HELP & SUPPORT
+                            ========================================== */}
+
                             <button
                                 type="button"
                                 onClick={() =>
-                                    goToPage("/activity")
+                                    goToPage(
+                                        "/activity"
+                                    )
                                 }
                             >
+
                                 <CircleHelp size={17} />
 
                                 <span>
@@ -420,8 +723,12 @@ function Navbar() {
                             <button
                                 type="button"
                                 className="account-logout"
-                                onClick={handleLogout}
-                                disabled={isLoggingOut}
+                                onClick={
+                                    handleLogout
+                                }
+                                disabled={
+                                    isLoggingOut
+                                }
                             >
 
                                 <LogOut size={17} />
@@ -435,6 +742,7 @@ function Navbar() {
                             </button>
 
                         </div>
+
                     )}
 
                 </div>

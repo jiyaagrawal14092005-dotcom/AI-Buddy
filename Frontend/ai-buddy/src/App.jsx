@@ -23,13 +23,14 @@ import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 
 import Chat from "./pages/chat";
+
 import GlobalVoiceAssistant from "./components/voice/GlobalVoiceAssistant";
+import NotificationToast from "./components/notifications/NotificationToast";
 
 
-
-/* ==========================================
-   PROTECTED ROUTE
-========================================== */
+// ==========================================
+// PROTECTED ROUTE
+// ==========================================
 
 function ProtectedRoute({ children }) {
 
@@ -71,10 +72,9 @@ function ProtectedRoute({ children }) {
 }
 
 
-
-/* ==========================================
-   PUBLIC ROUTE
-========================================== */
+// ==========================================
+// PUBLIC ROUTE
+// ==========================================
 
 function PublicRoute({ children }) {
 
@@ -116,10 +116,9 @@ function PublicRoute({ children }) {
 }
 
 
-
-/* ==========================================
-   APP
-========================================== */
+// ==========================================
+// MAIN APP
+// ==========================================
 
 function App() {
 
@@ -129,16 +128,35 @@ function App() {
 
             <BuddyProvider>
 
+                {/* ==========================================
+                    GLOBAL NOTIFICATION POPUP
+
+                    This stays mounted globally so the
+                    notification system does not belong
+                    to only one page.
+                ========================================== */}
+
+                <NotificationToast />
+
+
                 <BrowserRouter>
+
+                    {/* ==========================================
+                        GLOBAL VOICE ASSISTANT
+                    ========================================== */}
 
                     <GlobalVoiceAssistant />
 
+
+                    {/* ==========================================
+                        APPLICATION ROUTES
+                    ========================================== */}
 
                     <Routes>
 
 
                         {/* ==========================================
-                            PUBLIC ROUTES
+                            AUTHENTICATION
                         ========================================== */}
 
                         <Route
@@ -161,9 +179,8 @@ function App() {
                         />
 
 
-
                         {/* ==========================================
-                            PROTECTED ROUTES
+                            DASHBOARD
                         ========================================== */}
 
                         <Route
@@ -176,6 +193,10 @@ function App() {
                         />
 
 
+                        {/* ==========================================
+                            ASSISTANT
+                        ========================================== */}
+
                         <Route
                             path="/assistant"
                             element={
@@ -185,6 +206,10 @@ function App() {
                             }
                         />
 
+
+                        {/* ==========================================
+                            TASKS
+                        ========================================== */}
 
                         <Route
                             path="/tasks"
@@ -196,6 +221,10 @@ function App() {
                         />
 
 
+                        {/* ==========================================
+                            SCHEDULE
+                        ========================================== */}
+
                         <Route
                             path="/schedule"
                             element={
@@ -205,6 +234,10 @@ function App() {
                             }
                         />
 
+
+                        {/* ==========================================
+                            WORKFLOWS
+                        ========================================== */}
 
                         <Route
                             path="/workflows"
@@ -216,6 +249,10 @@ function App() {
                         />
 
 
+                        {/* ==========================================
+                            ACTIVITY
+                        ========================================== */}
+
                         <Route
                             path="/activity"
                             element={
@@ -225,6 +262,10 @@ function App() {
                             }
                         />
 
+
+                        {/* ==========================================
+                            INTEGRATIONS
+                        ========================================== */}
 
                         <Route
                             path="/integrations"
@@ -236,6 +277,10 @@ function App() {
                         />
 
 
+                        {/* ==========================================
+                            MEMORY
+                        ========================================== */}
+
                         <Route
                             path="/memory"
                             element={
@@ -245,6 +290,10 @@ function App() {
                             }
                         />
 
+
+                        {/* ==========================================
+                            SECURITY
+                        ========================================== */}
 
                         <Route
                             path="/security"
@@ -256,6 +305,10 @@ function App() {
                         />
 
 
+                        {/* ==========================================
+                            SETTINGS
+                        ========================================== */}
+
                         <Route
                             path="/settings"
                             element={
@@ -265,6 +318,10 @@ function App() {
                             }
                         />
 
+
+                        {/* ==========================================
+                            CHAT
+                        ========================================== */}
 
                         <Route
                             path="/chat"

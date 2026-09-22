@@ -1814,279 +1814,6 @@ class IntentDetector:
     # MULTI-STEP BROWSER DETECTION
     # =========================================
 
-    def _local_browser_detect(
-        self,
-        text: str
-    ) -> dict | None:
-
-        lower_text = text.lower()
-
-        multi_step_result = (
-            self._local_browser_multi_step_detect(
-                text
-            )
-        )
-
-        if multi_step_result is not None:
-            steps = (
-                multi_step_result
-                .get("parameters", {})
-                .get("steps", [])
-            )
-
-            previous_target = None
-
-            for step in steps:
-                params = step.get("parameters", {})
-
-                if params.get("action") == "click":
-                    selector = params.get("selector", "")
-
-                    match = re.search(
-                        r":has-text\((['\"])(.*?)\1\)",
-                        selector,
-                        flags=re.IGNORECASE
-                    )
-
-                    if match:
-                        target = match.group(2).strip()
-
-                        params.pop("selector", None)
-
-                        if previous_target:
-                            params["target"] = (
-                                f"{previous_target} {target} button"
-                            )
-                        elif re.search(
-                            r"\b(?:button|link)\b$",
-                            target,
-                            flags=re.IGNORECASE
-                        ):
-                            params["target"] = target
-                        else:
-                            params["target"] = f"{target} button"
-
-                        previous_target = target
-
-                elif params.get("action") == "download":
-                    if previous_target:
-                        params.pop("selector", None)
-                        params["target"] = (
-                            f"{previous_target} Download button"
-                        )
-
-            return multi_step_result
-
-        close_patterns = [
-            r"\bclose\s+(?:the\s+)?browser\b",
-            r"\bclose\s+(?:the\s+)?web\s+browser\b",
-            r"\bexit\s+(?:the\s+)?browser\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in close_patterns
-        ):
-
-            return {
-                "intent": "BROWSE_WEB",
-                "confidence": 0.99,
-                "parameters": {
-                    "action": "close",
-                    "url": "",
-                    "use_current_page": True
-                }
-            }
-
-        fill_patterns = [
-            r"\bfill\b",
-            r"\benter\b.*\bfield\b",
-            r"\btype\b.*\bfield\b",
-            r"\bput\b.*\bfield\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in fill_patterns
-        ):
-
-            url = self._extract_browser_url(text)
-
-            selector = (
-                self._extract_browser_selector(
-                    text,
-                    "fill"
-                )
-            )
-
-            value = (
-                self._extract_fill_value(text)
-            )
-
-            if selector and value:
-
-                return {
-                    "intent": "BROWSE_WEB",
-                    "confidence": 0.98,
-                    "parameters": {
-                        "action": "fill",
-                        "url": url,
-                        "selector": selector,
-                        "value": value,
-                        "use_current_page": not bool(url)
-                    }
-                }
-
-        click_patterns = [
-            r"\bclick\b",
-            r"\bpress\b.*\bbutton\b",
-            r"\bselect\b.*\bbutton\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in click_patterns
-        ):
-
-            url = self._extract_browser_url(text)
-
-            selector = (
-                self._extract_browser_selector(
-                    text,
-                    "click"
-                )
-            )
-
-            if selector:
-
-                return {
-                    "intent": "BROWSE_WEB",
-                    "confidence": 0.98,
-                    "parameters": {
-                        "action": "click",
-                        "url": url,
-                        "selector": selector,
-                        "use_current_page": not bool(url)
-                    }
-                }
-
-        read_patterns = [
-            r"\bread\s+(?:(?:the|this)\s+)?page\b",
-            r"\bread\s+(?:(?:the|this)\s+)?webpage\b",
-            r"\bread\s+(?:the\s+)?current\s+page\b",
-            r"\bread\s+(?:the\s+)?result\b",
-            r"\bread\s+(?:the\s+)?output\b",
-            r"\bread\s+(?:the\s+)?response\b",
-            r"\bget\s+(?:the\s+)?page\s+text\b",
-            r"\bextract\s+(?:the\s+)?page\b",
-            r"\bread\s+selector\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in read_patterns
-        ):
-
-            url = self._extract_browser_url(text)
-
-            selector = (
-                self._extract_browser_selector(
-                    text,
-                    "read"
-                )
-            )
-
-            if not selector:
-                selector = "body"
-
-            return {
-                "intent": "BROWSE_WEB",
-                "confidence": 0.98,
-                "parameters": {
-                    "action": "read",
-                    "url": url,
-                    "selector": selector,
-                    "use_current_page": not bool(url)
-                }
-            }
-
-        navigate_patterns = [
-            r"\bnavigate\s+to\b",
-            r"\bgo\s+to\b",
-            r"\bvisit\b",
-            r"\bopen\s+(?:the\s+)?website\b",
-            r"\bpar\s+jao\b",
-            r"\bpar\s+jaiye\b",
-            r"\bpar\s+jana\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in navigate_patterns
-        ):
-
-            url = self._extract_browser_url(text)
-
-            if url:
-
-                return {
-                    "intent": "BROWSE_WEB",
-                    "confidence": 0.98,
-                    "parameters": {
-                        "action": "navigate",
-                        "url": url
-                    }
-                }
-
-        open_patterns = [
-            r"\bopen\s+google\b",
-            r"\bopen\s+youtube\b",
-            r"\bopen\s+(?:the\s+)?browser\b",
-            r"\bopen\s+(?:a\s+)?website\b",
-            r"\bopen\s+(?:this\s+)?url\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in open_patterns
-        ):
-
-            url = self._extract_browser_url(text)
-
-            return {
-                "intent": "BROWSE_WEB",
-                "confidence": 0.98,
-                "parameters": {
-                    "action": "open",
-                    "url": url
-                }
-            }
-
-        return None
-
-    # =========================================
-    # LOCAL INTENT DETECTION
-    # =========================================
-
-
     def _local_browser_multi_step_detect(
         self,
         text: str
@@ -2112,11 +1839,8 @@ class IntentDetector:
             "close",
             "khol",
             "kholo",
-            "kholna",
             "jao",
-            "karo",
-            "karna",
-            "kardo"
+            "karo"
         ]
 
         if not any(
@@ -2125,51 +1849,37 @@ class IntentDetector:
         ):
             return None
 
-        # ---------------------------------------------------------
-        # Split ONLY on explicit connectors.
-        #
-        # Important:
-        # "Download button click karo"
-        # must stay together as ONE click step.
-        # ---------------------------------------------------------
-
+        # Split only at explicit connectors. Do not split on every comma
+        # or before every action word because phrases such as
+        # "Download button click karo" must remain one click step.
         parts = re.split(
-            r",\s*(?=[^,\n]*\b(?:open|navigate|go|visit|click|"
-            r"press|select|fill|enter|type|put|read|extract|"
-            r"download|save|close|exit|khol|kholo|kholna|jao|"
-            r"confirm|verify|check|ensure)\b)"
-            r"|\s+(?:and|then|aur)\s+"
+            r"\s+(?:and|then|aur)\s+"
             r"(?=(?:please\s+)?"
             r"(?:open|navigate|go|visit|click|press|select|"
             r"fill|enter|type|put|read|extract|download|save|"
-            r"close|exit|khol|kholo|kholna|jao|"
-            r"confirm|verify|check|ensure)\b)",
+            r"close|exit|khol|kholo|jao)\b)",
             text,
             flags=re.IGNORECASE
         )
 
-        # ---------------------------------------------------------
-        # Do NOT require 2 parts.
-        # A single browser command is still a valid browser intent.
-        # ---------------------------------------------------------
+        if len(parts) < 2:
+            return None
 
         steps = []
         known_url = ""
-        page_target = ""
 
         for part in parts:
 
             segment = part.strip(" ,")
-            
+
             if not segment:
                 continue
 
             lower_segment = segment.lower()
 
-            # -----------------------------------------------------
-            # Verification text is NOT a browser action.
-            # -----------------------------------------------------
-
+            # Verification language is not a browser action. For example:
+            # "confirm karo ki file Windows Downloads folder mein save karo"
+            # must not become a second DOWNLOAD step.
             verification_patterns = [
                 r"\bconfirm\b",
                 r"\bverify\b",
@@ -2191,12 +1901,9 @@ class IntentDetector:
                 for pattern in verification_patterns
             )
 
-            if is_verification:
-                continue
-
-            # -----------------------------------------------------
+            # ---------------------------------------------------------
             # OPEN / KHOLO
-            # -----------------------------------------------------
+            # ---------------------------------------------------------
 
             open_match = re.search(
                 r"\bopen\s+"
@@ -2207,7 +1914,7 @@ class IntentDetector:
             )
 
             hindi_open_match = re.search(
-                r"\b(?:khol|kholo|kholna)\b",
+                r"\b(?:khol|kholo)\b",
                 lower_segment,
                 flags=re.IGNORECASE
             )
@@ -2218,7 +1925,6 @@ class IntentDetector:
 
                 if url:
                     known_url = url
-                    page_target = ""
 
                     steps.append(
                         {
@@ -2229,127 +1935,15 @@ class IntentDetector:
 
                     continue
 
-                # -------------------------------------------------
-                # No direct URL.
-                #
-                # Example:
-                # "CodeWithHarry ki Python Cheatsheet page kholo"
-                #
-                # Open Google search for the requested target.
-                # -------------------------------------------------
-
-                cleaned_target = re.sub(
-                    r"\b(?:zarvis|jarvis)\b[, ]*",
-                    "",
-                    segment,
-                    flags=re.IGNORECASE
-                )
-
-                cleaned_target = re.sub(
-                    r"\b(?:page|website|site|webpage)\b",
-                    "",
-                    cleaned_target,
-                    flags=re.IGNORECASE
-                )
-
-                cleaned_target = re.sub(
-                    r"\b(?:khol|kholo|kholna|khol\s+do)\b",
-                    "",
-                    cleaned_target,
-                    flags=re.IGNORECASE
-                )
-
-                # -------------------------------------------------
-                # Resolve website name BEFORE removing Hindi connectors.
-                #
-                # Example:
-                # "CodeWithHarry ki Python Cheatsheet page kholo"
-                #
-                # website_name = CodeWithHarry
-                # requested_page = Python Cheatsheet
-                # -------------------------------------------------
-
-                website_name_match = re.search(
-                    r"^(?:the\s+)?"
-                    r"([A-Za-z0-9][A-Za-z0-9\s.-]*?)"
-                    r"\s+(?:ki|ka|ke|par)\s+",
-                    cleaned_target,
-                    flags=re.IGNORECASE
-                )
-
-                website_name = ""
-                requested_page = cleaned_target
-
-                if website_name_match:
-                    website_name = (
-                        website_name_match.group(1)
-                        .strip()
-                    )
-
-                    requested_page = re.sub(
-                        r"^"
-                        + re.escape(website_name)
-                        + r"\s+(?:ki|ka|ke|par)\s+",
-                        "",
-                        cleaned_target,
-                        count=1,
-                        flags=re.IGNORECASE
-                    ).strip()
-
-                requested_page = re.sub(
-                    r"\b(?:ki|ka|ke)\b",
-                    " ",
-                    requested_page,
-                    flags=re.IGNORECASE
-                )
-
-                requested_page = re.sub(
-                    r"\s+",
-                    " ",
-                    requested_page
-                ).strip(
-                    " .,!?-"
-                )
-
-                if website_name:
-                    # -------------------------------------------------
-                    # GENERIC WEBSITE DISCOVERY
-                    #
-                    # Do NOT construct a URL from the website name.
-                    # BrowserTool will pass website_name + page_target
-                    # to WebsiteDiscovery, which uses SearchTool to find
-                    # the actual page URL.
-                    #
-                    # This also preserves the existing direct-URL route
-                    # above, including the CodeWithHarry demo flow.
-                    # -------------------------------------------------
-                    known_url = ""
-                    page_target = requested_page
-
-                    steps.append(
-                        {
-                            "action": "open",
-                            "url": "",
-                            "website_name": website_name,
-                            "page_target": requested_page
-                        }
-                    )
-
-                    continue
-
-            # -----------------------------------------------------
-            # NAVIGATE / PAR JAO
-            # -----------------------------------------------------
+            # ---------------------------------------------------------
+            # NAVIGATE / JA0
+            # ---------------------------------------------------------
 
             navigate_match = re.search(
                 r"\b(?:navigate\s+to|"
                 r"go\s+to|visit|"
-                r"par\s+jao|"
-                r"par\s+jaiye|"
-                r"par\s+jana|"
-                r"per\s+jao|"
-                r"per\s+jaiye|"
-                r"per\s+jana)\b",
+                r"par\s+jao|par\s+jaiye|par\s+jana|"
+                r"per\s+jao|per\s+jaiye|per\s+jana)\b",
                 lower_segment
             )
 
@@ -2369,15 +1963,11 @@ class IntentDetector:
 
                     continue
 
-            # -----------------------------------------------------
+            # ---------------------------------------------------------
             # CLICK
-            #
-            # This MUST happen BEFORE DOWNLOAD.
-            #
-            # "Download button click karo"
-            # => click
-            # NOT download
-            # -----------------------------------------------------
+            # Check CLICK before DOWNLOAD so that
+            # "Download button click karo" is a click operation.
+            # ---------------------------------------------------------
 
             click_match = re.search(
                 r"\b(?:click|press|select)\b",
@@ -2385,109 +1975,21 @@ class IntentDetector:
                 flags=re.IGNORECASE
             )
 
-            # Hindi/Hinglish click commands.
-            # Examples:
-            # "Download button click karo"
-            # "Download button par click karo"
-            # "Download button dabao"
             hindi_click_match = re.search(
-                r"\b(?:button|link|tab|option)\b"
-                r".*?"
-                r"\b(?:click|press|select|dabao|daba|karo|karna|kardo)\b",
+                r"\b(?:button|link|tab|option)\b.*"
+                r"\b(?:karo|dabao|daba|select)\b",
                 lower_segment,
                 flags=re.IGNORECASE
             )
 
-            # Explicit "X button click karo" pattern.
-            explicit_button_click = re.search(
-                r"(?P<target>.+?)\s+"
-                r"\bbutton\b"
-                r"(?:\s+par|\s+pe)?\s+"
-                r"\b(?:click|press|select|dabao|daba|karo|karna|kardo)\b",
-                lower_segment,
-                flags=re.IGNORECASE
-            )
+            if click_match or hindi_click_match:
 
-            if (
-                click_match
-                or hindi_click_match
-                or explicit_button_click
-            ):
-
-                selector = None
-
-                # For phrases such as:
-                # "Download button click karo"
-                # directly create a text-based button selector.
-                if explicit_button_click:
-
-                    target = explicit_button_click.group(
-                        "target"
-                    ).strip()
-
-                    target = target.strip(
-                        " ,.!?:-"
-                    )
-
-                    if target:
-
-                        # Preserve the contextual item name so the
-                        # BrowserTool semantic resolver can identify
-                        # the correct button inside that item/card.
-                        # Example:
-                        # "Python Cheatsheet ka Download"
-                        # -> "Python Cheatsheet Download"
-                        target = re.sub(
-                            r"\bka\b",
-                            " ",
-                            target,
-                            flags=re.IGNORECASE
-                        )
-
-                        target = re.sub(
-                            r"\s+",
-                            " ",
-                            target
-                        ).strip()
-
-                        selector = (
-                            "button:has-text("
-                            + repr(target)
-                            + "), "
-                            "a:has-text("
-                            + repr(target)
-                            + ")"
-                        )
-
-                if not selector:
-
-                    selector = self._extract_browser_selector(
-                        segment,
-                        "click"
-                    )
+                selector = self._extract_browser_selector(
+                    segment,
+                    "click"
+                )
 
                 if selector:
-
-                    # When a natural-language open command resolved to
-                    # a search-engine results page, first open the requested
-                    # result before executing the requested control on that page.
-                    # This remains generic: page_target is derived from the
-                    # user's request and is not tied to any website.
-                    if (
-                        page_target
-                        and (
-                            known_url.startswith("https://www.google.com/search?")
-                            or known_url.startswith("https://www.bing.com/search?")
-                        )
-                    ):
-                        steps.append(
-                            {
-                                "action": "click",
-                                "target": f"{page_target} link",
-                                "use_current_page": True
-                            }
-                        )
-                        page_target = ""
 
                     click_parameters = {
                         "action": "click",
@@ -2495,60 +1997,14 @@ class IntentDetector:
                     }
 
                     if known_url:
-                        click_parameters[
-                            "use_current_page"
-                        ] = True
+                        click_parameters["use_current_page"] = True
 
-                    steps.append(
-                        click_parameters
-                    )
-
-                    # A download-button request has TWO actions:
-                    # 1. click the button
-                    # 2. perform the download and verify the saved file
-                    #
-                    # The old logic stopped after the click, which meant
-                    # BrowserTool never received its download action.
-                    download_after_click = re.search(
-                        r"\b(?:download|save)\b",
-                        lower_segment,
-                        flags=re.IGNORECASE
-                    )
-
-                    if download_after_click:
-                        download_target = (
-                            target
-                            if explicit_button_click and target
-                            else "download button"
-                        )
-
-                        download_target = re.sub(
-                            r"\s+download\s+download\s+button\b",
-                            " download button",
-                            download_target,
-                            flags=re.IGNORECASE
-                        ).strip()
-
-                        download_parameters = {
-                            "action": "download",
-                            "target": (
-                                target
-                                if explicit_button_click
-                                and target
-                                else "download button"
-                            ),
-                            "use_current_page": True
-                        }
-
-                        steps.append(
-                            download_parameters
-                        )
-
+                    steps.append(click_parameters)
                     continue
 
-            # -----------------------------------------------------
+            # ---------------------------------------------------------
             # FILL / ENTER / TYPE
-            # -----------------------------------------------------
+            # ---------------------------------------------------------
 
             fill_match = re.search(
                 r"\b(?:fill|enter|type|put)\b",
@@ -2562,9 +2018,7 @@ class IntentDetector:
                     "fill"
                 )
 
-                value = self._extract_fill_value(
-                    segment
-                )
+                value = self._extract_fill_value(segment)
 
                 if selector and value:
 
@@ -2575,19 +2029,14 @@ class IntentDetector:
                     }
 
                     if known_url:
-                        fill_parameters[
-                            "use_current_page"
-                        ] = True
+                        fill_parameters["use_current_page"] = True
 
-                    steps.append(
-                        fill_parameters
-                    )
-
+                    steps.append(fill_parameters)
                     continue
 
-            # -----------------------------------------------------
+            # ---------------------------------------------------------
             # READ / EXTRACT
-            # -----------------------------------------------------
+            # ---------------------------------------------------------
 
             read_match = re.search(
                 r"\b(?:read|extract|get)\b",
@@ -2614,9 +2063,11 @@ class IntentDetector:
 
                 continue
 
-            # -----------------------------------------------------
+            # ---------------------------------------------------------
             # DOWNLOAD
-            # -----------------------------------------------------
+            # Skip verification-only text and phrases where DOWNLOAD
+            # describes a button that is explicitly being clicked.
+            # ---------------------------------------------------------
 
             download_match = re.search(
                 r"\b(?:download|save)\b",
@@ -2626,13 +2077,14 @@ class IntentDetector:
             download_button_click = re.search(
                 r"\b(?:download|save)\s+"
                 r"(?:button|link)\b.*"
-                r"\b(?:click|press|select|karo|karna|kardo|dabao)\b",
+                r"\b(?:click|press|select|karo|dabao)\b",
                 lower_segment,
                 flags=re.IGNORECASE
             )
 
             if (
                 download_match
+                and not is_verification
                 and not download_button_click
             ):
 
@@ -2649,19 +2101,14 @@ class IntentDetector:
                     }
 
                     if known_url:
-                        download_parameters[
-                            "use_current_page"
-                        ] = True
+                        download_parameters["use_current_page"] = True
 
-                    steps.append(
-                        download_parameters
-                    )
-
+                    steps.append(download_parameters)
                     continue
 
-            # -----------------------------------------------------
+            # ---------------------------------------------------------
             # CLOSE
-            # -----------------------------------------------------
+            # ---------------------------------------------------------
 
             close_match = re.search(
                 r"\b(?:close|exit)\b.*\bbrowser\b",
@@ -2680,9 +2127,9 @@ class IntentDetector:
 
                 continue
 
-        # ---------------------------------------------------------
-        # If nothing was detected, return None.
-        # ---------------------------------------------------------
+            # Verification-only segments are intentionally ignored.
+            if is_verification:
+                continue
 
         if not steps:
             return None
@@ -2693,7 +2140,6 @@ class IntentDetector:
             steps,
             start=1
         ):
-
             planner_steps.append(
                 {
                     "step": index,
@@ -2710,9 +2156,25 @@ class IntentDetector:
             }
         }
 
-
     # =========================================
     # LOCAL BROWSER DETECTION
+    # =========================================
+
+    def _local_browser_detect(
+        self,
+        text: str
+    ) -> dict | None:
+
+        lower_text = text.lower()
+
+        multi_step_result = (
+            self._local_browser_multi_step_detect(
+                text
+            )
+        )
+
+        if multi_step_result is not None:
+            return multi_step_result
 
         close_patterns = [
             r"\bclose\s+(?:the\s+)?browser\b",

@@ -1,5 +1,14 @@
 ﻿import os
-from urllib.parse import urlparse
+import re
+from urllib.parse import (
+    urlparse,
+    parse_qs,
+    unquote
+)
+from urllib.request import (
+    Request,
+    urlopen
+)
 
 from dotenv import load_dotenv
 from google import genai
@@ -34,8 +43,6 @@ class SearchTool(BaseTool):
         self.model = "gemini-3.6-flash"
 
         # Normal-answer fallback models.
-        # These are tried one by one if the preferred
-        # grounded search is unavailable.
         self.fallback_models = [
             "gemini-3.5-flash",
             "gemini-2.5-flash",
@@ -367,6 +374,217 @@ class SearchTool(BaseTool):
         return images
 
     # =========================================
+    # GENERIC SEARCH URL CLEANUP
+    # =========================================
+
+    def _clean_search_result_url(
+        self,
+        url: str
+    ) -> str:
+
+        if not isinstance(url, str):
+            return ""
+
+        url = unquote(
+            url.strip()
+        )
+
+        if not url:
+            return ""
+
+        # Some search engines use redirect URLs
+        # containing the actual destination in a
+        # query parameter.
+        try:
+
+            parsed = urlparse(url)
+
+            query_parameters = parse_qs(
+                parsed.query
+            )
+
+            for key in (
+                "uddg",
+                "url",
+                "target",
+                "dest",
+                "destination"
+            ):
+
+                values = query_parameters.get(
+                    key
+                )
+
+                if values:
+
+                    candidate = unquote(
+                        values[0]
+                    ).strip()
+
+                    if candidate.startswith(
+                        "http://"
+                    ) or candidate.startswith(
+                        "https://"
+                    ):
+
+                        return candidate
+
+        except Exception:
+            pass
+
+        return url
+
+    # =========================================
+    # VALIDATE RESULT URL
+    # =========================================
+
+    def _is_valid_result_url(
+        self,
+        url: str
+    ) -> bool:
+
+        if not isinstance(url, str):
+            return False
+
+        url = url.strip()
+
+        if not (
+            url.startswith("http://")
+            or url.startswith("https://")
+        ):
+            return False
+
+        try:
+
+            parsed = urlparse(url)
+
+            if not parsed.netloc:
+                return False
+
+            domain = parsed.netloc.lower()
+
+            # Ignore search-engine URLs themselves.
+            blocked_domains = {
+                "duckduckgo.com",
+                "www.duckduckgo.com",
+                "google.com",
+                "www.google.com",
+                "bing.com",
+                "www.bing.com"
+            }
+
+            if domain in blocked_domains:
+                return False
+
+            return True
+
+        except Exception:
+
+            return False
+
+    # =========================================
+    # DUCKDUCKGO URL DISCOVERY
+    # =========================================
+
+    def _search_web_urls(
+        self,
+        query: str
+    ) -> list:
+
+        sources = []
+
+        try:
+
+            encoded_query = query.replace(
+                " ",
+                "+"
+            )
+
+            search_url = (
+                "https://html.duckduckgo.com/html/"
+                f"?q={encoded_query}"
+            )
+
+            request = Request(
+                search_url,
+                headers={
+                    "User-Agent": (
+                        "Mozilla/5.0 "
+                        "(Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36 "
+                        "(KHTML, like Gecko) "
+                        "Chrome/153.0 Safari/537.36"
+                    )
+                }
+            )
+
+            with urlopen(
+                request,
+                timeout=10
+            ) as response:
+
+                html = response.read().decode(
+                    "utf-8",
+                    errors="ignore"
+                )
+
+            # DuckDuckGo HTML result links commonly
+            # appear as result__a anchors.
+            matches = re.findall(
+                r'class=["\']result__a["\'][^>]+href=["\']([^"\']+)',
+                html,
+                flags=re.IGNORECASE
+            )
+
+            # Also support href appearing before the
+            # class attribute.
+            if not matches:
+
+                matches = re.findall(
+                    r'href=["\']([^"\']+)["\'][^>]+class=["\'][^"\']*result__a',
+                    html,
+                    flags=re.IGNORECASE
+                )
+
+            for raw_url in matches:
+
+                url = self._clean_search_result_url(
+                    raw_url
+                )
+
+                if not self._is_valid_result_url(
+                    url
+                ):
+                    continue
+
+                domain = self._extract_domain(
+                    url
+                )
+
+                source = {
+                    "title": "Web search result",
+                    "url": url,
+                    "domain": domain
+                }
+
+                if source not in sources:
+                    sources.append(source)
+
+            print(
+                "WEB URL DISCOVERY RESULTS:",
+                len(sources)
+            )
+
+        except Exception as error:
+
+            print(
+                "WEB URL DISCOVERY ERROR:",
+                repr(error)
+            )
+
+        return sources
+
+    # =========================================
     # GENERATE WEB-GROUNDED ANSWER
     # =========================================
 
@@ -473,7 +691,6 @@ class SearchTool(BaseTool):
 
         fallback_models = []
 
-        # Try the last model that worked first.
         if (
             isinstance(
                 self.last_successful_model,
@@ -486,7 +703,6 @@ class SearchTool(BaseTool):
                 self.last_successful_model.strip()
             )
 
-        # Add configured fallback models.
         if isinstance(
             self.fallback_models,
             list
@@ -496,16 +712,12 @@ class SearchTool(BaseTool):
                 self.fallback_models
             )
 
-        # Finally add the main model if it is not
-        # already present.
         if self.model not in fallback_models:
 
             fallback_models.append(
                 self.model
             )
 
-        # Remove duplicate model names while
-        # preserving their order.
         fallback_models = list(
             dict.fromkeys(
                 fallback_models
@@ -581,8 +793,6 @@ class SearchTool(BaseTool):
                         "an empty answer."
                     )
 
-                # Store the model that successfully
-                # generated the answer.
                 self.last_successful_model = (
                     model_name
                 )
@@ -610,10 +820,6 @@ class SearchTool(BaseTool):
                     "FALLBACK MODEL ERROR:",
                     error_message
                 )
-
-        # -----------------------------------------
-        # ALL MODELS FAILED
-        # -----------------------------------------
 
         raise RuntimeError(
             "All fallback AI models failed. "
@@ -718,6 +924,42 @@ class SearchTool(BaseTool):
                 )
             )
 
+            sources = result.get(
+                "sources",
+                []
+            )
+
+            # If Gemini grounding worked and returned
+            # sources, use those sources normally.
+            if sources:
+
+                return {
+                    "success": True,
+                    "query": query,
+                    "answer": result.get(
+                        "answer",
+                        ""
+                    ),
+                    "sources": sources,
+                    "images": result.get(
+                        "images",
+                        []
+                    ),
+                    "status": "grounded_answer",
+                    "grounding_used": True,
+                    "fallback_used": False,
+                    "message": (
+                        "Question answered successfully "
+                        "using web-grounded information."
+                    )
+                }
+
+            # Gemini returned an answer but no URLs.
+            # Continue to the URL-discovery fallback.
+            print(
+                "GROUNDED SEARCH RETURNED NO SOURCES."
+            )
+
             return {
                 "success": True,
                 "query": query,
@@ -725,20 +967,18 @@ class SearchTool(BaseTool):
                     "answer",
                     ""
                 ),
-                "sources": result.get(
-                    "sources",
-                    []
-                ),
+                "sources": [],
                 "images": result.get(
                     "images",
                     []
                 ),
-                "status": "grounded_answer",
+                "status": "grounded_answer_no_sources",
                 "grounding_used": True,
                 "fallback_used": False,
                 "message": (
-                    "Question answered successfully "
-                    "using web-grounded information."
+                    "Question answered using grounded "
+                    "information, but no source URLs "
+                    "were returned."
                 )
             }
 
@@ -755,6 +995,37 @@ class SearchTool(BaseTool):
 
         # =========================================
         # SECOND ATTEMPT
+        # DIRECT WEB URL DISCOVERY
+        # =========================================
+
+        web_sources = self._search_web_urls(
+            query
+        )
+
+        if web_sources:
+
+            return {
+                "success": True,
+                "query": query,
+                "answer": "",
+                "sources": web_sources,
+                "images": [],
+                "status": "web_url_discovery",
+                "grounding_used": False,
+                "fallback_used": False,
+                "message": (
+                    "Website URLs discovered using "
+                    "the web-search fallback."
+                ),
+                "grounding_error": (
+                    str(grounded_error)
+                    if grounded_error is not None
+                    else ""
+                )
+            }
+
+        # =========================================
+        # THIRD ATTEMPT
         # NORMAL GEMINI FALLBACK
         # =========================================
 
@@ -784,7 +1055,8 @@ class SearchTool(BaseTool):
                 ),
                 "message": (
                     "Question answered using AI knowledge. "
-                    "Live web grounding was unavailable."
+                    "Live web grounding and URL discovery "
+                    "were unavailable."
                 ),
                 "grounding_error": (
                     str(grounded_error)
@@ -813,7 +1085,7 @@ class SearchTool(BaseTool):
                 "fallback_used": False,
                 "message": (
                     "Could not generate an answer "
-                    "for the question."
+                    "or discover a website URL."
                 ),
                 "error": str(error),
                 "grounding_error": (

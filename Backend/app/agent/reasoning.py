@@ -810,6 +810,7 @@ class ReasoningEngine:
                 "click",
                 "fill",
                 "read",
+                "download",
                 "close"
             }
 
@@ -826,7 +827,7 @@ class ReasoningEngine:
                 }
 
             # -------------------------------------
-            # URL REQUIREMENT
+            # URL / WEBSITE DISCOVERY REQUIREMENT
             # -------------------------------------
 
             if action in {
@@ -838,22 +839,128 @@ class ReasoningEngine:
                     "url"
                 )
 
-                if (
-                    not isinstance(
+                website_name = parameters.get(
+                    "website_name"
+                )
+
+                page_target = parameters.get(
+                    "page_target"
+                )
+
+                # ---------------------------------
+                # CHECK EXPLICIT URL
+                # ---------------------------------
+
+                has_url = (
+                    isinstance(
                         url,
                         str
                     )
-                    or not url.strip()
+                    and bool(
+                        url.strip()
+                    )
+                )
+
+                # ---------------------------------
+                # CHECK WEBSITE NAME
+                # ---------------------------------
+
+                has_website_name = (
+                    isinstance(
+                        website_name,
+                        str
+                    )
+                    and bool(
+                        website_name.strip()
+                    )
+                )
+
+                # ---------------------------------
+                # CHECK PAGE TARGET
+                # ---------------------------------
+
+                has_page_target = (
+                    isinstance(
+                        page_target,
+                        str
+                    )
+                    and bool(
+                        page_target.strip()
+                    )
+                )
+
+                # ---------------------------------
+                # DIRECT URL ROUTE
+                #
+                # Example:
+                # https://www.codewithharry.com/
+                #
+                # Existing direct URL behavior
+                # remains unchanged.
+                # ---------------------------------
+
+                if has_url:
+
+                    parameters[
+                        "url"
+                    ] = url.strip()
+
+                # ---------------------------------
+                # GENERIC WEBSITE DISCOVERY ROUTE
+                #
+                # Example:
+                #
+                # website_name = "GeeksforGeeks"
+                # page_target = "Ring Topology"
+                #
+                # BrowserTool will pass these
+                # values to WebsiteDiscovery.
+                #
+                # WebsiteDiscovery
+                #        ↓
+                # SearchTool
+                #        ↓
+                # Actual website URL
+                # ---------------------------------
+
+                elif (
+                    has_website_name
+                    or has_page_target
                 ):
+
+                    if has_website_name:
+
+                        parameters[
+                            "website_name"
+                        ] = website_name.strip()
+
+                    if has_page_target:
+
+                        parameters[
+                            "page_target"
+                        ] = page_target.strip()
+
+                    # Empty URL tells BrowserTool
+                    # that URL discovery is required.
+
+                    parameters[
+                        "url"
+                    ] = ""
+
+                # ---------------------------------
+                # NOTHING PROVIDED
+                # ---------------------------------
+
+                else:
 
                     return {
                         "success": False,
                         "intent": intent,
                         "executable": False,
                         "message": (
-                            f"URL is required for "
-                            f"browser action "
-                            f"'{action}'."
+                            "URL or website information "
+                            "is required for browser "
+                            f"action '{action}'."
                         )
                     }
 
@@ -864,7 +971,8 @@ class ReasoningEngine:
             elif action in {
                 "click",
                 "fill",
-                "read"
+                "read",
+                "download"
             }:
 
                 if not parameters.get(
@@ -876,36 +984,68 @@ class ReasoningEngine:
                     ] = True
 
             # -------------------------------------
-            # CLICK / FILL SELECTOR
+            # CLICK / FILL / DOWNLOAD
+            # SELECTOR OR TARGET
             # -------------------------------------
 
             if action in {
                 "click",
-                "fill"
+                "fill",
+                "download"
             }:
 
                 selector = parameters.get(
                     "selector"
                 )
 
-                if (
-                    not isinstance(
+                target = parameters.get(
+                    "target"
+                )
+
+                has_selector = (
+                    isinstance(
                         selector,
                         str
                     )
-                    or not selector.strip()
-                ):
+                    and bool(
+                        selector.strip()
+                    )
+                )
+
+                has_target = (
+                    isinstance(
+                        target,
+                        str
+                    )
+                    and bool(
+                        target.strip()
+                    )
+                )
+
+                if not has_selector and not has_target:
 
                     return {
                         "success": False,
                         "intent": intent,
                         "executable": False,
                         "message": (
-                            f"Selector is required "
-                            f"for browser action "
-                            f"'{action}'."
+                            f"Selector or target is "
+                            f"required for browser "
+                            f"action '{action}'."
                         )
                     }
+
+                if has_selector:
+
+                    parameters[
+                        "selector"
+                    ] = selector.strip()
+
+                if has_target:
+
+                    parameters[
+                        "target"
+                    ] = target.strip()
 
             # -------------------------------------
             # FILL VALUE
@@ -1057,10 +1197,3 @@ def re_match_time(
             value.strip()
         )
     )
-
-
-
-
-
-
-

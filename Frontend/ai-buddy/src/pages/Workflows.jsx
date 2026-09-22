@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -44,6 +45,19 @@ function Workflows() {
     const [success, setSuccess] = useState("");
 
 
+    // ------------------------------------------
+    // DOWNLOAD NOTIFICATION
+    // ------------------------------------------
+
+    const [downloadNotification, setDownloadNotification] = useState({
+        status: "",
+        filename: "",
+        path: "",
+        size: 0,
+        message: "",
+    });
+
+
     const [showForm, setShowForm] = useState(
         location.state?.openForm === true
     );
@@ -58,112 +72,325 @@ function Workflows() {
 
 
     // ------------------------------------------
+    // FORMAT FILE SIZE
+    // ------------------------------------------
+
+    const formatFileSize = (bytes) => {
+
+        const numericBytes = Number(bytes);
+
+        if (
+            !Number.isFinite(numericBytes) ||
+            numericBytes <= 0
+        ) {
+            return "";
+        }
+
+        if (numericBytes < 1024) {
+            return `${numericBytes} B`;
+        }
+
+        if (numericBytes < 1024 * 1024) {
+            return `${(numericBytes / 1024).toFixed(1)} KB`;
+        }
+
+        if (numericBytes < 1024 * 1024 * 1024) {
+            return `${(
+                numericBytes /
+                (1024 * 1024)
+            ).toFixed(1)} MB`;
+        }
+
+        return `${(
+            numericBytes /
+            (1024 * 1024 * 1024)
+        ).toFixed(1)} GB`;
+    };
+
+
+    // ------------------------------------------
+    // FIND DOWNLOAD RESULT
+    // ------------------------------------------
+
+    const findDownloadResult = (engineWorkflow) => {
+
+        const results =
+            Array.isArray(
+                engineWorkflow?.results
+            )
+                ? engineWorkflow.results
+                : [];
+
+
+        for (const stepResult of results) {
+
+            const result =
+                stepResult?.result;
+
+
+            if (!result) {
+                continue;
+            }
+
+
+            // Direct download result
+            if (
+                result.action === "download" ||
+                result.filename ||
+                result.downloaded_file
+            ) {
+
+                return result;
+
+            }
+
+
+            // BrowserTool result
+            if (
+                result.browser &&
+                (
+                    result.browser.action === "download" ||
+                    result.browser.filename ||
+                    result.browser.downloaded_file
+                )
+            ) {
+
+                return {
+                    ...result,
+                    ...result.browser,
+                };
+
+            }
+
+        }
+
+
+        return null;
+    };
+
+
+    // ------------------------------------------
+    // HANDLE DOWNLOAD NOTIFICATION
+    // ------------------------------------------
+
+    const handleDownloadNotification =
+        (workflowResponse) => {
+
+            const engineWorkflow =
+                workflowResponse?.engine_workflow;
+
+
+            const downloadResult =
+                findDownloadResult(
+                    engineWorkflow
+                );
+
+
+            if (!downloadResult) {
+
+                return false;
+
+            }
+
+
+            const filename =
+                downloadResult.filename ||
+                downloadResult.downloaded_file?.filename ||
+                "Downloaded file";
+
+
+            const path =
+                downloadResult.path ||
+                downloadResult.downloaded_file?.path ||
+                "";
+
+
+            const size =
+                downloadResult.size_bytes ||
+                downloadResult.downloaded_file?.size_bytes ||
+                0;
+
+
+            if (
+                downloadResult.success === true
+            ) {
+
+                setDownloadNotification({
+
+                    status: "success",
+
+                    filename,
+
+                    path,
+
+                    size,
+
+                    message:
+                        "Download completed successfully.",
+
+                });
+
+                return true;
+
+            }
+
+
+            setDownloadNotification({
+
+                status: "error",
+
+                filename,
+
+                path,
+
+                size,
+
+                message:
+                    downloadResult.message ||
+                    "The file could not be downloaded.",
+
+            });
+
+            return true;
+        };
+
+
+    // ------------------------------------------
     // LOAD WORKFLOWS
     // ------------------------------------------
 
     const loadWorkflows = async () => {
 
         if (!authenticated || !user?.id) {
+
             setWorkflows([]);
+
             setLoading(false);
+
             return;
+
         }
+
 
         try {
 
             setLoading(true);
+
             setError("");
 
-            const result = await getWorkflows(user.id);
+
+            const result =
+                await getWorkflows(
+                    user.id
+                );
+
 
             const backendWorkflows =
-                Array.isArray(result?.workflows)
+                Array.isArray(
+                    result?.workflows
+                )
                     ? result.workflows
                     : [];
 
 
             const formattedWorkflows =
-                backendWorkflows.map((workflow) => {
+                backendWorkflows.map(
+                    (workflow) => {
 
-                    const parameters =
-                        workflow.parameters ||
-                        workflow.plan?.parameters ||
-                        {};
-
-
-                    const rawSteps =
-                        parameters.steps || [];
+                        const parameters =
+                            workflow.parameters ||
+                            workflow.plan?.parameters ||
+                            {};
 
 
-                    const steps =
-                        Array.isArray(rawSteps)
-                            ? rawSteps
-                            : [];
+                        const rawSteps =
+                            parameters.steps ||
+                            [];
 
 
-                    const displaySteps =
-                        steps.length > 0
-                            ? steps.map((step) => {
-
-                                if (
-                                    typeof step === "object" &&
-                                    step !== null
-                                ) {
-                                    return (
-                                        step.description ||
-                                        step.name ||
-                                        step.parameters?.task_name ||
-                                        step.parameters?.reminder ||
-                                        step.parameters?.city ||
-                                        `${step.tool || "Action"} step`
-                                    );
-                                }
-
-                                return String(step);
-                            })
-                            : [
-                                "Workflow configured"
-                            ];
+                        const steps =
+                            Array.isArray(
+                                rawSteps
+                            )
+                                ? rawSteps
+                                : [];
 
 
-                    return {
+                        const displaySteps =
+                            steps.length > 0
+                                ? steps.map(
+                                    (step) => {
 
-                        id: workflow.id,
+                                        if (
+                                            typeof step === "object" &&
+                                            step !== null
+                                        ) {
 
-                        name:
-                            workflow.name ||
-                            workflow.plan?.name ||
-                            "Unnamed Workflow",
+                                            return (
+                                                step.description ||
+                                                step.name ||
+                                                step.parameters?.task_name ||
+                                                step.parameters?.reminder ||
+                                                step.parameters?.city ||
+                                                `${step.tool || "Action"} step`
+                                            );
 
-                        description:
-                            workflow.description ||
-                            parameters.description ||
-                            "Workflow created with AI Buddy.",
+                                        }
 
-                        tool:
-                            workflow.tool ||
-                            workflow.plan?.tool ||
-                            "task",
+                                        return String(
+                                            step
+                                        );
 
-                        status:
-                            String(
-                                workflow.status ||
-                                "READY"
-                            ).toUpperCase(),
-
-                        steps: displaySteps,
-
-                        lastRun:
-                            workflow.last_run ||
-                            workflow.updated_at ||
-                            "Never",
-
-                    };
-
-                });
+                                    }
+                                )
+                                : [
+                                    "Workflow configured"
+                                ];
 
 
-            setWorkflows(formattedWorkflows);
+                        return {
+
+                            id:
+                                workflow.id,
+
+                            name:
+                                workflow.name ||
+                                workflow.plan?.name ||
+                                "Unnamed Workflow",
+
+                            description:
+                                workflow.description ||
+                                parameters.description ||
+                                "Workflow created with AI Buddy.",
+
+                            tool:
+                                workflow.tool ||
+                                workflow.plan?.tool ||
+                                "task",
+
+                            status:
+                                String(
+                                    workflow.status ||
+                                    "READY"
+                                ).toUpperCase(),
+
+                            steps:
+                                displaySteps,
+
+                            lastRun:
+                                workflow.last_run ||
+                                workflow.updated_at ||
+                                "Never",
+
+                        };
+
+                    }
+                );
+
+
+            setWorkflows(
+                formattedWorkflows
+            );
 
         } catch (requestError) {
 
@@ -172,9 +399,11 @@ function Workflows() {
                 requestError
             );
 
+
             setError(
                 "Unable to load workflows from the backend."
             );
+
 
             setWorkflows([]);
 
@@ -210,6 +439,7 @@ function Workflows() {
 
             event.preventDefault();
 
+
             const name =
                 newWorkflow.name.trim();
 
@@ -219,7 +449,9 @@ function Workflows() {
 
 
             const tool =
-                newWorkflow.tool.trim().toLowerCase();
+                newWorkflow.tool
+                    .trim()
+                    .toLowerCase();
 
 
             if (!name) {
@@ -233,7 +465,10 @@ function Workflows() {
             }
 
 
-            if (!authenticated || !user?.id) {
+            if (
+                !authenticated ||
+                !user?.id
+            ) {
 
                 setError(
                     "Please login before creating a workflow."
@@ -247,11 +482,16 @@ function Workflows() {
             const rawSteps =
                 newWorkflow.steps
                     .split(",")
-                    .map((step) => step.trim())
+                    .map(
+                        (step) =>
+                            step.trim()
+                    )
                     .filter(Boolean);
 
 
-            if (rawSteps.length === 0) {
+            if (
+                rawSteps.length === 0
+            ) {
 
                 setError(
                     "Please enter at least one workflow step."
@@ -271,7 +511,11 @@ function Workflows() {
             ];
 
 
-            if (!supportedTools.includes(tool)) {
+            if (
+                !supportedTools.includes(
+                    tool
+                )
+            ) {
 
                 setError(
                     "Please select a supported workflow tool."
@@ -287,78 +531,112 @@ function Workflows() {
             // ------------------------------------------
 
             const steps =
-                rawSteps.map((stepText, index) => {
+                rawSteps.map(
+                    (stepText, index) => {
 
-                    let parameters = {};
+                        let parameters = {};
 
 
-                    if (tool === "task") {
+                        if (
+                            tool === "task"
+                        ) {
 
-                        parameters = {
-                            task_name: stepText,
+                            parameters = {
+
+                                task_name:
+                                    stepText,
+
+                            };
+
+                        }
+
+
+                        else if (
+                            tool === "reminder"
+                        ) {
+
+                            parameters = {
+
+                                reminder:
+                                    stepText,
+
+                                time:
+                                    "",
+
+                            };
+
+                        }
+
+
+                        else if (
+                            tool === "timer"
+                        ) {
+
+                            const duration =
+                                Number(
+                                    stepText
+                                );
+
+
+                            parameters = {
+
+                                duration_seconds:
+                                    Number.isFinite(
+                                        duration
+                                    ) &&
+                                    duration > 0
+                                        ? duration
+                                        : 60,
+
+                            };
+
+                        }
+
+
+                        else if (
+                            tool === "weather"
+                        ) {
+
+                            parameters = {
+
+                                city:
+                                    stepText,
+
+                            };
+
+                        }
+
+
+                        else if (
+                            tool === "browser"
+                        ) {
+
+                            parameters = {
+
+                                action:
+                                    stepText,
+
+                            };
+
+                        }
+
+
+                        return {
+
+                            step_id:
+                                index + 1,
+
+                            tool,
+
+                            parameters,
+
+                            description:
+                                stepText,
+
                         };
 
                     }
-
-
-                    else if (tool === "reminder") {
-
-                        parameters = {
-                            reminder: stepText,
-                            time: "",
-                        };
-
-                    }
-
-
-                    else if (tool === "timer") {
-
-                        const duration =
-                            Number(stepText);
-
-
-                        parameters = {
-                            duration_seconds:
-                                Number.isFinite(duration) &&
-                                duration > 0
-                                    ? duration
-                                    : 60,
-                        };
-
-                    }
-
-
-                    else if (tool === "weather") {
-
-                        parameters = {
-                            city: stepText,
-                        };
-
-                    }
-
-
-                    else if (tool === "browser") {
-
-                        parameters = {
-                            action: stepText,
-                        };
-
-                    }
-
-
-                    return {
-
-                        step_id: index + 1,
-
-                        tool,
-
-                        parameters,
-
-                        description: stepText,
-
-                    };
-
-                });
+                );
 
 
             try {
@@ -370,54 +648,159 @@ function Workflows() {
                 setSuccess("");
 
 
-                await createWorkflowApi(
+                setDownloadNotification({
 
-                    {
+                    status:
+                        "processing",
 
-                        name,
+                    filename:
+                        "",
 
-                        description,
+                    path:
+                        "",
 
-                        tool,
+                    size:
+                        0,
 
-                        parameters: {
+                    message:
+                        "Executing workflow and processing requested actions...",
+
+                });
+
+
+                const workflowResponse =
+                    await createWorkflowApi(
+
+                        {
+
+                            name,
 
                             description,
 
-                            steps,
+                            tool,
+
+                            parameters: {
+
+                                description,
+
+                                steps,
+
+                            },
 
                         },
 
-                    },
+                        user.id
 
-                    user.id
+                    );
 
-                );
+
+                // ------------------------------------------
+                // HANDLE DOWNLOAD RESULT
+                // ------------------------------------------
+
+                const hasDownload =
+                    handleDownloadNotification(
+                        workflowResponse
+                    );
+
+
+                if (
+                    workflowResponse?.success !== true
+                ) {
+
+                    setDownloadNotification(
+                        (current) => {
+
+                            if (
+                                current.status ===
+                                "success"
+                            ) {
+                                return current;
+                            }
+
+                            return {
+
+                                ...current,
+
+                                status:
+                                    "error",
+
+                                message:
+                                    workflowResponse?.message ||
+                                    "Workflow execution failed.",
+
+                            };
+
+                        }
+                    );
+
+
+                    throw new Error(
+                        workflowResponse?.message ||
+                        "Workflow execution failed."
+                    );
+
+                }
+
+
+                // ------------------------------------------
+                // WORKFLOW SUCCESS
+                // ------------------------------------------
+
+                if (!hasDownload) {
+
+                    setDownloadNotification({
+
+                        status:
+                            "success",
+
+                        filename:
+                            "",
+
+                        path:
+                            "",
+
+                        size:
+                            0,
+
+                        message:
+                            "Workflow executed successfully.",
+
+                    });
+
+                }
 
 
                 setSuccess(
-                    "Workflow created successfully."
+                    hasDownload
+                        ? "Workflow completed successfully. Download status updated below."
+                        : "Workflow created and executed successfully."
                 );
 
 
                 setNewWorkflow({
 
-                    name: "",
+                    name:
+                        "",
 
-                    description: "",
+                    description:
+                        "",
 
-                    tool: "task",
+                    tool:
+                        "task",
 
-                    steps: "",
+                    steps:
+                        "",
 
                 });
 
 
-                setShowForm(false);
+                setShowForm(
+                    false
+                );
 
 
                 await loadWorkflows();
-
 
             } catch (requestError) {
 
@@ -426,9 +809,40 @@ function Workflows() {
                     requestError
                 );
 
+
                 setError(
                     requestError?.message ||
                     "Unable to create workflow."
+                );
+
+
+                setDownloadNotification(
+                    (current) => {
+
+                        if (
+                            current.status ===
+                            "success"
+                        ) {
+
+                            return current;
+
+                        }
+
+
+                        return {
+
+                            ...current,
+
+                            status:
+                                "error",
+
+                            message:
+                                requestError?.message ||
+                                "Workflow execution failed.",
+
+                        };
+
+                    }
                 );
 
             } finally {
@@ -447,7 +861,10 @@ function Workflows() {
     const handleDeleteWorkflow =
         async (workflowId) => {
 
-            if (!authenticated || !user?.id) {
+            if (
+                !authenticated ||
+                !user?.id
+            ) {
 
                 setError(
                     "Please login before deleting a workflow."
@@ -476,6 +893,26 @@ function Workflows() {
                 );
 
 
+                setDownloadNotification({
+
+                    status:
+                        "",
+
+                    filename:
+                        "",
+
+                    path:
+                        "",
+
+                    size:
+                        0,
+
+                    message:
+                        "",
+
+                });
+
+
                 await loadWorkflows();
 
             } catch (requestError) {
@@ -484,6 +921,7 @@ function Workflows() {
                     "Workflow deletion failed:",
                     requestError
                 );
+
 
                 setError(
                     requestError?.message ||
@@ -502,14 +940,16 @@ function Workflows() {
     const activeCount =
         workflows.filter(
             (workflow) =>
-                workflow.status === "ACTIVE"
+                workflow.status ===
+                "ACTIVE"
         ).length;
 
 
     const readyCount =
         workflows.filter(
             (workflow) =>
-                workflow.status !== "ACTIVE"
+                workflow.status !==
+                "ACTIVE"
         ).length;
 
 
@@ -540,7 +980,9 @@ function Workflows() {
 
                             <span className="workflows-eyebrow">
 
-                                <WorkflowIcon size={14} />
+                                <WorkflowIcon
+                                    size={14}
+                                />
 
                                 ZARVIS AUTOMATION SYSTEM
 
@@ -569,6 +1011,25 @@ function Workflows() {
 
                                 setSuccess("");
 
+                                setDownloadNotification({
+
+                                    status:
+                                        "",
+
+                                    filename:
+                                        "",
+
+                                    path:
+                                        "",
+
+                                    size:
+                                        0,
+
+                                    message:
+                                        "",
+
+                                });
+
                                 setShowForm(
                                     !showForm
                                 );
@@ -576,7 +1037,9 @@ function Workflows() {
                             }}
                         >
 
-                            <Plus size={18} />
+                            <Plus
+                                size={18}
+                            />
 
                             Create Workflow
 
@@ -603,6 +1066,96 @@ function Workflows() {
                         <div className="schedule-message schedule-success">
 
                             {success}
+
+                        </div>
+
+                    )}
+
+
+                    {/* DOWNLOAD NOTIFICATION */}
+
+                    {downloadNotification.status && (
+
+                        <div
+                            className={
+                                `schedule-message ${
+                                    downloadNotification.status ===
+                                    "error"
+                                        ? "schedule-error"
+                                        : "schedule-success"
+                                }`
+                            }
+                        >
+
+                            <div>
+
+                                <strong>
+
+                                    {downloadNotification.status ===
+                                    "processing"
+                                        ? "⏳ Downloading / Processing"
+                                        : downloadNotification.status ===
+                                          "success"
+                                            ? "✓ Download Successful"
+                                            : "✕ Download Failed"}
+
+                                </strong>
+
+
+                                <div>
+
+                                    {downloadNotification.message}
+
+                                </div>
+
+
+                                {downloadNotification.filename && (
+
+                                    <div>
+
+                                        <strong>
+                                            File:
+                                        </strong>{" "}
+
+                                        {downloadNotification.filename}
+
+                                    </div>
+
+                                )}
+
+
+                                {downloadNotification.path && (
+
+                                    <div>
+
+                                        <strong>
+                                            Saved to:
+                                        </strong>{" "}
+
+                                        {downloadNotification.path}
+
+                                    </div>
+
+                                )}
+
+
+                                {downloadNotification.size > 0 && (
+
+                                    <div>
+
+                                        <strong>
+                                            Size:
+                                        </strong>{" "}
+
+                                        {formatFileSize(
+                                            downloadNotification.size
+                                        )}
+
+                                    </div>
+
+                                )}
+
+                            </div>
 
                         </div>
 
@@ -666,7 +1219,9 @@ function Workflows() {
                             </span>
 
                             <strong>
-                                READY
+                                {saving
+                                    ? "RUNNING"
+                                    : "READY"}
                             </strong>
 
                         </div>
@@ -704,7 +1259,9 @@ function Workflows() {
                                 <button
                                     type="button"
                                     onClick={() =>
-                                        setShowForm(false)
+                                        setShowForm(
+                                            false
+                                        )
                                     }
                                     aria-label="Close workflow form"
                                 >
@@ -733,9 +1290,12 @@ function Workflows() {
                                         }
                                         onChange={(event) =>
                                             setNewWorkflow({
+
                                                 ...newWorkflow,
+
                                                 name:
                                                     event.target.value,
+
                                             })
                                         }
                                     />
@@ -759,9 +1319,12 @@ function Workflows() {
                                         }
                                         onChange={(event) =>
                                             setNewWorkflow({
+
                                                 ...newWorkflow,
+
                                                 description:
                                                     event.target.value,
+
                                             })
                                         }
                                     />
@@ -783,9 +1346,12 @@ function Workflows() {
                                         }
                                         onChange={(event) =>
                                             setNewWorkflow({
+
                                                 ...newWorkflow,
+
                                                 tool:
                                                     event.target.value,
+
                                             })
                                         }
                                     >
@@ -826,13 +1392,17 @@ function Workflows() {
                                     <input
                                         type="text"
                                         placeholder={
-                                            newWorkflow.tool === "task"
+                                            newWorkflow.tool ===
+                                            "task"
                                                 ? "Study Python, Complete assignment"
-                                                : newWorkflow.tool === "reminder"
+                                                : newWorkflow.tool ===
+                                                  "reminder"
                                                     ? "Submit assignment, Attend meeting"
-                                                    : newWorkflow.tool === "timer"
+                                                    : newWorkflow.tool ===
+                                                      "timer"
                                                         ? "60, 300, 600"
-                                                        : newWorkflow.tool === "weather"
+                                                        : newWorkflow.tool ===
+                                                          "weather"
                                                             ? "Jaipur, Delhi, Mumbai"
                                                             : "Open website, Search information"
                                         }
@@ -841,9 +1411,12 @@ function Workflows() {
                                         }
                                         onChange={(event) =>
                                             setNewWorkflow({
+
                                                 ...newWorkflow,
+
                                                 steps:
                                                     event.target.value,
+
                                             })
                                         }
                                     />
@@ -863,10 +1436,12 @@ function Workflows() {
                                 disabled={saving}
                             >
 
-                                <Plus size={16} />
+                                <Plus
+                                    size={16}
+                                />
 
                                 {saving
-                                    ? "CREATING..."
+                                    ? "EXECUTING..."
                                     : "CREATE WORKFLOW"}
 
                             </button>
@@ -886,9 +1461,14 @@ function Workflows() {
                             <div>
 
                                 <span>
+
                                     AUTOMATION QUEUE // {String(
                                         workflows.length
-                                    ).padStart(2, "0")}
+                                    ).padStart(
+                                        2,
+                                        "0"
+                                    )}
+
                                 </span>
 
                                 <h2>
@@ -902,7 +1482,9 @@ function Workflows() {
 
                                 <span></span>
 
-                                SYSTEM READY
+                                {saving
+                                    ? "EXECUTING"
+                                    : "SYSTEM READY"}
 
                             </div>
 
@@ -916,7 +1498,9 @@ function Workflows() {
 
                                 <div className="workflow-empty">
 
-                                    <WorkflowIcon size={34} />
+                                    <WorkflowIcon
+                                        size={34}
+                                    />
 
                                     <h3>
                                         Loading workflows...
@@ -932,7 +1516,9 @@ function Workflows() {
 
                                 <div className="workflow-empty">
 
-                                    <WorkflowIcon size={34} />
+                                    <WorkflowIcon
+                                        size={34}
+                                    />
 
                                     <h3>
                                         No workflows yet
@@ -952,7 +1538,9 @@ function Workflows() {
 
                                         <article
                                             className="workflow-card"
-                                            key={workflow.id}
+                                            key={
+                                                workflow.id
+                                            }
                                         >
 
 
@@ -966,7 +1554,9 @@ function Workflows() {
 
                                                     <div className="workflow-card-icon">
 
-                                                        <Zap size={17} />
+                                                        <Zap
+                                                            size={17}
+                                                        />
 
                                                     </div>
 
@@ -987,12 +1577,14 @@ function Workflows() {
 
 
                                                 <div
-                                                    className={`workflow-status ${
-                                                        workflow.status ===
+                                                    className={
+                                                        `workflow-status ${
+                                                            workflow.status ===
                                                             "ACTIVE"
-                                                            ? "workflow-active"
-                                                            : "workflow-ready"
-                                                    }`}
+                                                                ? "workflow-active"
+                                                                : "workflow-ready"
+                                                        }`
+                                                    }
                                                 >
 
                                                     <span></span>
@@ -1020,14 +1612,18 @@ function Workflows() {
                                                     <div className="workflow-step">
 
                                                         <div className="workflow-step-number">
+
                                                             AI
+
                                                         </div>
 
                                                         <span>
+
                                                             {String(
                                                                 workflow.tool ||
                                                                 "task"
                                                             ).toUpperCase()}
+
                                                         </span>
 
                                                     </div>
@@ -1088,13 +1684,13 @@ function Workflows() {
                                                                         .length -
                                                                     1 && (
 
-                                                                        <ArrowRight
-                                                                            size={
-                                                                                13
-                                                                            }
-                                                                        />
+                                                                    <ArrowRight
+                                                                        size={
+                                                                            13
+                                                                        }
+                                                                    />
 
-                                                                    )}
+                                                                )}
 
                                                             </div>
 
@@ -1113,7 +1709,9 @@ function Workflows() {
 
                                                 <div className="workflow-last-run">
 
-                                                    <Clock3 size={13} />
+                                                    <Clock3
+                                                        size={13}
+                                                    />
 
                                                     <span>
                                                         Last run:
@@ -1133,7 +1731,7 @@ function Workflows() {
                                                         type="button"
                                                         className="workflow-run-button"
                                                         disabled
-                                                        title="Workflow execution endpoint is not implemented yet"
+                                                        title="Workflow execution is performed when the workflow is created."
                                                     >
 
                                                         <CheckCircle2
@@ -1157,7 +1755,9 @@ function Workflows() {
                                                         aria-label="Delete workflow"
                                                     >
 
-                                                        <Trash2 size={15} />
+                                                        <Trash2
+                                                            size={15}
+                                                        />
 
                                                     </button>
 
@@ -1189,3 +1789,4 @@ function Workflows() {
 
 
 export default Workflows;
+

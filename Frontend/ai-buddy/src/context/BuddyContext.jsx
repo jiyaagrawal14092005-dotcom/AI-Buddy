@@ -1,5 +1,8 @@
+
 // ==========================================
 // ZARVIS BUDDY CONTEXT
+// Global assistant state, execution state,
+// and notification management
 // ==========================================
 
 import {
@@ -11,44 +14,93 @@ import {
 const BuddyContext = createContext(null);
 
 export function BuddyProvider({ children }) {
+
+    // ==========================================
+    // ZARVIS STATUS
+    // ==========================================
+
     const [buddyStatus, setBuddyStatus] = useState("ONLINE");
     const [isThinking, setIsThinking] = useState(false);
 
     const [lastCommand, setLastCommand] = useState("");
     const [lastResponse, setLastResponse] = useState("");
 
-    // Voice states
+    // ==========================================
+    // VOICE STATES
+    // ==========================================
+
     const [isListening, setIsListening] = useState(false);
     const [wakeWordActive, setWakeWordActive] = useState(false);
 
-    // Set Zarvis status
+    // ==========================================
+    // GLOBAL EXECUTION STATE
+    //
+    // This state belongs to BuddyProvider,
+    // not Assistant.jsx.
+    //
+    // Therefore it survives route changes.
+    // ==========================================
+
+    const [executionActive, setExecutionActive] = useState(false);
+
+    const [executionStatus, setExecutionStatus] =
+        useState("IDLE");
+
+    const [executionMessage, setExecutionMessage] =
+        useState("");
+
+    // ==========================================
+    // GLOBAL NOTIFICATIONS
+    // ==========================================
+
+    const [notifications, setNotifications] = useState([]);
+
+    // ==========================================
+    // SET ZARVIS STATUS
+    // ==========================================
+
     const updateStatus = (status) => {
         setBuddyStatus(status);
     };
 
-    // Start thinking
+    // ==========================================
+    // START THINKING
+    // ==========================================
+
     const startThinking = () => {
         setIsThinking(true);
         setBuddyStatus("THINKING");
     };
 
-    // Stop thinking
+    // ==========================================
+    // STOP THINKING
+    // ==========================================
+
     const stopThinking = () => {
         setIsThinking(false);
         setBuddyStatus("ONLINE");
     };
 
-    // Save latest command
+    // ==========================================
+    // SAVE LATEST COMMAND
+    // ==========================================
+
     const setCommand = (command) => {
         setLastCommand(command);
     };
 
-    // Save latest response
+    // ==========================================
+    // SAVE LATEST RESPONSE
+    // ==========================================
+
     const setResponse = (response) => {
         setLastResponse(response);
     };
 
-    // Voice listening state
+    // ==========================================
+    // VOICE LISTENING STATE
+    // ==========================================
+
     const startListeningState = () => {
         setIsListening(true);
         setBuddyStatus("LISTENING");
@@ -62,7 +114,10 @@ export function BuddyProvider({ children }) {
         }
     };
 
-    // Wake word state
+    // ==========================================
+    // WAKE WORD STATE
+    // ==========================================
+
     const enableWakeWord = () => {
         setWakeWordActive(true);
     };
@@ -76,8 +131,158 @@ export function BuddyProvider({ children }) {
         }
     };
 
-    // Reset assistant state
+    // ==========================================
+    // GLOBAL EXECUTION
+    // ==========================================
+
+    const startExecution = (message = "Processing your request...") => {
+        setExecutionActive(true);
+        setExecutionStatus("RUNNING");
+        setExecutionMessage(message);
+    };
+
+    const updateExecution = (
+        status,
+        message = ""
+    ) => {
+        setExecutionStatus(status);
+        setExecutionMessage(message);
+
+        if (
+            status === "COMPLETED" ||
+            status === "FAILED" ||
+            status === "CANCELLED"
+        ) {
+            setExecutionActive(false);
+        }
+    };
+
+    const finishExecution = (
+        message = "Task completed successfully."
+    ) => {
+        setExecutionStatus("COMPLETED");
+        setExecutionMessage(message);
+        setExecutionActive(false);
+    };
+
+    const failExecution = (
+        message = "Task failed."
+    ) => {
+        setExecutionStatus("FAILED");
+        setExecutionMessage(message);
+        setExecutionActive(false);
+    };
+
+    const clearExecution = () => {
+        setExecutionActive(false);
+        setExecutionStatus("IDLE");
+        setExecutionMessage("");
+    };
+
+    // ==========================================
+    // ADD GLOBAL NOTIFICATION
+    // ==========================================
+
+    const addNotification = ({
+        title = "Zarvis Update",
+        message = "",
+        type = "info",
+        icon = "info",
+        persistent = true,
+    } = {}) => {
+
+        const notification = {
+            id:
+                `${Date.now()}-${Math.random()
+                    .toString(36)
+                    .slice(2, 9)}`,
+
+            title,
+            message,
+            type,
+            icon,
+            persistent,
+
+            read: false,
+
+            createdAt: new Date().toISOString(),
+        };
+
+        setNotifications((previous) => [
+            notification,
+            ...previous,
+        ]);
+
+        return notification.id;
+    };
+
+    // ==========================================
+    // REMOVE NOTIFICATION
+    // ==========================================
+
+    const removeNotification = (notificationId) => {
+        setNotifications((previous) =>
+            previous.filter(
+                (notification) =>
+                    notification.id !== notificationId
+            )
+        );
+    };
+
+    // ==========================================
+    // MARK ONE NOTIFICATION AS READ
+    // ==========================================
+
+    const markNotificationRead = (notificationId) => {
+        setNotifications((previous) =>
+            previous.map((notification) =>
+                notification.id === notificationId
+                    ? {
+                        ...notification,
+                        read: true,
+                    }
+                    : notification
+            )
+        );
+    };
+
+    // ==========================================
+    // MARK ALL NOTIFICATIONS AS READ
+    // ==========================================
+
+    const markAllNotificationsRead = () => {
+        setNotifications((previous) =>
+            previous.map((notification) => ({
+                ...notification,
+                read: true,
+            }))
+        );
+    };
+
+    // ==========================================
+    // CLEAR ALL NOTIFICATIONS
+    // ==========================================
+
+    const clearNotifications = () => {
+        setNotifications([]);
+    };
+
+    // ==========================================
+    // UNREAD NOTIFICATION COUNT
+    // ==========================================
+
+    const unreadNotificationCount =
+        notifications.filter(
+            (notification) =>
+                !notification.read
+        ).length;
+
+    // ==========================================
+    // RESET ASSISTANT STATE
+    // ==========================================
+
     const resetBuddy = () => {
+
         setIsThinking(false);
         setIsListening(false);
         setWakeWordActive(false);
@@ -85,17 +290,38 @@ export function BuddyProvider({ children }) {
         setLastCommand("");
         setLastResponse("");
 
+        setExecutionActive(false);
+        setExecutionStatus("IDLE");
+        setExecutionMessage("");
+
         setBuddyStatus("ONLINE");
     };
 
+    // ==========================================
+    // CONTEXT VALUE
+    // ==========================================
+
     const value = {
+
+        // --------------------------------------
+        // ZARVIS STATUS
+        // --------------------------------------
+
         buddyStatus,
         isThinking,
         lastCommand,
         lastResponse,
 
+        // --------------------------------------
+        // VOICE
+        // --------------------------------------
+
         isListening,
         wakeWordActive,
+
+        // --------------------------------------
+        // EXISTING FUNCTIONS
+        // --------------------------------------
 
         updateStatus,
 
@@ -111,6 +337,39 @@ export function BuddyProvider({ children }) {
         enableWakeWord,
         disableWakeWord,
 
+        // --------------------------------------
+        // GLOBAL EXECUTION
+        // --------------------------------------
+
+        executionActive,
+        executionStatus,
+        executionMessage,
+
+        startExecution,
+        updateExecution,
+        finishExecution,
+        failExecution,
+        clearExecution,
+
+        // --------------------------------------
+        // GLOBAL NOTIFICATIONS
+        // --------------------------------------
+
+        notifications,
+        unreadNotificationCount,
+
+        addNotification,
+        removeNotification,
+
+        markNotificationRead,
+        markAllNotificationsRead,
+
+        clearNotifications,
+
+        // --------------------------------------
+        // RESET
+        // --------------------------------------
+
         resetBuddy,
     };
 
@@ -121,9 +380,11 @@ export function BuddyProvider({ children }) {
     );
 }
 
-// Custom hook
 export function useBuddy() {
-    const context = useContext(BuddyContext);
+
+    const context = useContext(
+        BuddyContext
+    );
 
     if (!context) {
         throw new Error(
@@ -135,3 +396,4 @@ export function useBuddy() {
 }
 
 export default BuddyContext;
+
