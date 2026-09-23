@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Sparkles, Mic, Send } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useBuddy } from "../context/BuddyContext";
 import { useAuth } from "../context/AuthContext";
@@ -27,6 +27,7 @@ function Dashboard() {
     const {
         buddyStatus,
         isThinking,
+        dashboardRefreshKey,
     } = useBuddy();
 
     const {
@@ -37,18 +38,6 @@ function Dashboard() {
 
     const [activeAction, setActiveAction] =
         useState("");
-
-    const [command, setCommand] =
-        useState("");
-
-    const [isListening, setIsListening] =
-        useState(false);
-
-    const [voiceMessage, setVoiceMessage] =
-        useState("");
-
-    const recognitionRef =
-        useRef(null);
 
 
     /* =================================================
@@ -163,6 +152,7 @@ function Dashboard() {
     }, [
         authenticated,
         user?.id,
+        dashboardRefreshKey,
     ]);
 
 
@@ -235,514 +225,6 @@ function Dashboard() {
 
 
     /* =================================================
-       VOICE RECOGNITION SETUP
-    ================================================= */
-
-    useEffect(() => {
-
-        const SpeechRecognition =
-            window.SpeechRecognition ||
-            window.webkitSpeechRecognition;
-
-
-        if (!SpeechRecognition) {
-            return;
-        }
-
-
-        const recognition =
-            new SpeechRecognition();
-
-
-        recognition.continuous = false;
-
-        recognition.interimResults = false;
-
-        recognition.lang = "en-IN";
-
-
-        recognition.onstart = () => {
-
-            setIsListening(true);
-
-            setVoiceMessage(
-                "Listening..."
-            );
-
-        };
-
-
-        recognition.onresult = (event) => {
-
-            const spokenText =
-                event.results[0][0].transcript;
-
-
-            setCommand(spokenText);
-
-            setVoiceMessage(
-                `Heard: "${spokenText}"`
-            );
-
-
-            setTimeout(() => {
-
-                executeCommand(
-                    spokenText
-                );
-
-            }, 150);
-
-        };
-
-
-        recognition.onerror = (event) => {
-
-            console.error(
-                "Voice recognition error:",
-                event.error
-            );
-
-
-            setIsListening(false);
-
-
-            if (
-                event.error ===
-                "not-allowed"
-            ) {
-
-                setVoiceMessage(
-                    "Microphone permission denied."
-                );
-
-            } else if (
-                event.error ===
-                "no-speech"
-            ) {
-
-                setVoiceMessage(
-                    "I couldn't hear anything."
-                );
-
-            } else {
-
-                setVoiceMessage(
-                    "Voice recognition failed. Try again."
-                );
-
-            }
-
-        };
-
-
-        recognition.onend = () => {
-
-            setIsListening(false);
-
-        };
-
-
-        recognitionRef.current =
-            recognition;
-
-
-        return () => {
-
-            recognition.stop();
-
-            recognitionRef.current =
-                null;
-
-        };
-
-    }, []);
-
-
-    /* =================================================
-       QUICK ACTION
-    ================================================= */
-
-    const handleQuickAction = (
-        action
-    ) => {
-
-        setActiveAction(action);
-
-    };
-
-
-    /* =================================================
-       COMMAND EXECUTION
-    ================================================= */
-
-    const executeCommand = (
-        inputCommand
-    ) => {
-
-        const userCommand =
-            inputCommand
-                .trim()
-                .toLowerCase();
-
-
-        if (!userCommand) {
-            return;
-        }
-
-
-        /* ===============================
-           CREATE TASK
-        =============================== */
-
-        if (
-            userCommand.includes(
-                "create task"
-            ) ||
-            userCommand.includes(
-                "add task"
-            ) ||
-            userCommand.includes(
-                "new task"
-            ) ||
-            userCommand === "task"
-        ) {
-
-            setCommand("");
-
-            setActiveAction("task");
-
-
-            navigate("/tasks", {
-                state: {
-                    openForm: true,
-                },
-            });
-
-            return;
-        }
-
-
-        /* ===============================
-           TRAVEL
-        =============================== */
-
-        if (
-            userCommand.includes(
-                "travel"
-            ) ||
-            userCommand.includes(
-                "trip"
-            ) ||
-            userCommand.includes(
-                "travel plan"
-            )
-        ) {
-
-            setCommand("");
-
-            setActiveAction(
-                "travel"
-            );
-
-
-            navigate("/schedule", {
-                state: {
-                    eventType: "travel",
-                },
-            });
-
-            return;
-        }
-
-
-        /* ===============================
-           WORKFLOW
-        =============================== */
-
-        if (
-            userCommand.includes(
-                "workflow"
-            ) ||
-            userCommand.includes(
-                "automation"
-            ) ||
-            userCommand.includes(
-                "automate"
-            )
-        ) {
-
-            setCommand("");
-
-            setActiveAction(
-                "workflow"
-            );
-
-
-            navigate("/workflows", {
-                state: {
-                    openForm: true,
-                },
-            });
-
-            return;
-        }
-
-
-        /* ===============================
-           MEMORY
-        =============================== */
-
-        if (
-            userCommand.includes(
-                "save memory"
-            ) ||
-            userCommand.includes(
-                "add memory"
-            ) ||
-            userCommand.includes(
-                "remember this"
-            ) ||
-            userCommand.includes(
-                "remember"
-            )
-        ) {
-
-            setCommand("");
-
-            setActiveAction(
-                "memory"
-            );
-
-
-            navigate("/memory", {
-                state: {
-                    openForm: true,
-                },
-            });
-
-            return;
-        }
-
-
-        /* ===============================
-           STUDY / ASSISTANT
-        =============================== */
-
-        if (
-            userCommand.includes(
-                "study"
-            ) ||
-            userCommand.includes(
-                "study help"
-            ) ||
-            userCommand.includes(
-                "explain"
-            ) ||
-            userCommand.includes(
-                "learn"
-            )
-        ) {
-
-            setCommand("");
-
-            navigate("/assistant");
-
-            return;
-        }
-
-
-        /* ===============================
-           SCHEDULE
-        =============================== */
-
-        if (
-            userCommand.includes(
-                "schedule"
-            ) ||
-            userCommand.includes(
-                "plan my day"
-            ) ||
-            userCommand.includes(
-                "add event"
-            ) ||
-            userCommand.includes(
-                "calendar"
-            )
-        ) {
-
-            setCommand("");
-
-            setActiveAction(
-                "schedule"
-            );
-
-
-            navigate("/schedule");
-
-            return;
-        }
-
-
-        /* ===============================
-           FOCUS MODE
-        =============================== */
-
-        if (
-            userCommand.includes(
-                "focus"
-            ) ||
-            userCommand.includes(
-                "start focus"
-            ) ||
-            userCommand.includes(
-                "pomodoro"
-            ) ||
-            userCommand.includes(
-                "timer"
-            )
-        ) {
-
-            setCommand("");
-
-            setActiveAction(
-                "focus"
-            );
-
-
-            setTimeout(() => {
-
-                document
-                    .getElementById(
-                        "zarvis-timer"
-                    )
-                    ?.scrollIntoView({
-                        behavior:
-                            "smooth",
-                        block:
-                            "center",
-                    });
-
-            }, 100);
-
-
-            return;
-        }
-
-
-        /* ===============================
-           OPEN ASSISTANT
-        =============================== */
-
-        if (
-            userCommand.includes(
-                "assistant"
-            ) ||
-            userCommand.includes(
-                "chat with zarvis"
-            ) ||
-            userCommand.includes(
-                "help me"
-            )
-        ) {
-
-            setCommand("");
-
-            navigate(
-                "/assistant"
-            );
-
-            return;
-        }
-
-
-        /* ===============================
-           UNKNOWN COMMAND
-        =============================== */
-
-        setActiveAction(
-            `command:${inputCommand.trim()}`
-        );
-
-        setCommand("");
-
-    };
-
-
-    /* =================================================
-       TEXT COMMAND
-    ================================================= */
-
-    const handleCommand = () => {
-
-        executeCommand(
-            command
-        );
-
-    };
-
-
-    /* =================================================
-       VOICE BUTTON
-    ================================================= */
-
-    const handleVoiceCommand = () => {
-
-        const SpeechRecognition =
-            window.SpeechRecognition ||
-            window.webkitSpeechRecognition;
-
-
-        if (!SpeechRecognition) {
-
-            setVoiceMessage(
-                "Voice recognition is not supported in this browser."
-            );
-
-            return;
-
-        }
-
-
-        if (isListening) {
-
-            recognitionRef.current?.stop();
-
-            setIsListening(false);
-
-            setVoiceMessage(
-                "Voice input stopped."
-            );
-
-            return;
-
-        }
-
-
-        setVoiceMessage(
-            "Starting voice input..."
-        );
-
-
-        try {
-
-            recognitionRef.current?.start();
-
-        } catch (error) {
-
-            console.error(
-                "Could not start voice recognition:",
-                error
-            );
-
-            setIsListening(false);
-
-        }
-
-    };
-
-
-    /* =================================================
        TIMER
     ================================================= */
 
@@ -765,23 +247,36 @@ function Dashboard() {
             });
 
     };
+
+
+    /* =================================================
+       GREETING
+    ================================================= */
+
     const getGreeting = () => {
-    const hour = new Date().getHours();
 
-    if (hour >= 5 && hour < 12) {
-        return "GOOD MORNING";
-    }
+        const hour =
+            new Date().getHours();
 
-    if (hour >= 12 && hour < 17) {
-        return "GOOD AFTERNOON";
-    }
 
-    if (hour >= 17 && hour < 21) {
-        return "GOOD EVENING";
-    }
+        if (hour >= 5 && hour < 12) {
+            return "GOOD MORNING";
+        }
 
-    return "GOOD NIGHT";
-};
+
+        if (hour >= 12 && hour < 17) {
+            return "GOOD AFTERNOON";
+        }
+
+
+        if (hour >= 17 && hour < 21) {
+            return "GOOD EVENING";
+        }
+
+
+        return "GOOD NIGHT";
+
+    };
 
 
     return (
@@ -1010,26 +505,6 @@ function Dashboard() {
 
                         <ChatBox />
 
-
-
-                        {voiceMessage && (
-
-                            <div className="voice-command-status">
-
-                                <span
-                                    className={
-                                        isListening
-                                            ? "voice-status-active"
-                                            : ""
-                                    }
-                                ></span>
-
-                                {voiceMessage}
-
-                            </div>
-
-                        )}
-
                     </section>
 
 
@@ -1208,11 +683,11 @@ function Dashboard() {
 
                             <button
                                 type="button"
-                                className={`quick-action-card ${activeAction ===
-                                        "task"
+                                className={`quick-action-card ${
+                                    activeAction === "task"
                                         ? "active"
                                         : ""
-                                    }`}
+                                }`}
                                 onClick={() =>
                                     navigate(
                                         "/tasks",
@@ -1243,11 +718,11 @@ function Dashboard() {
 
                             <button
                                 type="button"
-                                className={`quick-action-card ${activeAction ===
-                                        "schedule"
+                                className={`quick-action-card ${
+                                    activeAction === "schedule"
                                         ? "active"
                                         : ""
-                                    }`}
+                                }`}
                                 onClick={() =>
                                     navigate(
                                         "/schedule"
@@ -1272,11 +747,11 @@ function Dashboard() {
 
                             <button
                                 type="button"
-                                className={`quick-action-card ${activeAction ===
-                                        "workflow"
+                                className={`quick-action-card ${
+                                    activeAction === "workflow"
                                         ? "active"
                                         : ""
-                                    }`}
+                                }`}
                                 onClick={() =>
                                     navigate(
                                         "/workflows",
@@ -1307,11 +782,11 @@ function Dashboard() {
 
                             <button
                                 type="button"
-                                className={`quick-action-card ${activeAction ===
-                                        "memory"
+                                className={`quick-action-card ${
+                                    activeAction === "memory"
                                         ? "active"
                                         : ""
-                                    }`}
+                                }`}
                                 onClick={() =>
                                     navigate(
                                         "/memory",
@@ -1342,11 +817,11 @@ function Dashboard() {
 
                             <button
                                 type="button"
-                                className={`quick-action-card ${activeAction ===
-                                        "focus"
+                                className={`quick-action-card ${
+                                    activeAction === "focus"
                                         ? "active"
                                         : ""
-                                    }`}
+                                }`}
                                 onClick={
                                     handleStartTimer
                                 }

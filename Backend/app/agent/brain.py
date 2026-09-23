@@ -500,6 +500,11 @@ class AIBrain:
 
             tool_parameters["user_id"] = user_id
 
+            print(
+                "DEBUG EMAIL TOOL PARAMETERS:",
+                tool_parameters
+            )
+
             return tool.execute(
                 tool_parameters
             )
@@ -1323,6 +1328,17 @@ class AIBrain:
 
         action_result = None
 
+        # ---------------------------------
+        # BASIC EXECUTION WORKFLOW
+        # ---------------------------------
+        execution_workflow = [
+            {
+                "step": 1,
+                "name": "User Command",
+                "status": "completed"
+            }
+        ]
+
         approval_required = False
 
         current_approval_id = None
@@ -1441,6 +1457,12 @@ class AIBrain:
                 "context": []
             }
 
+        execution_workflow.append({
+            "step": 2,
+            "name": "Security Check",
+            "status": "completed"
+        })
+
         # ---------------------------------
         # INTENT DETECTION
         # ---------------------------------
@@ -1470,6 +1492,12 @@ class AIBrain:
         intent_name = self._get_intent_name(
             intent
         )
+
+        execution_workflow.append({
+            "step": 3,
+            "name": "Intent Detection",
+            "status": "completed"
+        })
 
         # ---------------------------------
         # GENERAL QUERY
@@ -1674,6 +1702,12 @@ class AIBrain:
             )
         )
 
+        execution_workflow.append({
+            "step": 4,
+            "name": "Planning",
+            "status": "completed"
+        })
+
         # ---------------------------------
         # REASONING
         # ---------------------------------
@@ -1702,6 +1736,12 @@ class AIBrain:
                 "approval_id": None,
                 "context": []
             }
+
+        execution_workflow.append({
+            "step": 5,
+            "name": "Reasoning",
+            "status": "completed"
+        })
 
         # ---------------------------------
         # PLAN / REASONING VALIDATION
@@ -1806,6 +1846,12 @@ class AIBrain:
                     else:
 
                         action = None
+
+                    execution_workflow.append({
+                        "step": 6,
+                        "name": "Security Check",
+                        "status": "completed"
+                    })
 
                     # ---------------------------------
                     # APPROVAL VERIFICATION
@@ -1956,6 +2002,12 @@ class AIBrain:
                             False
                         ) and not approval_id:
 
+                            execution_workflow.append({
+                                "step": 7,
+                                "name": "Approval",
+                                "status": "waiting"
+                            })
+
                             approval_request = (
                                 self._create_approval_request(
                                     user_id=user_id,
@@ -2063,6 +2115,25 @@ class AIBrain:
                         # ---------------------------------
                         # BROWSER → WORKFLOW
                         # ---------------------------------
+                        print(
+                            "DEBUG APPROVED EXECUTION:",
+                            {
+                                "approval_id": approval_id,
+                                "tool_name": tool_name,
+                                "action": action,
+                                "parameters": parameters
+                            }
+                        )
+                        
+                        execution_workflow.append({
+                            "step": 7,
+                            "name": (
+                                "Browser Tool"
+                                if tool_name == "browser"
+                                else f"{str(tool_name).replace('_', ' ').title()} Tool"
+                            ),
+                            "status": "running"
+                        })
 
                         if tool_name == "browser":
 
@@ -2282,6 +2353,38 @@ class AIBrain:
                                     )
 
         # ---------------------------------
+        # COMPLETE BASIC EXECUTION WORKFLOW
+        # ---------------------------------
+
+        if approval_required:
+
+            for workflow_step in execution_workflow:
+                if workflow_step.get("name") == "Security Check":
+                    workflow_step["status"] = "completed"
+
+        elif action_result is not None:
+
+            tool_success = action_result.get(
+                "success",
+                False
+            )
+
+            for workflow_step in execution_workflow:
+                if workflow_step.get("status") == "running":
+                    workflow_step["status"] = (
+                        "completed"
+                        if tool_success
+                        else "failed"
+                    )
+
+            if tool_success:
+                execution_workflow.append({
+                    "step": len(execution_workflow) + 1,
+                    "name": "Completed",
+                    "status": "completed"
+                })
+
+        # ---------------------------------
         # STORE CONTEXT
         # ---------------------------------
 
@@ -2317,6 +2420,7 @@ class AIBrain:
             "action_result": action_result,
             "approval_required": approval_required,
             "approval_id": current_approval_id,
+            "execution_workflow": execution_workflow,
             "context": context
         }
 

@@ -16,6 +16,7 @@ import Sidebar from "../components/common/Sidebar";
 import Navbar from "../components/common/Navbar";
 
 import { useAuth } from "../context/AuthContext";
+import { useBuddy } from "../context/BuddyContext";
 
 import {
     getWorkflows,
@@ -33,6 +34,17 @@ function Workflows() {
         authenticated,
     } = useAuth();
 
+    // =========================================================
+    // GLOBAL AI BUDDY EXECUTION STATE
+    // =========================================================
+
+    const {
+        executionWorkflow,
+        executionActive,
+        executionStatus,
+        executionMessage,
+    } = useBuddy();
+
 
     const [workflows, setWorkflows] = useState([]);
 
@@ -45,9 +57,9 @@ function Workflows() {
     const [success, setSuccess] = useState("");
 
 
-    // ------------------------------------------
+    // =========================================================
     // DOWNLOAD NOTIFICATION
-    // ------------------------------------------
+    // =========================================================
 
     const [downloadNotification, setDownloadNotification] = useState({
         status: "",
@@ -71,9 +83,9 @@ function Workflows() {
     });
 
 
-    // ------------------------------------------
+    // =========================================================
     // FORMAT FILE SIZE
-    // ------------------------------------------
+    // =========================================================
 
     const formatFileSize = (bytes) => {
 
@@ -108,9 +120,9 @@ function Workflows() {
     };
 
 
-    // ------------------------------------------
+    // =========================================================
     // FIND DOWNLOAD RESULT
-    // ------------------------------------------
+    // =========================================================
 
     const findDownloadResult = (engineWorkflow) => {
 
@@ -133,7 +145,6 @@ function Workflows() {
             }
 
 
-            // Direct download result
             if (
                 result.action === "download" ||
                 result.filename ||
@@ -145,7 +156,6 @@ function Workflows() {
             }
 
 
-            // BrowserTool result
             if (
                 result.browser &&
                 (
@@ -169,9 +179,9 @@ function Workflows() {
     };
 
 
-    // ------------------------------------------
+    // =========================================================
     // HANDLE DOWNLOAD NOTIFICATION
-    // ------------------------------------------
+    // =========================================================
 
     const handleDownloadNotification =
         (workflowResponse) => {
@@ -187,9 +197,7 @@ function Workflows() {
 
 
             if (!downloadResult) {
-
                 return false;
-
             }
 
 
@@ -255,13 +263,16 @@ function Workflows() {
         };
 
 
-    // ------------------------------------------
-    // LOAD WORKFLOWS
-    // ------------------------------------------
+    // =========================================================
+    // LOAD SAVED WORKFLOWS
+    // =========================================================
 
     const loadWorkflows = async () => {
 
-        if (!authenticated || !user?.id) {
+        if (
+            !authenticated ||
+            !user?.id
+        ) {
 
             setWorkflows([]);
 
@@ -416,9 +427,9 @@ function Workflows() {
     };
 
 
-    // ------------------------------------------
+    // =========================================================
     // INITIAL LOAD
-    // ------------------------------------------
+    // =========================================================
 
     useEffect(() => {
 
@@ -430,9 +441,9 @@ function Workflows() {
     ]);
 
 
-    // ------------------------------------------
+    // =========================================================
     // CREATE WORKFLOW
-    // ------------------------------------------
+    // =========================================================
 
     const handleCreateWorkflow =
         async (event) => {
@@ -526,9 +537,9 @@ function Workflows() {
             }
 
 
-            // ------------------------------------------
+            // =================================================
             // CONVERT TEXT STEPS INTO BACKEND STEPS
-            // ------------------------------------------
+            // =================================================
 
             const steps =
                 rawSteps.map(
@@ -694,9 +705,9 @@ function Workflows() {
                     );
 
 
-                // ------------------------------------------
+                // =================================================
                 // HANDLE DOWNLOAD RESULT
-                // ------------------------------------------
+                // =================================================
 
                 const hasDownload =
                     handleDownloadNotification(
@@ -715,8 +726,11 @@ function Workflows() {
                                 current.status ===
                                 "success"
                             ) {
+
                                 return current;
+
                             }
+
 
                             return {
 
@@ -743,9 +757,9 @@ function Workflows() {
                 }
 
 
-                // ------------------------------------------
+                // =================================================
                 // WORKFLOW SUCCESS
-                // ------------------------------------------
+                // =================================================
 
                 if (!hasDownload) {
 
@@ -854,9 +868,9 @@ function Workflows() {
         };
 
 
-    // ------------------------------------------
+    // =========================================================
     // DELETE WORKFLOW
-    // ------------------------------------------
+    // =========================================================
 
     const handleDeleteWorkflow =
         async (workflowId) => {
@@ -933,9 +947,9 @@ function Workflows() {
         };
 
 
-    // ------------------------------------------
+    // =========================================================
     // WORKFLOW COUNTS
-    // ------------------------------------------
+    // =========================================================
 
     const activeCount =
         workflows.filter(
@@ -953,9 +967,23 @@ function Workflows() {
         ).length;
 
 
-    // ------------------------------------------
+    // =========================================================
+    // NORMALIZE EXECUTION WORKFLOW
+    // =========================================================
+
+    const liveExecutionSteps =
+        Array.isArray(executionWorkflow)
+            ? executionWorkflow
+            : [];
+
+
+    const hasLiveExecution =
+        liveExecutionSteps.length > 0;
+
+
+    // =========================================================
     // UI
-    // ------------------------------------------
+    // =========================================================
 
     return (
 
@@ -972,7 +1000,9 @@ function Workflows() {
                 <div className="workflows-page">
 
 
-                    {/* HEADER */}
+                    {/* =================================================
+                        HEADER
+                    ================================================= */}
 
                     <section className="workflows-header">
 
@@ -1048,7 +1078,9 @@ function Workflows() {
                     </section>
 
 
-                    {/* MESSAGES */}
+                    {/* =================================================
+                        MESSAGES
+                    ================================================= */}
 
                     {error && (
 
@@ -1072,7 +1104,9 @@ function Workflows() {
                     )}
 
 
-                    {/* DOWNLOAD NOTIFICATION */}
+                    {/* =================================================
+                        DOWNLOAD NOTIFICATION
+                    ================================================= */}
 
                     {downloadNotification.status && (
 
@@ -1162,7 +1196,9 @@ function Workflows() {
                     )}
 
 
-                    {/* STATS */}
+                    {/* =================================================
+                        STATS
+                    ================================================= */}
 
                     <section className="workflow-stats">
 
@@ -1174,9 +1210,11 @@ function Workflows() {
                             </span>
 
                             <strong>
+
                                 {loading
                                     ? "..."
                                     : workflows.length}
+
                             </strong>
 
                         </div>
@@ -1189,9 +1227,11 @@ function Workflows() {
                             </span>
 
                             <strong>
+
                                 {loading
                                     ? "..."
                                     : activeCount}
+
                             </strong>
 
                         </div>
@@ -1204,9 +1244,11 @@ function Workflows() {
                             </span>
 
                             <strong>
+
                                 {loading
                                     ? "..."
                                     : readyCount}
+
                             </strong>
 
                         </div>
@@ -1219,9 +1261,11 @@ function Workflows() {
                             </span>
 
                             <strong>
-                                {saving
+
+                                {saving || executionActive
                                     ? "RUNNING"
                                     : "READY"}
+
                             </strong>
 
                         </div>
@@ -1229,7 +1273,171 @@ function Workflows() {
                     </section>
 
 
-                    {/* CREATE WORKFLOW */}
+                    {/* =================================================
+                        LIVE ZARVIS EXECUTION WORKFLOW
+                    ================================================= */}
+
+                    {hasLiveExecution && (
+
+                        <section className="workflow-list-panel">
+
+                            <div className="workflow-list-header">
+
+                                <div>
+
+                                    <span>
+                                        LIVE ZARVIS EXECUTION
+                                    </span>
+
+                                    <h2>
+                                        Current Task Workflow
+                                    </h2>
+
+                                </div>
+
+
+                                <div className="workflow-network-status">
+
+                                    <span></span>
+
+                                    {executionActive
+                                        ? "EXECUTING"
+                                        : executionStatus === "completed"
+                                            ? "COMPLETED"
+                                            : executionStatus === "failed"
+                                                ? "FAILED"
+                                                : "READY"}
+
+                                </div>
+
+                            </div>
+
+
+                            {executionMessage && (
+
+                                <div className="schedule-message schedule-success">
+
+                                    {executionMessage}
+
+                                </div>
+
+                            )}
+
+
+                            <div className="workflow-live-execution">
+
+                                {liveExecutionSteps.map(
+                                    (step, index) => {
+
+                                        const stepName =
+                                            typeof step === "string"
+                                                ? step
+                                                : step?.name ||
+                                                  step?.description ||
+                                                  step?.action ||
+                                                  step?.tool ||
+                                                  "Action";
+
+
+                                        const stepStatus =
+                                            typeof step === "object"
+                                                ? String(
+                                                    step?.status ||
+                                                    "pending"
+                                                ).toLowerCase()
+                                                : "pending";
+
+
+                                        return (
+
+                                            <div
+                                                className="workflow-live-step"
+                                                key={
+                                                    step?.id ||
+                                                    step?.step_id ||
+                                                    index
+                                                }
+                                            >
+
+                                                <div
+                                                    className={
+                                                        `workflow-step-number ${
+                                                            stepStatus === "completed" ||
+                                                            stepStatus === "success"
+                                                                ? "workflow-step-completed"
+                                                                : stepStatus === "running" ||
+                                                                  stepStatus === "active"
+                                                                    ? "workflow-step-running"
+                                                                    : stepStatus === "failed" ||
+                                                                      stepStatus === "error"
+                                                                        ? "workflow-step-failed"
+                                                                        : ""
+                                                        }`
+                                                    }
+                                                >
+
+                                                    {String(
+                                                        index + 1
+                                                    ).padStart(
+                                                        2,
+                                                        "0"
+                                                    )}
+
+                                                </div>
+
+
+                                                <div className="workflow-live-step-content">
+
+                                                    <strong>
+                                                        {stepName}
+                                                    </strong>
+
+
+                                                    <span>
+
+                                                        {stepStatus === "completed" ||
+                                                        stepStatus === "success"
+                                                            ? "Completed"
+                                                            : stepStatus === "running" ||
+                                                              stepStatus === "active"
+                                                                ? "Running"
+                                                                : stepStatus === "failed" ||
+                                                                  stepStatus === "error"
+                                                                    ? "Failed"
+                                                                    : "Pending"}
+
+                                                    </span>
+
+                                                </div>
+
+
+                                                {index <
+                                                    liveExecutionSteps.length -
+                                                    1 && (
+
+                                                    <ArrowRight
+                                                        size={14}
+                                                    />
+
+                                                )}
+
+                                            </div>
+
+                                        );
+
+                                    }
+                                )}
+
+                            </div>
+
+                        </section>
+
+                    )}
+
+
+                    {/* =================================================
+                        CREATE WORKFLOW
+                    ================================================= */}
 
                     {showForm && (
 
@@ -1451,7 +1659,9 @@ function Workflows() {
                     )}
 
 
-                    {/* WORKFLOW LIST */}
+                    {/* =================================================
+                        SAVED WORKFLOW LIST
+                    ================================================= */}
 
                     <section className="workflow-list-panel">
 

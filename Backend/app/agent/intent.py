@@ -1,6 +1,7 @@
 import json
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
+
 from google import genai
 
 
@@ -134,68 +135,6 @@ class IntentDetector:
         text: str
     ) -> str:
 
-        # -----------------------------------------
-        # 1. 12-hour format with AM/PM
-        #    8:00 AM
-        #    8:00 PM
-        #    8:00 a.m.
-        #    8:00 p.m.
-        #    8 AM
-        #    8 PM
-        # -----------------------------------------
-
-        am_pm_match = re.search(
-            r"\b("
-            r"0?[1-9]|1[0-2]"
-            r")"
-            r"(?:[:.]"
-            r"([0-5]\d)"
-            r")?"
-            r"\s*"
-            r"(A\.?M\.?|P\.?M\.?)"
-            r"\b",
-            text,
-            flags=re.IGNORECASE
-        )
-
-        if am_pm_match:
-
-            hour = int(
-                am_pm_match.group(1)
-            )
-
-            minute = am_pm_match.group(2)
-
-            if minute is None:
-                minute = 0
-            else:
-                minute = int(minute)
-
-            period = (
-                am_pm_match.group(3)
-                .replace(".", "")
-                .upper()
-            )
-
-            if period == "AM":
-
-                if hour == 12:
-                    hour = 0
-
-            else:
-
-                if hour != 12:
-                    hour += 12
-
-            return f"{hour:02d}:{minute:02d}"
-
-
-        # -----------------------------------------
-        # 2. 24-hour format
-        #    14:30
-        #    08:00
-        # -----------------------------------------
-
         time_match = re.search(
             r"\b([01]?\d|2[0-3]):([0-5]\d)\b",
             text
@@ -211,6 +150,79 @@ class IntentDetector:
 
             return f"{hour:02d}:{minute}"
 
+        am_pm_match = re.search(
+            r"\b("
+            r"0?[1-9]|1[0-2]"
+            r")"
+            r":"
+            r"([0-5]\d)"
+            r"\s*"
+            r"(AM|PM)"
+            r"\b",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        if am_pm_match:
+
+            hour = int(
+                am_pm_match.group(1)
+            )
+
+            minute = int(
+                am_pm_match.group(2)
+            )
+
+            period = (
+                am_pm_match.group(3)
+                .upper()
+            )
+
+            if period == "AM":
+
+                if hour == 12:
+                    hour = 0
+
+            else:
+
+                if hour != 12:
+                    hour += 12
+
+            return f"{hour:02d}:{minute:02d}"
+
+        hour_only_match = re.search(
+            r"\b("
+            r"0?[1-9]|1[0-2]"
+            r")"
+            r"\s*"
+            r"(AM|PM)"
+            r"\b",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        if hour_only_match:
+
+            hour = int(
+                hour_only_match.group(1)
+            )
+
+            period = (
+                hour_only_match.group(2)
+                .upper()
+            )
+
+            if period == "AM":
+
+                if hour == 12:
+                    hour = 0
+
+            else:
+
+                if hour != 12:
+                    hour += 12
+
+            return f"{hour:02d}:00"
 
         return ""
 
@@ -1081,6 +1093,55 @@ class IntentDetector:
             )
 
         # =====================================
+        # FOCUS MODE
+        # =====================================
+
+        focus_mode_match = re.search(
+            r"\b(?:start|begin|activate|enable)\s+"
+            r"focus\s+mode\b"
+            r"(?:\s+for)?\s+(\d+)\s*"
+            r"(seconds?|secs?|minutes?|mins?|hours?|hrs?)?",
+            lower_text
+        )
+
+        if focus_mode_match:
+
+            value = int(
+                focus_mode_match.group(1)
+            )
+
+            unit = (
+                focus_mode_match.group(2)
+                or "minutes"
+            )
+
+            unit = unit.lower()
+
+            if (
+                unit.startswith("second")
+                or unit.startswith("sec")
+            ):
+                duration_seconds = value
+
+            elif (
+                unit.startswith("hour")
+                or unit.startswith("hr")
+            ):
+                duration_seconds = value * 60 * 60
+
+            else:
+                duration_seconds = value * 60
+
+            return {
+                "intent": "SET_TIMER",
+                "confidence": 0.99,
+                "parameters": {
+                    "duration_seconds": duration_seconds,
+                    "focus_mode": True
+                }
+            }
+
+        # =====================================
         # SET TIMER
         # =====================================
 
@@ -1177,6 +1238,61 @@ class IntentDetector:
                     )
 
             parameters["city"] = city
+
+        # =====================================
+        # TIME AND DATE DETECTION
+        # =====================================
+
+        time_patterns = [
+            r"\bwhat\s+time\s+is\s+it\b",
+            r"\bwhat(?:\'s| is)\s+the\s+time\b",
+            r"\bcurrent\s+time\b",
+            r"\btime\s+right\s+now\b",
+            r"\btime\s+now\b",
+            r"\btell\s+me\s+the\s+time\b",
+            r"\bwhat\s+time\s+it\s+is\b"
+        ]
+
+        date_patterns = [
+            r"\bwhat\s+date\s+is\s+it\b",
+            r"\bwhat(?:\'s| is)\s+today(?:\'s)?\s+date\b",
+            r"\btoday(?:\'s)?\s+date\b",
+            r"\bcurrent\s+date\b",
+            r"\bwhat\s+day\s+is\s+it\b",
+            r"\bwhat\s+day\s+it\s+is\b"
+        ]
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in time_patterns
+        ):
+            return {
+                "intent": "GET_TIME",
+                "confidence": 0.98,
+                "parameters": {
+                    "action": "current_time",
+                    "timezone": "Asia/Kolkata"
+                }
+            }
+
+        if any(
+            re.search(
+                pattern,
+                lower_text
+            )
+            for pattern in date_patterns
+        ):
+            return {
+                "intent": "GET_DATE",
+                "confidence": 0.98,
+                "parameters": {
+                    "action": "current_date",
+                    "timezone": "Asia/Kolkata"
+                }
+            }
 
         # =====================================
         # SEARCH INFORMATION
@@ -1423,9 +1539,6 @@ class IntentDetector:
             "MANAGE_FILE",
             "OPEN_APPLICATION",
             "BROWSE_WEB",
-            "GET_TIME",
-            "GET_DATE",
-            "STOP",
             "GENERAL_QUERY"
         }
 
@@ -1486,18 +1599,6 @@ class IntentDetector:
         text: str
     ) -> str:
 
-        # Support Markdown-style URLs:
-        # [https://example.com](https://example.com)
-        markdown_url_match = re.search(
-            r"\[[^\]]*\]\((https?://[^)]+)\)",
-            text,
-            flags=re.IGNORECASE
-        )
-
-        if markdown_url_match:
-            return markdown_url_match.group(1).rstrip(".,?!")
-
-        # Support normal URLs.
         url_match = re.search(
             r"https?://[^\s]+",
             text,
@@ -1505,22 +1606,13 @@ class IntentDetector:
         )
 
         if url_match:
+
             return (
                 url_match.group(0)
                 .rstrip(".,?!")
             )
 
         lower_text = text.lower()
-
-        # Localhost URL support
-        localhost_match = re.search(
-            r"\blocalhost(?:\s+|:)(\d{1,5})\b",
-            lower_text
-        )
-
-        if localhost_match:
-            port = localhost_match.group(1)
-            return f"http://127.0.0.1:{port}"
 
         if "google" in lower_text:
             return "https://www.google.com"
@@ -1708,110 +1800,262 @@ class IntentDetector:
 
                 return "#message"
 
-        if action == "download":
-
-            direct_download_match = re.search(
-                r"\b(?:download|save)\s+"
-                r"(?:the\s+)?"
-                r"([#.][A-Za-z0-9_-]+)",
-                text,
-                flags=re.IGNORECASE
-            )
-
-            if direct_download_match:
-
-                selector = (
-                    direct_download_match.group(1)
-                    .strip()
-                )
-
-                if selector:
-                    return selector
-
-            natural_download_match = re.search(
-                r"(.+?)\s+"
-                r"(?:download|save)\b"
-                r"(?:\s+(?:kar(?:o|na|do)|please))*\s*[.!?]*$",
-                text,
-                flags=re.IGNORECASE
-            )
-
-            if natural_download_match:
-
-                target_text = (
-                    natural_download_match.group(1)
-                    .strip(" .,!? ")
-                )
-
-                target_text = re.sub(
-                    r"^(?:the|this|that)\s+",
-                    "",
-                    target_text,
-                    flags=re.IGNORECASE
-                ).strip()
-
-                if target_text:
-
-                    safe_target = (
-                        target_text
-                        .replace("\\", "\\\\")
-                        .replace("'", "\\'")
-                    )
-
-                    return (
-                        f"li:has-text('{safe_target}') a[download]"
-                    )
-
-            reverse_download_match = re.search(
-                r"\b(?:download|save)\s+"
-                r"(?:the\s+)?"
-                r"(.+?)"
-                r"(?:\s+kar(?:o|na|do))?"
-                r"\s*[.!?]*$",
-                text,
-                flags=re.IGNORECASE
-            )
-
-            if reverse_download_match:
-
-                target_text = (
-                    reverse_download_match.group(1)
-                    .strip(" .,!? ")
-                )
-
-                # Remove trailing voice-command words accidentally
-                # captured as the download target.
-                target_text = re.sub(
-                    r"\s+(?:please|karo|karna|kardo|do)\s*$",
-                    "",
-                    target_text,
-                    flags=re.IGNORECASE
-                ).strip(" .,!? ")
-
-                if target_text:
-
-                    safe_target = (
-                        target_text
-                        .replace("\\", "\\\\")
-                        .replace("'", "\\'")
-                    )
-
-                    return (
-                        f"li:has-text('{safe_target}') a[download]"
-                    )
-
-            if re.search(
-                r"\b(?:download|save)\s+"
-                r"(?:the\s+)?(?:file|document|notes?)\b",
-                lower_text
-            ):
-
-                return "a[download]"
-
         return ""
 
     # =========================================
     # MULTI-STEP BROWSER DETECTION
+    # =========================================
+
+    def _local_browser_multi_step_detect(
+        self,
+        text: str
+    ) -> dict | None:
+
+        lower_text = text.lower()
+
+        action_words = [
+            "open",
+            "navigate",
+            "go to",
+            "visit",
+            "click",
+            "press",
+            "fill",
+            "enter",
+            "type",
+            "read",
+            "extract",
+            "close"
+        ]
+
+        if not any(
+            word in lower_text
+            for word in action_words
+        ):
+            return None
+
+        parts = re.split(
+            r"\s+(?:and|then)\s+|"
+            r"\s*,\s*",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        if len(parts) < 2:
+            return None
+
+        steps = []
+
+        known_url = ""
+
+        for part in parts:
+
+            segment = part.strip()
+
+            if not segment:
+                continue
+
+            lower_segment = segment.lower()
+
+            open_match = re.search(
+                r"\bopen\s+"
+                r"(https?://[^\s,]+|"
+                r"(?:the\s+)?(?:google|youtube)\b)",
+                segment,
+                flags=re.IGNORECASE
+            )
+
+            if open_match:
+
+                url = self._extract_browser_url(
+                    segment
+                )
+
+                if url:
+
+                    known_url = url
+
+                    steps.append(
+                        {
+                            "action": "open",
+                            "url": url
+                        }
+                    )
+
+                    continue
+
+            navigate_match = re.search(
+                r"\b(?:navigate\s+to|"
+                r"go\s+to|visit)\b",
+                lower_segment
+            )
+
+            if navigate_match:
+
+                url = self._extract_browser_url(
+                    segment
+                )
+
+                if url:
+
+                    known_url = url
+
+                    steps.append(
+                        {
+                            "action": "navigate",
+                            "url": url
+                        }
+                    )
+
+                    continue
+
+            click_match = re.search(
+                r"\b(?:click|press|select)\b",
+                lower_segment
+            )
+
+            if click_match:
+
+                selector = (
+                    self._extract_browser_selector(
+                        segment,
+                        "click"
+                    )
+                )
+
+                if selector:
+
+                    click_parameters = {
+                        "action": "click",
+                        "selector": selector
+                    }
+
+                    if known_url:
+
+                        click_parameters[
+                            "use_current_page"
+                        ] = True
+
+                    steps.append(
+                        click_parameters
+                    )
+
+                    continue
+
+            fill_match = re.search(
+                r"\b(?:fill|enter|type|put)\b",
+                lower_segment
+            )
+
+            if fill_match:
+
+                selector = (
+                    self._extract_browser_selector(
+                        segment,
+                        "fill"
+                    )
+                )
+
+                value = (
+                    self._extract_fill_value(
+                        segment
+                    )
+                )
+
+                if selector and value:
+
+                    fill_parameters = {
+                        "action": "fill",
+                        "selector": selector,
+                        "value": value
+                    }
+
+                    if known_url:
+
+                        fill_parameters[
+                            "use_current_page"
+                        ] = True
+
+                    steps.append(
+                        fill_parameters
+                    )
+
+                    continue
+
+            read_match = re.search(
+                r"\b(?:read|extract|get)\b",
+                lower_segment
+            )
+
+            if read_match:
+
+                selector = (
+                    self._extract_browser_selector(
+                        segment,
+                        "read"
+                    )
+                )
+
+                if not selector:
+                    selector = "body"
+
+                read_parameters = {
+                    "action": "read",
+                    "selector": selector,
+                    "use_current_page": True
+                }
+
+                steps.append(
+                    read_parameters
+                )
+
+                continue
+
+            close_match = re.search(
+                r"\b(?:close|exit)\b"
+                r".*\bbrowser\b",
+                lower_segment
+            )
+
+            if close_match:
+
+                steps.append(
+                    {
+                        "action": "close",
+                        "use_current_page": True
+                    }
+                )
+
+                continue
+
+        if len(steps) < 2:
+            return None
+
+        planner_steps = []
+
+        for index, step_parameters in enumerate(
+            steps,
+            start=1
+        ):
+
+            planner_steps.append(
+                {
+                    "step": index,
+                    "tool": "browser",
+                    "parameters": step_parameters
+                }
+            )
+
+        return {
+            "intent": "BROWSE_WEB",
+            "confidence": 0.99,
+            "parameters": {
+                "steps": planner_steps
+            }
+        }
+
+    # =========================================
+    # LOCAL BROWSER DETECTION
     # =========================================
 
     def _local_browser_detect(
@@ -1828,53 +2072,6 @@ class IntentDetector:
         )
 
         if multi_step_result is not None:
-            steps = (
-                multi_step_result
-                .get("parameters", {})
-                .get("steps", [])
-            )
-
-            previous_target = None
-
-            for step in steps:
-                params = step.get("parameters", {})
-
-                if params.get("action") == "click":
-                    selector = params.get("selector", "")
-
-                    match = re.search(
-                        r":has-text\((['\"])(.*?)\1\)",
-                        selector,
-                        flags=re.IGNORECASE
-                    )
-
-                    if match:
-                        target = match.group(2).strip()
-
-                        params.pop("selector", None)
-
-                        if previous_target:
-                            params["target"] = (
-                                f"{previous_target} {target} button"
-                            )
-                        elif re.search(
-                            r"\b(?:button|link)\b$",
-                            target,
-                            flags=re.IGNORECASE
-                        ):
-                            params["target"] = target
-                        else:
-                            params["target"] = f"{target} button"
-
-                        previous_target = target
-
-                elif params.get("action") == "download":
-                    if previous_target:
-                        params.pop("selector", None)
-                        params["target"] = (
-                            f"{previous_target} Download button"
-                        )
-
             return multi_step_result
 
         close_patterns = [
@@ -2026,847 +2223,7 @@ class IntentDetector:
             r"\bnavigate\s+to\b",
             r"\bgo\s+to\b",
             r"\bvisit\b",
-            r"\bopen\s+(?:the\s+)?website\b",
-            r"\bpar\s+jao\b",
-            r"\bpar\s+jaiye\b",
-            r"\bpar\s+jana\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in navigate_patterns
-        ):
-
-            url = self._extract_browser_url(text)
-
-            if url:
-
-                return {
-                    "intent": "BROWSE_WEB",
-                    "confidence": 0.98,
-                    "parameters": {
-                        "action": "navigate",
-                        "url": url
-                    }
-                }
-
-        open_patterns = [
-            r"\bopen\s+google\b",
-            r"\bopen\s+youtube\b",
-            r"\bopen\s+(?:the\s+)?browser\b",
-            r"\bopen\s+(?:a\s+)?website\b",
-            r"\bopen\s+(?:this\s+)?url\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in open_patterns
-        ):
-
-            url = self._extract_browser_url(text)
-
-            return {
-                "intent": "BROWSE_WEB",
-                "confidence": 0.98,
-                "parameters": {
-                    "action": "open",
-                    "url": url
-                }
-            }
-
-        return None
-
-    # =========================================
-    # LOCAL INTENT DETECTION
-    # =========================================
-
-
-    def _local_browser_multi_step_detect(
-        self,
-        text: str
-    ) -> dict | None:
-
-        lower_text = text.lower()
-
-        action_words = [
-            "open",
-            "navigate",
-            "go to",
-            "visit",
-            "click",
-            "press",
-            "select",
-            "fill",
-            "enter",
-            "type",
-            "read",
-            "extract",
-            "download",
-            "save",
-            "close",
-            "khol",
-            "kholo",
-            "kholna",
-            "jao",
-            "karo",
-            "karna",
-            "kardo"
-        ]
-
-        if not any(
-            word in lower_text
-            for word in action_words
-        ):
-            return None
-
-        # ---------------------------------------------------------
-        # Split ONLY on explicit connectors.
-        #
-        # Important:
-        # "Download button click karo"
-        # must stay together as ONE click step.
-        # ---------------------------------------------------------
-
-        parts = re.split(
-            r",\s*(?=[^,\n]*\b(?:open|navigate|go|visit|click|"
-            r"press|select|fill|enter|type|put|read|extract|"
-            r"download|save|close|exit|khol|kholo|kholna|jao|"
-            r"confirm|verify|check|ensure)\b)"
-            r"|\s+(?:and|then|aur)\s+"
-            r"(?=(?:please\s+)?"
-            r"(?:open|navigate|go|visit|click|press|select|"
-            r"fill|enter|type|put|read|extract|download|save|"
-            r"close|exit|khol|kholo|kholna|jao|"
-            r"confirm|verify|check|ensure)\b)",
-            text,
-            flags=re.IGNORECASE
-        )
-
-        # ---------------------------------------------------------
-        # Do NOT require 2 parts.
-        # A single browser command is still a valid browser intent.
-        # ---------------------------------------------------------
-
-        steps = []
-        known_url = ""
-        page_target = ""
-
-        for part in parts:
-
-            segment = part.strip(" ,")
-            
-            if not segment:
-                continue
-
-            lower_segment = segment.lower()
-
-            # -----------------------------------------------------
-            # Verification text is NOT a browser action.
-            # -----------------------------------------------------
-
-            verification_patterns = [
-                r"\bconfirm\b",
-                r"\bverify\b",
-                r"\bcheck\b",
-                r"\bensure\b",
-                r"\bwindows\s+downloads?\s+folder\b",
-                r"\bdownloads?\s+folder\b",
-                r"\bfile\s+(?:is\s+)?saved\b",
-                r"\bsave\s+hui\b",
-                r"\bsave\s+ho\b"
-            ]
-
-            is_verification = any(
-                re.search(
-                    pattern,
-                    lower_segment,
-                    flags=re.IGNORECASE
-                )
-                for pattern in verification_patterns
-            )
-
-            if is_verification:
-                continue
-
-            # -----------------------------------------------------
-            # OPEN / KHOLO
-            # -----------------------------------------------------
-
-            open_match = re.search(
-                r"\bopen\s+"
-                r"(https?://[^\s,]+|"
-                r"(?:the\s+)?(?:google|youtube)\b)",
-                segment,
-                flags=re.IGNORECASE
-            )
-
-            hindi_open_match = re.search(
-                r"\b(?:khol|kholo|kholna)\b",
-                lower_segment,
-                flags=re.IGNORECASE
-            )
-
-            if open_match or hindi_open_match:
-
-                url = self._extract_browser_url(segment)
-
-                if url:
-                    known_url = url
-                    page_target = ""
-
-                    steps.append(
-                        {
-                            "action": "open",
-                            "url": url
-                        }
-                    )
-
-                    continue
-
-                # -------------------------------------------------
-                # No direct URL.
-                #
-                # Example:
-                # "CodeWithHarry ki Python Cheatsheet page kholo"
-                #
-                # Open Google search for the requested target.
-                # -------------------------------------------------
-
-                cleaned_target = re.sub(
-                    r"\b(?:zarvis|jarvis)\b[, ]*",
-                    "",
-                    segment,
-                    flags=re.IGNORECASE
-                )
-
-                cleaned_target = re.sub(
-                    r"\b(?:page|website|site|webpage)\b",
-                    "",
-                    cleaned_target,
-                    flags=re.IGNORECASE
-                )
-
-                cleaned_target = re.sub(
-                    r"\b(?:khol|kholo|kholna|khol\s+do)\b",
-                    "",
-                    cleaned_target,
-                    flags=re.IGNORECASE
-                )
-
-                # -------------------------------------------------
-                # Resolve website name BEFORE removing Hindi connectors.
-                #
-                # Example:
-                # "CodeWithHarry ki Python Cheatsheet page kholo"
-                #
-                # website_name = CodeWithHarry
-                # requested_page = Python Cheatsheet
-                # -------------------------------------------------
-
-                website_name_match = re.search(
-                    r"^(?:the\s+)?"
-                    r"([A-Za-z0-9][A-Za-z0-9\s.-]*?)"
-                    r"\s+(?:ki|ka|ke|par)\s+",
-                    cleaned_target,
-                    flags=re.IGNORECASE
-                )
-
-                website_name = ""
-                requested_page = cleaned_target
-
-                if website_name_match:
-                    website_name = (
-                        website_name_match.group(1)
-                        .strip()
-                    )
-
-                    requested_page = re.sub(
-                        r"^"
-                        + re.escape(website_name)
-                        + r"\s+(?:ki|ka|ke|par)\s+",
-                        "",
-                        cleaned_target,
-                        count=1,
-                        flags=re.IGNORECASE
-                    ).strip()
-
-                requested_page = re.sub(
-                    r"\b(?:ki|ka|ke)\b",
-                    " ",
-                    requested_page,
-                    flags=re.IGNORECASE
-                )
-
-                requested_page = re.sub(
-                    r"\s+",
-                    " ",
-                    requested_page
-                ).strip(
-                    " .,!?-"
-                )
-
-                if website_name:
-                    # -------------------------------------------------
-                    # GENERIC WEBSITE DISCOVERY
-                    #
-                    # Do NOT construct a URL from the website name.
-                    # BrowserTool will pass website_name + page_target
-                    # to WebsiteDiscovery, which uses SearchTool to find
-                    # the actual page URL.
-                    #
-                    # This also preserves the existing direct-URL route
-                    # above, including the CodeWithHarry demo flow.
-                    # -------------------------------------------------
-                    known_url = ""
-                    page_target = requested_page
-
-                    steps.append(
-                        {
-                            "action": "open",
-                            "url": "",
-                            "website_name": website_name,
-                            "page_target": requested_page
-                        }
-                    )
-
-                    continue
-
-            # -----------------------------------------------------
-            # NAVIGATE / PAR JAO
-            # -----------------------------------------------------
-
-            navigate_match = re.search(
-                r"\b(?:navigate\s+to|"
-                r"go\s+to|visit|"
-                r"par\s+jao|"
-                r"par\s+jaiye|"
-                r"par\s+jana|"
-                r"per\s+jao|"
-                r"per\s+jaiye|"
-                r"per\s+jana)\b",
-                lower_segment
-            )
-
-            if navigate_match:
-
-                url = self._extract_browser_url(segment)
-
-                if url:
-                    known_url = url
-
-                    steps.append(
-                        {
-                            "action": "navigate",
-                            "url": url
-                        }
-                    )
-
-                    continue
-
-            # -----------------------------------------------------
-            # CLICK
-            #
-            # This MUST happen BEFORE DOWNLOAD.
-            #
-            # "Download button click karo"
-            # => click
-            # NOT download
-            # -----------------------------------------------------
-
-            click_match = re.search(
-                r"\b(?:click|press|select)\b",
-                lower_segment,
-                flags=re.IGNORECASE
-            )
-
-            # Hindi/Hinglish click commands.
-            # Examples:
-            # "Download button click karo"
-            # "Download button par click karo"
-            # "Download button dabao"
-            hindi_click_match = re.search(
-                r"\b(?:button|link|tab|option)\b"
-                r".*?"
-                r"\b(?:click|press|select|dabao|daba|karo|karna|kardo)\b",
-                lower_segment,
-                flags=re.IGNORECASE
-            )
-
-            # Explicit "X button click karo" pattern.
-            explicit_button_click = re.search(
-                r"(?P<target>.+?)\s+"
-                r"\bbutton\b"
-                r"(?:\s+par|\s+pe)?\s+"
-                r"\b(?:click|press|select|dabao|daba|karo|karna|kardo)\b",
-                lower_segment,
-                flags=re.IGNORECASE
-            )
-
-            if (
-                click_match
-                or hindi_click_match
-                or explicit_button_click
-            ):
-
-                selector = None
-
-                # For phrases such as:
-                # "Download button click karo"
-                # directly create a text-based button selector.
-                if explicit_button_click:
-
-                    target = explicit_button_click.group(
-                        "target"
-                    ).strip()
-
-                    target = target.strip(
-                        " ,.!?:-"
-                    )
-
-                    if target:
-
-                        # Preserve the contextual item name so the
-                        # BrowserTool semantic resolver can identify
-                        # the correct button inside that item/card.
-                        # Example:
-                        # "Python Cheatsheet ka Download"
-                        # -> "Python Cheatsheet Download"
-                        target = re.sub(
-                            r"\bka\b",
-                            " ",
-                            target,
-                            flags=re.IGNORECASE
-                        )
-
-                        target = re.sub(
-                            r"\s+",
-                            " ",
-                            target
-                        ).strip()
-
-                        selector = (
-                            "button:has-text("
-                            + repr(target)
-                            + "), "
-                            "a:has-text("
-                            + repr(target)
-                            + ")"
-                        )
-
-                if not selector:
-
-                    selector = self._extract_browser_selector(
-                        segment,
-                        "click"
-                    )
-
-                if selector:
-
-                    # When a natural-language open command resolved to
-                    # a search-engine results page, first open the requested
-                    # result before executing the requested control on that page.
-                    # This remains generic: page_target is derived from the
-                    # user's request and is not tied to any website.
-                    if (
-                        page_target
-                        and (
-                            known_url.startswith("https://www.google.com/search?")
-                            or known_url.startswith("https://www.bing.com/search?")
-                        )
-                    ):
-                        steps.append(
-                            {
-                                "action": "click",
-                                "target": f"{page_target} link",
-                                "use_current_page": True
-                            }
-                        )
-                        page_target = ""
-
-                    click_parameters = {
-                        "action": "click",
-                        "selector": selector
-                    }
-
-                    if known_url:
-                        click_parameters[
-                            "use_current_page"
-                        ] = True
-
-                    steps.append(
-                        click_parameters
-                    )
-
-                    # A download-button request has TWO actions:
-                    # 1. click the button
-                    # 2. perform the download and verify the saved file
-                    #
-                    # The old logic stopped after the click, which meant
-                    # BrowserTool never received its download action.
-                    download_after_click = re.search(
-                        r"\b(?:download|save)\b",
-                        lower_segment,
-                        flags=re.IGNORECASE
-                    )
-
-                    if download_after_click:
-                        download_target = (
-                            target
-                            if explicit_button_click and target
-                            else "download button"
-                        )
-
-                        download_target = re.sub(
-                            r"\s+download\s+download\s+button\b",
-                            " download button",
-                            download_target,
-                            flags=re.IGNORECASE
-                        ).strip()
-
-                        download_parameters = {
-                            "action": "download",
-                            "target": (
-                                target
-                                if explicit_button_click
-                                and target
-                                else "download button"
-                            ),
-                            "use_current_page": True
-                        }
-
-                        steps.append(
-                            download_parameters
-                        )
-
-                    continue
-
-            # -----------------------------------------------------
-            # FILL / ENTER / TYPE
-            # -----------------------------------------------------
-
-            fill_match = re.search(
-                r"\b(?:fill|enter|type|put)\b",
-                lower_segment
-            )
-
-            if fill_match:
-
-                selector = self._extract_browser_selector(
-                    segment,
-                    "fill"
-                )
-
-                value = self._extract_fill_value(
-                    segment
-                )
-
-                if selector and value:
-
-                    fill_parameters = {
-                        "action": "fill",
-                        "selector": selector,
-                        "value": value
-                    }
-
-                    if known_url:
-                        fill_parameters[
-                            "use_current_page"
-                        ] = True
-
-                    steps.append(
-                        fill_parameters
-                    )
-
-                    continue
-
-            # -----------------------------------------------------
-            # READ / EXTRACT
-            # -----------------------------------------------------
-
-            read_match = re.search(
-                r"\b(?:read|extract|get)\b",
-                lower_segment
-            )
-
-            if read_match:
-
-                selector = self._extract_browser_selector(
-                    segment,
-                    "read"
-                )
-
-                if not selector:
-                    selector = "body"
-
-                steps.append(
-                    {
-                        "action": "read",
-                        "selector": selector,
-                        "use_current_page": True
-                    }
-                )
-
-                continue
-
-            # -----------------------------------------------------
-            # DOWNLOAD
-            # -----------------------------------------------------
-
-            download_match = re.search(
-                r"\b(?:download|save)\b",
-                lower_segment
-            )
-
-            download_button_click = re.search(
-                r"\b(?:download|save)\s+"
-                r"(?:button|link)\b.*"
-                r"\b(?:click|press|select|karo|karna|kardo|dabao)\b",
-                lower_segment,
-                flags=re.IGNORECASE
-            )
-
-            if (
-                download_match
-                and not download_button_click
-            ):
-
-                selector = self._extract_browser_selector(
-                    segment,
-                    "download"
-                )
-
-                if selector:
-
-                    download_parameters = {
-                        "action": "download",
-                        "selector": selector
-                    }
-
-                    if known_url:
-                        download_parameters[
-                            "use_current_page"
-                        ] = True
-
-                    steps.append(
-                        download_parameters
-                    )
-
-                    continue
-
-            # -----------------------------------------------------
-            # CLOSE
-            # -----------------------------------------------------
-
-            close_match = re.search(
-                r"\b(?:close|exit)\b.*\bbrowser\b",
-                lower_segment,
-                flags=re.IGNORECASE
-            )
-
-            if close_match:
-
-                steps.append(
-                    {
-                        "action": "close",
-                        "use_current_page": True
-                    }
-                )
-
-                continue
-
-        # ---------------------------------------------------------
-        # If nothing was detected, return None.
-        # ---------------------------------------------------------
-
-        if not steps:
-            return None
-
-        planner_steps = []
-
-        for index, step_parameters in enumerate(
-            steps,
-            start=1
-        ):
-
-            planner_steps.append(
-                {
-                    "step": index,
-                    "tool": "browser",
-                    "parameters": step_parameters
-                }
-            )
-
-        return {
-            "intent": "BROWSE_WEB",
-            "confidence": 0.99,
-            "parameters": {
-                "steps": planner_steps
-            }
-        }
-
-
-    # =========================================
-    # LOCAL BROWSER DETECTION
-
-        close_patterns = [
-            r"\bclose\s+(?:the\s+)?browser\b",
-            r"\bclose\s+(?:the\s+)?web\s+browser\b",
-            r"\bexit\s+(?:the\s+)?browser\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in close_patterns
-        ):
-
-            return {
-                "intent": "BROWSE_WEB",
-                "confidence": 0.99,
-                "parameters": {
-                    "action": "close",
-                    "url": "",
-                    "use_current_page": True
-                }
-            }
-
-        fill_patterns = [
-            r"\bfill\b",
-            r"\benter\b.*\bfield\b",
-            r"\btype\b.*\bfield\b",
-            r"\bput\b.*\bfield\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in fill_patterns
-        ):
-
-            url = self._extract_browser_url(text)
-
-            selector = (
-                self._extract_browser_selector(
-                    text,
-                    "fill"
-                )
-            )
-
-            value = (
-                self._extract_fill_value(text)
-            )
-
-            if selector and value:
-
-                return {
-                    "intent": "BROWSE_WEB",
-                    "confidence": 0.98,
-                    "parameters": {
-                        "action": "fill",
-                        "url": url,
-                        "selector": selector,
-                        "value": value,
-                        "use_current_page": not bool(url)
-                    }
-                }
-
-        click_patterns = [
-            r"\bclick\b",
-            r"\bpress\b.*\bbutton\b",
-            r"\bselect\b.*\bbutton\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in click_patterns
-        ):
-
-            url = self._extract_browser_url(text)
-
-            selector = (
-                self._extract_browser_selector(
-                    text,
-                    "click"
-                )
-            )
-
-            if selector:
-
-                return {
-                    "intent": "BROWSE_WEB",
-                    "confidence": 0.98,
-                    "parameters": {
-                        "action": "click",
-                        "url": url,
-                        "selector": selector,
-                        "use_current_page": not bool(url)
-                    }
-                }
-
-        read_patterns = [
-            r"\bread\s+(?:(?:the|this)\s+)?page\b",
-            r"\bread\s+(?:(?:the|this)\s+)?webpage\b",
-            r"\bread\s+(?:the\s+)?current\s+page\b",
-            r"\bread\s+(?:the\s+)?result\b",
-            r"\bread\s+(?:the\s+)?output\b",
-            r"\bread\s+(?:the\s+)?response\b",
-            r"\bget\s+(?:the\s+)?page\s+text\b",
-            r"\bextract\s+(?:the\s+)?page\b",
-            r"\bread\s+selector\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in read_patterns
-        ):
-
-            url = self._extract_browser_url(text)
-
-            selector = (
-                self._extract_browser_selector(
-                    text,
-                    "read"
-                )
-            )
-
-            if not selector:
-                selector = "body"
-
-            return {
-                "intent": "BROWSE_WEB",
-                "confidence": 0.98,
-                "parameters": {
-                    "action": "read",
-                    "url": url,
-                    "selector": selector,
-                    "use_current_page": not bool(url)
-                }
-            }
-
-        navigate_patterns = [
-            r"\bnavigate\s+to\b",
-            r"\bgo\s+to\b",
-            r"\bvisit\b",
-            r"\bopen\s+(?:the\s+)?website\b",
-            r"\bpar\s+jao\b",
-            r"\bpar\s+jaiye\b",
-            r"\bpar\s+jana\b"
+            r"\bopen\s+(?:the\s+)?website\b"
         ]
 
         if any(
@@ -2942,83 +2299,6 @@ class IntentDetector:
 
         if browser_result is not None:
             return browser_result
-
-        # =====================================
-        # STOP / CANCEL ZARVIS
-        # =====================================
-
-        stop_patterns = [
-            r"^\s*stop\s*$",
-            r"^\s*stop\s+listening\s*$",
-            r"^\s*stop\s+jarvis\s*$",
-            r"^\s*jarvis\s+stop\s*$",
-            r"^\s*zarvis\s+stop\s*$",
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in stop_patterns
-        ):
-            return {
-                "intent": "STOP",
-                "confidence": 0.99,
-                "parameters": {}
-            }
-        # =====================================
-        # TIME / DATE
-        # =====================================
-    
-        time_patterns = [
-            r"\bwhat\s+time\s+is\s+it\b",
-            r"\bwhat(?:'s| is)\s+the\s+time\b",
-            r"\bcurrent\s+time\b",
-            r"\btime\s+right\s+now\b",
-            r"\btime\s+now\b",
-            r"\bwhat\s+time\s+is\s+it\s+right\s+now\b"
-        ]
-
-        date_patterns = [
-            r"\bwhat\s+date\s+is\s+it\b",
-            r"\bwhat(?:'s| is)\s+today(?:'s)?\s+date\b",
-            r"\bwhat\s+is\s+today\b",
-            r"\btoday(?:'s)?\s+date\b",
-            r"\bcurrent\s+date\b",
-            r"\bwhat\s+day\s+is\s+it\b",
-            r"\bwhat(?:'s| is)\s+the\s+day\b"
-        ]
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in time_patterns
-        ):
-            return {
-                "intent": "GET_TIME",
-                "confidence": 0.99,
-                "parameters": {
-                    "timezone": "Asia/Kolkata"
-                }
-            }
-
-        if any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in date_patterns
-        ):
-            return {
-                "intent": "GET_DATE",
-                "confidence": 0.99,
-                "parameters": {
-                    "timezone": "Asia/Kolkata"
-                }
-            }
 
         # =====================================
         # CALENDAR
@@ -3434,7 +2714,7 @@ class IntentDetector:
                 }
             }
 
-                # =====================================
+        # =====================================
         # CREATE REMINDER
         # =====================================
 
@@ -3454,233 +2734,25 @@ class IntentDetector:
         ):
 
             reminder_text = text
-            reminder_time = None
 
-            # -----------------------------------------
-            # REMOVE WAKE WORD
-            # -----------------------------------------
-
-            reminder_source = re.sub(
-                r"^\s*(?:zarvis|jarvis)\s*[,:\-]?\s*",
-                "",
-                text,
-                flags=re.IGNORECASE
-            ).strip()
-
-            # -----------------------------------------
-            # RELATIVE TIME:
-            # "in 30 minutes"
-            # "in 2 hours"
-            # -----------------------------------------
-
-            relative_match = re.search(
-                r"\bin\s+(\d+)\s*"
-                r"(minute|minutes|min|mins|hour|hours|hr|hrs)\b",
-                reminder_source,
-                flags=re.IGNORECASE
+            match = re.search(
+                r"remind\s+me\s+"
+                r"(?:to\s+)?(.+)",
+                lower_text
             )
 
-            if relative_match:
-
-                amount = int(
-                    relative_match.group(1)
-                )
-
-                unit = (
-                    relative_match.group(2)
-                    .lower()
-                )
-
-                now = datetime.now()
-
-                if unit.startswith("hour") or unit in (
-                    "hr",
-                    "hrs"
-                ):
-
-                    reminder_datetime = (
-                        now + timedelta(
-                            hours=amount
-                        )
-                    )
-
-                else:
-
-                    reminder_datetime = (
-                        now + timedelta(
-                            minutes=amount
-                        )
-                    )
-
-                reminder_time = (
-                    reminder_datetime.isoformat(
-                        timespec="seconds"
-                    )
-                )
-
-                reminder_text = re.sub(
-                    relative_match.group(0),
-                    "",
-                    reminder_source,
-                    flags=re.IGNORECASE
-                ).strip()
-
-            else:
-
-                # -----------------------------------------
-                # CLOCK TIME
-                # Examples:
-                # 8 AM
-                # 8:00 AM
-                # 8 a.m.
-                # 20:00
-                # -----------------------------------------
-
-                time_match = re.search(
-                    r"\b(\d{1,2})"
-                    r"(?:[:.](\d{2}))?"
-                    r"\s*"
-                    r"(a\.?m\.?|p\.?m\.?)\b",
-                    reminder_source,
-                    flags=re.IGNORECASE
-                )
-
-                if time_match:
-
-                    hour = int(
-                        time_match.group(1)
-                    )
-
-                    minute = int(
-                        time_match.group(2)
-                        or 0
-                    )
-
-                    meridiem = (
-                        time_match.group(3)
-                        .lower()
-                        .replace(".", "")
-                    )
-
-                    if not 1 <= hour <= 12:
-                        hour = None
-
-                    if hour is not None:
-
-                        if meridiem == "pm" and hour != 12:
-                            hour += 12
-
-                        elif meridiem == "am" and hour == 12:
-                            hour = 0
-
-                        now = datetime.now()
-
-                        reminder_datetime = now.replace(
-                            hour=hour,
-                            minute=minute,
-                            second=0,
-                            microsecond=0
-                        )
-
-                        # -----------------------------------------
-                        # TODAY / TOMORROW
-                        # -----------------------------------------
-
-                        if re.search(
-                            r"\btomorrow\b",
-                            reminder_source,
-                            flags=re.IGNORECASE
-                        ):
-
-                            reminder_datetime += timedelta(
-                                days=1
-                            )
-
-                        elif reminder_datetime <= now:
-
-                            reminder_datetime += timedelta(
-                                days=1
-                            )
-
-                        reminder_time = (
-                            reminder_datetime.isoformat(
-                                timespec="seconds"
-                            )
-                        )
-
-                        # -----------------------------------------
-                        # REMOVE TIME PHRASE FROM REMINDER TEXT
-                        # -----------------------------------------
-
-                        reminder_text = re.sub(
-                            time_match.group(0),
-                            "",
-                            reminder_source,
-                            flags=re.IGNORECASE
-                        )
-
-                        reminder_text = re.sub(
-                            r"\btomorrow\b",
-                            "",
-                            reminder_text,
-                            flags=re.IGNORECASE
-                        )
-
-                        reminder_text = re.sub(
-                            r"\btoday\b",
-                            "",
-                            reminder_text,
-                            flags=re.IGNORECASE
-                        )
-
-                        reminder_text = re.sub(
-                            r"\bat\s*$",
-                            "",
-                            reminder_text,
-                            flags=re.IGNORECASE
-                        )
-
-                        reminder_text = re.sub(
-                            r"\s+",
-                            " ",
-                            reminder_text
-                        ).strip(
-                            " ,.-:"
-                        )
-
-                else:
-
-                    # -----------------------------------------
-                    # NO TIME FOUND
-                    # -----------------------------------------
-
-                    reminder_text = re.sub(
-                        r"^\s*(?:remind\s+me|"
-                        r"create\s+(?:a\s+)?reminder|"
-                        r"set\s+(?:a\s+)?reminder|"
-                        r"add\s+(?:a\s+)?reminder)"
-                        r"\s*(?:to\s+)?",
-                        "",
-                        reminder_source,
-                        flags=re.IGNORECASE
-                    ).strip()
-
-            # -----------------------------------------
-            # FINAL CLEANUP
-            # -----------------------------------------
-
-            if not reminder_text:
+            if match:
 
                 reminder_text = (
-                    "Reminder"
+                    match.group(1)
+                    .strip()
                 )
 
             return {
                 "intent": "CREATE_REMINDER",
-                "confidence": 0.98,
+                "confidence": 0.9,
                 "parameters": {
-                    "reminder": reminder_text,
-                    "time": reminder_time
+                    "reminder": reminder_text
                 }
             }
 
@@ -4067,60 +3139,52 @@ class IntentDetector:
         # SEARCH INFORMATION
         # =====================================
 
-        # Explicit search/current-information requests
-        # should use SEARCH_INFORMATION.
-        #
-        # Ordinary educational/general questions such as:
-        # "What is AI?"
-        # "Explain machine learning."
-        # "Tell me about Python."
-        # remain GENERAL_QUERY so Gemini can answer them
-        # directly without unnecessary web grounding.
-
-        explicit_search_patterns = [
+        search_patterns = [
             r"\bsearch\s+for\b",
             r"\bsearch\b",
             r"\blook\s+up\b",
             r"\bfind\s+information\b",
             r"\bfind\s+out\b",
-            r"\bsearch\s+this\b",
-            r"\bgoogle\s+this\b",
-            r"\bcheck\s+online\b",
-            r"\blook\s+online\b"
-        ]
-
-        current_information_patterns = [
+            r"^\s*what\s+is\b",
+            r"^\s*what\s+are\b",
+            r"^\s*who\s+is\b",
+            r"^\s*who\s+are\b",
+            r"^\s*where\s+is\b",
+            r"^\s*where\s+are\b",
+            r"^\s*when\s+is\b",
+            r"^\s*when\s+was\b",
+            r"^\s*when\s+did\b",
+            r"^\s*why\s+is\b",
+            r"^\s*why\s+are\b",
+            r"^\s*why\s+was\b",
+            r"^\s*why\s+were\b",
+            r"^\s*how\s+does\b",
+            r"^\s*how\s+do\b",
+            r"^\s*how\s+is\b",
+            r"^\s*how\s+are\b",
+            r"^\s*how\s+can\b",
+            r"^\s*how\s+to\b",
             r"\blatest\b",
             r"\bcurrent\b",
-            r"\btoday(?:'s)?\b",
-            r"\bnews\b",
+            r"\btoday\b",
             r"\brecent\b",
+            r"\bnews\b",
+            r"\bupdate\b",
             r"\brecently\b",
-            r"\bthis\s+week\b",
-            r"\bthis\s+month\b",
-            r"\bthis\s+year\b",
-            r"\bup[\s-]?to[\s-]?date\b"
+            r"\btell\s+me\s+about\b",
+            r"\bexplain\b.*"
+            r"\b(?:technology|company|person|"
+            r"topic|concept)\b",
+            r"\binformation\s+about\b",
+            r"\bdetails\s+about\b"
         ]
 
-        has_explicit_search = any(
+        if any(
             re.search(
                 pattern,
                 lower_text
             )
-            for pattern in explicit_search_patterns
-        )
-
-        has_current_information = any(
-            re.search(
-                pattern,
-                lower_text
-            )
-            for pattern in current_information_patterns
-        )
-
-        if (
-            has_explicit_search
-            or has_current_information
+            for pattern in search_patterns
         ):
 
             query = text
@@ -4141,11 +3205,9 @@ class IntentDetector:
             else:
 
                 about_match = re.search(
-                    r"(?:find\s+information\s+about|"
-                    r"find\s+out\s+about|"
-                    r"tell\s+me\s+the\s+latest\s+about|"
-                    r"latest\s+information\s+about|"
-                    r"current\s+information\s+about)\s+(.+)",
+                    r"(?:tell\s+me\s+about|"
+                    r"information\s+about|"
+                    r"details\s+about)\s+(.+)",
                     lower_text
                 )
 
@@ -4163,7 +3225,6 @@ class IntentDetector:
                     "query": query
                 }
             }
-
 
         # =====================================
         # GENERAL QUERY
@@ -4573,7 +3634,7 @@ User message:
         except Exception as error:
 
             print(
-                "⚠️ Local browser detection failed:"
+                "âš ï¸ Local browser detection failed:"
             )
 
             print(
@@ -4627,7 +3688,7 @@ User message:
         except Exception as error:
 
             print(
-                "⚠️ Local calendar detection failed:"
+                "âš ï¸ Local calendar detection failed:"
             )
 
             print(
@@ -4681,7 +3742,7 @@ User message:
         except Exception as error:
 
             print(
-                "⚠️ Local booking detection failed:"
+                "âš ï¸ Local booking detection failed:"
             )
 
             print(
@@ -4745,7 +3806,7 @@ User message:
         except Exception as error:
 
             print(
-                "⚠️ Local timer detection failed:"
+                "âš ï¸ Local timer detection failed:"
             )
 
             print(
@@ -4908,7 +3969,7 @@ User message:
         except Exception as error:
 
             print(
-                "⚠️ Local shopping detection failed:"
+                "âš ï¸ Local shopping detection failed:"
             )
 
             print(
@@ -4953,135 +4014,4 @@ User message:
             print(
                 f"Error: {error}"
             )
-
-        # =====================================
-        # FAST LOCAL INTENT DETECTION
-        # =====================================
-
-        # Run the complete local detector before calling Gemini.
-        # This is important for search/factual requests because
-        # local detection should work even when Gemini quota is
-        # exhausted or unavailable.
-
-        try:
-
-            local_result = (
-                self._local_detect(
-                    message
-                )
-            )
-
-            if isinstance(
-                local_result,
-                dict
-            ):
-
-                local_result = (
-                    self._validate_result(
-                        local_result
-                    )
-                )
-
-                local_intent = (
-                    local_result.get(
-                        "intent",
-                        "GENERAL_QUERY"
-                    )
-                )
-
-                if local_intent != "GENERAL_QUERY":
-
-                    return local_result
-
-                local_confidence = local_result.get(
-                    "confidence",
-                    0.0
-                )
-
-                try:
-                    local_confidence = float(
-                        local_confidence
-                    )
-                except Exception:
-                    local_confidence = 0.0
-
-                if local_confidence >= 0.7:
-
-                    return local_result
-
-        except Exception as error:
-
-            print(
-                "Local intent detection failed:"
-            )
-
-            print(
-                f"Error: {error}"
-            )
-
-        # =====================================
-        # GEMINI FALLBACK
-        # =====================================
-
-        try:
-
-            gemini_result = (
-                self._detect_with_gemini(
-                    message
-                )
-            )
-
-            gemini_result = (
-                self._repair_parameters(
-                    message,
-                    gemini_result
-                )
-            )
-
-            return self._validate_result(
-                gemini_result
-            )
-
-        except Exception as error:
-
-            print(
-                "Gemini intent detection failed:"
-            )
-
-            print(
-                f"Error: {error}"
-            )
-
-            # If Gemini is unavailable, return the local
-            # result instead of returning None.
-
-            try:
-
-                fallback_result = (
-                    self._local_detect(
-                        message
-                    )
-                )
-
-                return self._validate_result(
-                    fallback_result
-                )
-
-            except Exception as fallback_error:
-
-                print(
-                    "Local fallback intent detection failed:"
-                )
-
-                print(
-                    f"Error: {fallback_error}"
-                )
-
-                return {
-                    "intent": "GENERAL_QUERY",
-                    "confidence": 0.0,
-                    "parameters": {}
-                }
-
-
 

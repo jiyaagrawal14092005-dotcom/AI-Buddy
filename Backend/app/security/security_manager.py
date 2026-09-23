@@ -311,7 +311,7 @@ class SecurityManager:
             ↓
         Input Validation
             ↓
-        Rate Limiting
+        Rate Limit
             ↓
         Prompt Guard
         """
@@ -554,9 +554,17 @@ class SecurityManager:
                 severity="low"
             )
 
+        # IMPORTANT:
+        # Preserve the approval requirement returned by
+        # ToolGuard. Older code looked only for
+        # "approval_required", while ToolGuard uses
+        # "requires_approval".
         result["requires_approval"] = result.get(
-            "approval_required",
-            False
+            "requires_approval",
+            result.get(
+                "approval_required",
+                False
+            )
         )
 
         return result
@@ -624,9 +632,15 @@ class SecurityManager:
                 severity="low"
             )
 
+        # IMPORTANT:
+        # Preserve the approval requirement returned by
+        # ActionPolicy as well.
         result["requires_approval"] = result.get(
-            "approval_required",
-            False
+            "requires_approval",
+            result.get(
+                "approval_required",
+                False
+            )
         )
 
         return result
@@ -670,6 +684,10 @@ class SecurityManager:
                 "stage": "tool_guard",
                 "tool": tool_name,
                 "action": action,
+                "requires_approval": tool_result.get(
+                    "requires_approval",
+                    False
+                ),
                 "message": tool_result.get(
                     "message",
                     "Tool access denied."
@@ -696,6 +714,10 @@ class SecurityManager:
                 "stage": "action_policy",
                 "tool": tool_name,
                 "action": action,
+                "requires_approval": action_result.get(
+                    "requires_approval",
+                    False
+                ),
                 "message": action_result.get(
                     "message",
                     "Action denied."
@@ -896,6 +918,7 @@ class SecurityManager:
         """
 
         try:
+
             user_id = str(user_id)
 
             granted = self.permissions.has_permission(
@@ -916,6 +939,7 @@ class SecurityManager:
             }
 
         except Exception as error:
+
             return {
                 "allowed": False,
                 "granted": False,
@@ -1410,6 +1434,7 @@ class SecurityManager:
                     "enabled": True
                 }
             },
+
             "component_count": len(
                 self.get_security_components()
             )
@@ -1485,11 +1510,11 @@ class SecurityManager:
                 "input_validator": (
                     self.config.enable_input_validator
                 ),
-                "data_isolation": (
-                    self.config.enable_data_isolation
-                ),
                 "encryption": (
                     self.config.enable_encryption
+                ),
+                "data_isolation": (
+                    self.config.enable_data_isolation
                 ),
                 "secret_manager": (
                     self.config.enable_secret_manager

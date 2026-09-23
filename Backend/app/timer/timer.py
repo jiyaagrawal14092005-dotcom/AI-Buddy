@@ -48,6 +48,12 @@ class Timer:
         self.duration_seconds = duration_seconds
         self.callback = callback
 
+        # -----------------------------------------
+        # Focus Mode
+        # -----------------------------------------
+
+        self.focus_mode = False
+
         self.status = "created"
         self.created_at = datetime.now()
         self.started_at = None
@@ -60,19 +66,25 @@ class Timer:
         if self.status == "running":
             return {
                 "success": False,
-                "message": "Timer is already running."
+                "message": (
+                    "Timer is already running."
+                )
             }
 
         if self.status == "completed":
             return {
                 "success": False,
-                "message": "Timer has already completed."
+                "message": (
+                    "Timer has already completed."
+                )
             }
 
         if self.status == "cancelled":
             return {
                 "success": False,
-                "message": "Timer has been cancelled."
+                "message": (
+                    "Timer has been cancelled."
+                )
             }
 
         self.status = "running"
@@ -86,13 +98,24 @@ class Timer:
         self._timer.daemon = True
         self._timer.start()
 
+        message = (
+            "Focus Mode started successfully."
+            if self.focus_mode
+            else "Timer started successfully."
+        )
+
         return {
             "success": True,
             "timer_id": self.timer_id,
             "status": self.status,
-            "duration_seconds": self.duration_seconds,
-            "remaining_seconds": self.duration_seconds,
-            "message": "Timer started successfully."
+            "duration_seconds": (
+                self.duration_seconds
+            ),
+            "remaining_seconds": (
+                self.duration_seconds
+            ),
+            "focus_mode": self.focus_mode,
+            "message": message
         }
 
     def _complete(self) -> None:
@@ -118,13 +141,17 @@ class Timer:
         if self.status == "completed":
             return {
                 "success": False,
-                "message": "Timer has already completed."
+                "message": (
+                    "Timer has already completed."
+                )
             }
 
         if self.status == "cancelled":
             return {
                 "success": False,
-                "message": "Timer is already cancelled."
+                "message": (
+                    "Timer is already cancelled."
+                )
             }
 
         self.status = "cancelled"
@@ -133,11 +160,18 @@ class Timer:
             "success": True,
             "timer_id": self.timer_id,
             "status": self.status,
-            "remaining_seconds": self.get_remaining_seconds(),
-            "message": "Timer cancelled successfully."
+            "focus_mode": self.focus_mode,
+            "remaining_seconds": (
+                self.get_remaining_seconds()
+            ),
+            "message": (
+                "Timer cancelled successfully."
+            )
         }
 
-    def get_remaining_seconds(self) -> float:
+    def get_remaining_seconds(
+        self
+    ) -> float:
 
         if self.status == "created":
             return float(
@@ -148,6 +182,7 @@ class Timer:
             return 0.0
 
         if self.status == "cancelled":
+
             if self.started_at is None:
                 return float(
                     self.duration_seconds
@@ -159,7 +194,8 @@ class Timer:
             )
 
         elapsed_seconds = (
-            datetime.now() - self.started_at
+            datetime.now() -
+            self.started_at
         ).total_seconds()
 
         remaining_seconds = (
@@ -180,18 +216,28 @@ class Timer:
 
         return {
             "timer_id": self.timer_id,
-            "duration_seconds": self.duration_seconds,
+            "duration_seconds": (
+                self.duration_seconds
+            ),
             "remaining_seconds": round(
                 remaining_seconds,
                 2
             ),
             "status": self.status,
-            "created_at": self.created_at.isoformat(),
+
+            # Focus Mode information
+            "focus_mode": self.focus_mode,
+
+            "created_at": (
+                self.created_at.isoformat()
+            ),
+
             "started_at": (
                 self.started_at.isoformat()
                 if self.started_at
                 else None
             ),
+
             "completed_at": (
                 self.completed_at.isoformat()
                 if self.completed_at

@@ -15,11 +15,18 @@ import {
     cancelTimer,
 } from "../../services/timerService";
 
+import { useBuddy } from "../../context/BuddyContext";
+
 
 const DEFAULT_MINUTES = 25;
 
 
 function Timer() {
+
+    const {
+        addNotification,
+    } = useBuddy();
+
 
     // =====================================================
     // LOCAL FOCUS TIMER
@@ -44,6 +51,11 @@ function Timer() {
 
     const [backendLoading, setBackendLoading] =
         useState(false);
+
+
+    // Track previous backend status
+    const [previousBackendStatus, setPreviousBackendStatus] =
+        useState(null);
 
 
     const totalSeconds =
@@ -84,7 +96,7 @@ function Timer() {
             clearInterval(interval);
         };
 
-    }, [running]);
+    }, [running, seconds]);
 
 
     // =====================================================
@@ -117,6 +129,14 @@ function Timer() {
                     Array.isArray(result?.timers)
                 ) {
 
+                    /*
+                     * IMPORTANT:
+                     * First check for an active timer.
+                     *
+                     * This keeps the existing AI timer
+                     * behaviour intact.
+                     */
+
                     const activeTimers =
                         result.timers.filter(
                             (timer) =>
@@ -135,6 +155,41 @@ function Timer() {
 
                         setBackendTimer(
                             latestTimer
+                        );
+
+                        return;
+                    }
+
+
+                    /*
+                     * If there is no active timer,
+                     * check whether a Focus Mode timer
+                     * has just completed.
+                     *
+                     * We only keep the latest completed
+                     * Focus Mode timer for notification.
+                     */
+
+                    const completedFocusTimers =
+                        result.timers.filter(
+                            (timer) =>
+                                timer.status === "completed" &&
+                                timer.focus_mode === true
+                        );
+
+
+                    if (
+                        completedFocusTimers.length > 0
+                    ) {
+
+                        const latestCompleted =
+                            completedFocusTimers[
+                                completedFocusTimers.length - 1
+                            ];
+
+
+                        setBackendTimer(
+                            latestCompleted
                         );
 
                     }
@@ -250,6 +305,97 @@ function Timer() {
 
 
     // =====================================================
+    // FOCUS MODE START / COMPLETE NOTIFICATIONS
+    // =====================================================
+
+    useEffect(() => {
+
+        if (!backendTimer?.focus_mode) {
+            return;
+        }
+
+
+        const currentStatus =
+            backendTimer.status;
+
+
+        /*
+         * START notification
+         *
+         * Only show when the timer actually changes
+         * into running state.
+         */
+
+        if (
+            currentStatus === "running" &&
+            previousBackendStatus !== "running"
+        ) {
+
+            const durationSeconds =
+                Number(
+                    backendTimer.duration_seconds || 0
+                );
+
+
+            const durationMinutes =
+                Math.floor(
+                    durationSeconds / 60
+                );
+
+
+            const displayDuration =
+                durationSeconds < 60
+                    ? `${durationSeconds} seconds`
+                    : `${durationMinutes} minute${
+                        durationMinutes === 1
+                            ? ""
+                            : "s"
+                    }`;
+
+
+            addNotification({
+                type: "success",
+                title: "Focus Mode Started",
+                message:
+                    `Focus Mode started for ${displayDuration}.`,
+            });
+
+        }
+
+
+        /*
+         * COMPLETION notification
+         */
+
+        if (
+            currentStatus === "completed" &&
+            previousBackendStatus === "running"
+        ) {
+
+            addNotification({
+                type: "success",
+                title: "Focus Mode Completed",
+                message:
+                    "Focus Mode completed.",
+            });
+
+        }
+
+
+        setPreviousBackendStatus(
+            currentStatus
+        );
+
+    }, [
+        backendTimer?.status,
+        backendTimer?.focus_mode,
+        backendTimer?.timer_id,
+        addNotification,
+        previousBackendStatus,
+    ]);
+
+
+    // =====================================================
     // DETERMINE TIMER TYPE
     // =====================================================
 
@@ -271,6 +417,10 @@ function Timer() {
 
     const backendCreated =
         backendTimer?.status === "created";
+
+
+    const isFocusMode =
+        backendTimer?.focus_mode === true;
 
 
     // =====================================================
@@ -376,7 +526,7 @@ function Timer() {
 
     const toggleTimer = () => {
 
-        // AI timer is controlled by backend
+        // AI / Focus timer is controlled by backend
         if (isBackendTimer) {
             return;
         }
@@ -400,7 +550,7 @@ function Timer() {
 
     const resetTimer = async () => {
 
-        // Backend AI timer
+        // Backend AI / Focus timer
         if (backendTimer?.timer_id) {
 
             try {
@@ -420,6 +570,7 @@ function Timer() {
 
 
             setBackendTimer(null);
+            setPreviousBackendStatus(null);
 
             return;
         }
@@ -488,7 +639,9 @@ function Timer() {
 
                         <h3>
                             {isBackendTimer
-                                ? "AI TIMER"
+                                ? isFocusMode
+                                    ? "FOCUS MODE"
+                                    : "AI TIMER"
                                 : "FOCUS MODE"}
                         </h3>
 
@@ -532,7 +685,9 @@ function Timer() {
                 <div className="timer-session-label">
 
                     {isBackendTimer
-                        ? `AI_TIMER_${backendTimer.timer_id}`
+                        ? isFocusMode
+                            ? `FOCUS_MODE_${backendTimer.timer_id}`
+                            : `AI_TIMER_${backendTimer.timer_id}`
                         : "SESSION_01"}
 
                 </div>
@@ -581,7 +736,9 @@ function Timer() {
                     <span>
 
                         {isBackendTimer
-                            ? "AI TIMER PROGRESS"
+                            ? isFocusMode
+                                ? "FOCUS PROGRESS"
+                                : "AI TIMER PROGRESS"
                             : "FOCUS PROGRESS"}
 
                     </span>

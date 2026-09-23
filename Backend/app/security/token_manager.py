@@ -297,7 +297,8 @@ class TokenManager:
     def get_token(
         self,
         user_id,
-        provider
+        provider,
+        allow_expired=False
     ):
 
         user_result = self._validate_user_id(
@@ -348,11 +349,25 @@ class TokenManager:
                     )
                 }
 
-            if self._is_expired(
+            is_expired = self._is_expired(
                 token_record.expires_at
-            ):
+            )
+
+            # -------------------------------------------------
+            # EXPIRED TOKEN
+            # -------------------------------------------------
+            #
+            # Normally an expired token is rejected.
+            #
+            # When allow_expired=True, the token is still
+            # returned so a provider such as Gmail can use
+            # its refresh token to obtain a new access token.
+            # -------------------------------------------------
+
+            if is_expired and not allow_expired:
 
                 token_record.active = False
+
                 token_record.updated_at = (
                     datetime.utcnow()
                 )
@@ -366,11 +381,19 @@ class TokenManager:
                     )
                 }
 
+            # -------------------------------------------------
+            # DECRYPT ACCESS TOKEN
+            # -------------------------------------------------
+
             access_token = (
                 self.encryption.decrypt_value(
                     token_record.encrypted_access_token
                 )
             )
+
+            # -------------------------------------------------
+            # DECRYPT REFRESH TOKEN
+            # -------------------------------------------------
 
             refresh_token = None
 
@@ -390,7 +413,8 @@ class TokenManager:
                 "access_token": access_token,
                 "refresh_token": refresh_token,
                 "expires_at": token_record.expires_at,
-                "active": token_record.active
+                "active": token_record.active,
+                "expired": is_expired
             }
 
         except Exception as exc:
@@ -457,6 +481,7 @@ class TokenManager:
                 }
 
             token_record.active = False
+
             token_record.updated_at = (
                 datetime.utcnow()
             )
@@ -668,6 +693,7 @@ class TokenManager:
 
         try:
             return db.query(OAuthToken).count()
+
         finally:
             db.close()
 
@@ -683,6 +709,7 @@ class TokenManager:
                 )
                 .count()
             )
+
         finally:
             db.close()
 

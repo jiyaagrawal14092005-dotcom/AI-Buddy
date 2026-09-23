@@ -106,7 +106,11 @@ class ReasoningEngine:
             "action"
         ],
 
-        "CHECK_CALENDAR": [],
+        "CHECK_CALENDAR": [
+            "title",
+            "date",
+            "time"
+        ],
 
         # =====================================
         # SHOPPING
@@ -572,309 +576,194 @@ class ReasoningEngine:
 
         if intent == "CHECK_CALENDAR":
 
-            # -------------------------------------
-            # ACTION
-            # -------------------------------------
-
-            action = parameters.get(
-                "action",
-                "create"
+            title = parameters.get(
+                "title"
             )
 
-            if not isinstance(
-                action,
-                str
+            date = parameters.get(
+                "date"
+            )
+
+            time = parameters.get(
+                "time"
+            )
+
+            # -------------------------------------
+            # TITLE
+            # -------------------------------------
+
+            if (
+                not isinstance(
+                    title,
+                    str
+                )
+                or not title.strip()
             ):
-
-                action = "create"
-
-            action = action.strip().lower()
-
-            allowed_calendar_actions = {
-                "create",
-                "list",
-                "get",
-                "delete"
-            }
-
-            if action not in allowed_calendar_actions:
 
                 return {
                     "success": False,
                     "intent": intent,
                     "executable": False,
                     "message": (
-                        f"Unsupported calendar "
-                        f"action '{action}'."
+                        "Calendar event title "
+                        "is required."
                     )
                 }
 
-            parameters[
-                "action"
-            ] = action
-
             # -------------------------------------
-            # LIST
-            # -------------------------------------
-            # Listing events does not require
-            # title, date, or time.
+            # DATE
             # -------------------------------------
 
-            if action == "list":
-
-                parameters = {
-                    "action": "list"
-                }
-
-            # -------------------------------------
-            # GET / DELETE
-            # -------------------------------------
-            # These actions identify an existing
-            # event by title.
-            # -------------------------------------
-
-            elif action in {
-                "get",
-                "delete"
-            }:
-
-                title = parameters.get(
-                    "title"
-                )
-
-                if (
-                    not isinstance(
-                        title,
-                        str
-                    )
-                    or not title.strip()
-                ):
-
-                    return {
-                        "success": False,
-                        "intent": intent,
-                        "executable": False,
-                        "message": (
-                            "Calendar event title "
-                            "is required."
-                        )
-                    }
-
-                parameters[
-                    "title"
-                ] = title.strip()
-
-            # -------------------------------------
-            # CREATE
-            # -------------------------------------
-
-            elif action == "create":
-
-                title = parameters.get(
-                    "title"
-                )
-
-                date = parameters.get(
-                    "date"
-                )
-
-                time = parameters.get(
-                    "time"
-                )
-
-                # ---------------------------------
-                # TITLE
-                # ---------------------------------
-
-                if (
-                    not isinstance(
-                        title,
-                        str
-                    )
-                    or not title.strip()
-                ):
-
-                    return {
-                        "success": False,
-                        "intent": intent,
-                        "executable": False,
-                        "message": (
-                            "Calendar event title "
-                            "is required."
-                        )
-                    }
-
-                parameters[
-                    "title"
-                ] = title.strip()
-
-                # ---------------------------------
-                # DATE
-                # ---------------------------------
-
-                if (
-                    not isinstance(
-                        date,
-                        str
-                    )
-                    or not date.strip()
-                ):
-
-                    return {
-                        "success": False,
-                        "intent": intent,
-                        "executable": False,
-                        "message": (
-                            "Calendar event date "
-                            "is required."
-                        )
-                    }
-
-                date = date.strip()
-
-                parameters[
-                    "date"
-                ] = date
-
-                # ---------------------------------
-                # DATE FORMAT
-                # ---------------------------------
-
-                if not re_match_date(
-                    date
-                ):
-
-                    return {
-                        "success": False,
-                        "intent": intent,
-                        "executable": False,
-                        "message": (
-                            "Calendar event date must "
-                            "use YYYY-MM-DD format."
-                        )
-                    }
-
-                # ---------------------------------
-                # TIME
-                # ---------------------------------
-
-                if (
-                    not isinstance(
-                        time,
-                        str
-                    )
-                    or not time.strip()
-                ):
-
-                    return {
-                        "success": False,
-                        "intent": intent,
-                        "executable": False,
-                        "message": (
-                            "Calendar event time "
-                            "is required."
-                        )
-                    }
-
-                time = time.strip()
-
-                parameters[
-                    "time"
-                ] = time
-
-                # ---------------------------------
-                # TIME FORMAT
-                # ---------------------------------
-
-                if not re_match_time(
-                    time
-                ):
-
-                    return {
-                        "success": False,
-                        "intent": intent,
-                        "executable": False,
-                        "message": (
-                            "Calendar event time must "
-                            "use HH:MM format."
-                        )
-                    }
-
-                # ---------------------------------
-                # DURATION
-                # ---------------------------------
-
-                duration = parameters.get(
-                    "duration_minutes"
-                )
-
-                if duration is not None:
-
-                    try:
-
-                        duration = int(
-                            duration
-                        )
-
-                    except (
-                        TypeError,
-                        ValueError
-                    ):
-
-                        return {
-                            "success": False,
-                            "intent": intent,
-                            "executable": False,
-                            "message": (
-                                "Calendar event duration "
-                                "must be a number."
-                            )
-                        }
-
-                    if duration <= 0:
-
-                        return {
-                            "success": False,
-                            "intent": intent,
-                            "executable": False,
-                            "message": (
-                                "Calendar event duration "
-                                "must be greater than zero."
-                            )
-                        }
-
-                    parameters[
-                        "duration_minutes"
-                    ] = duration
-
-                # ---------------------------------
-                # DETAILS
-                # ---------------------------------
-
-                details = parameters.get(
-                    "details",
-                    ""
-                )
-
-                if details is None:
-
-                    parameters[
-                        "details"
-                    ] = ""
-
-                elif not isinstance(
-                    details,
+            if (
+                not isinstance(
+                    date,
                     str
+                )
+                or not date.strip()
+            ):
+
+                return {
+                    "success": False,
+                    "intent": intent,
+                    "executable": False,
+                    "message": (
+                        "Calendar event date "
+                        "is required."
+                    )
+                }
+
+            # -------------------------------------
+            # DATE FORMAT
+            # -------------------------------------
+
+            if not re_match_date(
+                date
+            ):
+
+                return {
+                    "success": False,
+                    "intent": intent,
+                    "executable": False,
+                    "message": (
+                        "Calendar event date must "
+                        "use YYYY-MM-DD format."
+                    )
+                }
+
+            # -------------------------------------
+            # TIME
+            # -------------------------------------
+
+            if (
+                not isinstance(
+                    time,
+                    str
+                )
+                or not time.strip()
+            ):
+
+                return {
+                    "success": False,
+                    "intent": intent,
+                    "executable": False,
+                    "message": (
+                        "Calendar event time "
+                        "is required."
+                    )
+                }
+
+            # -------------------------------------
+            # TIME FORMAT
+            # -------------------------------------
+
+            if not re_match_time(
+                time
+            ):
+
+                return {
+                    "success": False,
+                    "intent": intent,
+                    "executable": False,
+                    "message": (
+                        "Calendar event time must "
+                        "use HH:MM format."
+                    )
+                }
+
+            # -------------------------------------
+            # DURATION
+            # -------------------------------------
+
+            duration = parameters.get(
+                "duration_minutes"
+            )
+
+            if duration is not None:
+
+                try:
+
+                    duration = int(
+                        duration
+                    )
+
+                except (
+                    TypeError,
+                    ValueError
                 ):
 
-                    parameters[
-                        "details"
-                    ] = str(
-                        details
-                    )
+                    return {
+                        "success": False,
+                        "intent": intent,
+                        "executable": False,
+                        "message": (
+                            "Calendar event duration "
+                            "must be a number."
+                        )
+                    }
+
+                if duration <= 0:
+
+                    return {
+                        "success": False,
+                        "intent": intent,
+                        "executable": False,
+                        "message": (
+                            "Calendar event duration "
+                            "must be greater than zero."
+                        )
+                    }
+
+                parameters[
+                    "duration_minutes"
+                ] = duration
+
+            # -------------------------------------
+            # DETAILS
+            # -------------------------------------
+
+            details = parameters.get(
+                "details",
+                ""
+            )
+
+            if details is None:
+
+                parameters[
+                    "details"
+                ] = ""
+
+            elif not isinstance(
+                details,
+                str
+            ):
+
+                parameters[
+                    "details"
+                ] = str(
+                    details
+                )
 
         # =========================================
-
         # BROWSER VALIDATION
         # =========================================
 

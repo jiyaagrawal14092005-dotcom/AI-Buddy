@@ -20,6 +20,7 @@ import {
 
 import Sidebar from "../components/common/Sidebar";
 import Navbar from "../components/common/Navbar";
+import ApprovalRequest from "../components/ApprovalRequest";
 
 import { useAuth } from "../context/AuthContext";
 import { useBuddy } from "../context/BuddyContext";
@@ -48,6 +49,12 @@ function Assistant() {
 
     const {
         addNotification,
+        startExecution,
+        updateExecution,
+        finishExecution,
+        failExecution,
+        setExecutionWorkflowData,
+        clearExecutionWorkflow,
     } = useBuddy();
 
 
@@ -657,10 +664,6 @@ function Assistant() {
         );
 
 
-        // ==========================================
-        // BASIC RESULT EXTRACTION
-        // ==========================================
-
         const actionResult =
             result?.action_result ||
             result?.actionResult ||
@@ -685,19 +688,11 @@ function Assistant() {
             ).toUpperCase();
 
 
-        // ==========================================
-        // BROWSER RESULT
-        // ==========================================
-
         const browserResult =
             actionResult?.browser ||
             result?.browser ||
             null;
 
-
-        // ==========================================
-        // ACTION TYPE
-        // ==========================================
 
         const actionType =
             actionResult?.action ||
@@ -712,10 +707,6 @@ function Assistant() {
             ).toLowerCase();
 
 
-        // ==========================================
-        // DOWNLOAD INFORMATION
-        // ==========================================
-
         let downloadedFile =
             actionResult?.download ||
             browserResult?.download ||
@@ -724,10 +715,6 @@ function Assistant() {
             result?.file ||
             null;
 
-
-        // ==========================================
-        // DIRECT FILE INFORMATION
-        // ==========================================
 
         if (
             !downloadedFile &&
@@ -744,19 +731,11 @@ function Assistant() {
         }
 
 
-        // ==========================================
-        // COMMAND TEXT
-        // ==========================================
-
         const commandText =
             String(
                 cleanText || ""
             ).toLowerCase();
 
-
-        // ==========================================
-        // DOWNLOAD COMMAND DETECTION
-        // ==========================================
 
         const isDownloadCommand =
             commandText.includes(
@@ -772,10 +751,6 @@ function Assistant() {
                 "file save"
             );
 
-
-        // ==========================================
-        // SUCCESS CONDITIONS
-        // ==========================================
 
         const actionSuccess =
             actionResult?.success === true ||
@@ -795,24 +770,8 @@ function Assistant() {
             isDownloadCommand;
 
 
-        console.log(
-            "Notification detection:",
-            {
-                workflowStatus,
-                normalizedStatus,
-                actionType,
-                normalizedAction,
-                actionSuccess,
-                workflowCompleted,
-                isDownloadCommand,
-                downloadDetected,
-                downloadedFile,
-            }
-        );
-
-
         // ==========================================
-        // DOWNLOAD SUCCESS
+        // DOWNLOAD SUCCESS NOTIFICATION
         // ==========================================
 
         if (
@@ -835,15 +794,6 @@ function Assistant() {
                 downloadedFile?.download_path ||
                 downloadedFile?.file_path ||
                 "Windows Downloads folder";
-
-
-            console.log(
-                "Creating DOWNLOAD SUCCESS notification:",
-                {
-                    filename,
-                    downloadPath,
-                }
-            );
 
 
             addNotification({
@@ -874,7 +824,7 @@ function Assistant() {
 
 
         // ==========================================
-        // DOWNLOAD FAILURE
+        // DOWNLOAD FAILURE NOTIFICATION
         // ==========================================
 
         if (
@@ -891,12 +841,6 @@ function Assistant() {
                 browserResult?.message ||
                 result?.message ||
                 "The requested file could not be downloaded.";
-
-
-            console.log(
-                "Creating DOWNLOAD FAILURE notification:",
-                failureMessage
-            );
 
 
             addNotification({
@@ -924,7 +868,7 @@ function Assistant() {
 
 
         // ==========================================
-        // GENERAL BROWSER WORKFLOW SUCCESS
+        // BROWSER TASK SUCCESS NOTIFICATION
         // ==========================================
 
         if (
@@ -935,11 +879,6 @@ function Assistant() {
                 normalizedAction === "navigate"
             )
         ) {
-
-            console.log(
-                "Creating BROWSER WORKFLOW notification."
-            );
-
 
             addNotification({
 
@@ -960,6 +899,125 @@ function Assistant() {
                     true,
 
             });
+
+
+            return;
+        }
+
+
+        // ==========================================
+        // EMAIL SUCCESS NOTIFICATION
+        // ==========================================
+
+        /*
+         * Backend intent can be returned either as:
+         *
+         * {
+         *     intent: "SEND_EMAIL"
+         * }
+         *
+         * OR:
+         *
+         * {
+         *     intent: {
+         *         intent: "SEND_EMAIL",
+         *         ...
+         *     }
+         * }
+         *
+         * Therefore we normalize both forms.
+         */
+
+        const intentName =
+            typeof result?.intent === "string"
+                ? result.intent
+                : result?.intent?.intent || "";
+
+
+        const emailAction =
+            actionResult?.action ||
+            actionResult?.action_type ||
+            actionResult?.type ||
+            "";
+
+
+        const emailStatus =
+            actionResult?.status ||
+            actionResult?.state ||
+            "";
+
+
+        console.log(
+            "EMAIL DEBUG:",
+            {
+                actionResult,
+                intent: result?.intent,
+                intentName,
+                status: emailStatus,
+                action: emailAction,
+            }
+        );
+
+
+        const normalizedEmailStatus =
+            String(
+                emailStatus
+            ).toLowerCase();
+
+
+        const normalizedEmailAction =
+            String(
+                emailAction
+            ).toLowerCase();
+
+
+        const normalizedIntentName =
+            String(
+                intentName
+            ).toUpperCase();
+
+
+        const emailSent =
+            normalizedEmailStatus === "sent" &&
+            (
+                normalizedEmailAction === "send" ||
+                normalizedIntentName === "SEND_EMAIL"
+            );
+
+
+        if (emailSent) {
+
+            const recipient =
+                actionResult?.recipient ||
+                actionResult?.email?.recipient ||
+                result?.intent?.parameters?.recipient ||
+                "recipient";
+
+
+            addNotification({
+
+                title:
+                    "Email sent",
+
+                message:
+                    `Your email was sent successfully to ${recipient}.`,
+
+                type:
+                    "success",
+
+                icon:
+                    "mail",
+
+                persistent:
+                    true,
+
+            });
+
+
+            console.log(
+                "Zarvis email success notification created:",
+                recipient
+            );
 
 
             return;
@@ -1022,11 +1080,18 @@ function Assistant() {
             );
 
 
-            try {
+            // ==========================================
+            // GLOBAL EXECUTION WORKFLOW
+            // ==========================================
 
-                // ==========================================
-                // GET LATEST AUTH STATE
-                // ==========================================
+            startExecution(
+                "Zarvis is processing your request..."
+            );
+
+            clearExecutionWorkflow();
+
+
+            try {
 
                 const currentUser =
                     userRef.current;
@@ -1062,10 +1127,6 @@ function Assistant() {
                 }
 
 
-                // ==========================================
-                // REAL BACKEND REQUEST
-                // ==========================================
-
                 const result =
                     await sendMessage(
                         cleanText,
@@ -1079,14 +1140,54 @@ function Assistant() {
                 );
 
 
-                // ==========================================
-                // CREATE GLOBAL NOTIFICATION
-                // ==========================================
+                const backendExecutionWorkflow =
+                    result?.execution_workflow ||
+                    result?.executionWorkflow ||
+                    [];
 
-                createActionNotification(
-                    result,
-                    cleanText
-                );
+
+                if (
+                    Array.isArray(
+                        backendExecutionWorkflow
+                    ) &&
+                    backendExecutionWorkflow.length > 0
+                ) {
+
+                    setExecutionWorkflowData(
+                        backendExecutionWorkflow
+                    );
+
+                }
+
+
+                // Do not create success notification
+                // while an approval is still pending.
+                if (
+                    !result?.approval_required
+                ) {
+
+                    createActionNotification(
+                        result,
+                        cleanText
+                    );
+
+
+                    if (result?.success !== false) {
+
+                        finishExecution(
+                            result?.message ||
+                            "Task completed successfully."
+                        );
+
+                    } else {
+
+                        failExecution(
+                            result?.message ||
+                            "Task execution failed."
+                        );
+
+                    }
+                }
 
 
                 // ==========================================
@@ -1108,6 +1209,7 @@ function Assistant() {
                         result?.parameters ||
                         result?.plan?.parameters ||
                         result?.plan?.details ||
+                        result?.action_result?.parameters ||
                         {};
 
 
@@ -1132,9 +1234,15 @@ function Assistant() {
                     });
 
 
+                    updateExecution(
+                        "WAITING_APPROVAL",
+                        "Waiting for your approval..."
+                    );
+
+
                     const approvalMessage =
                         result.message ||
-                        "This booking requires your approval before I can confirm it.";
+                        "This action requires your approval before I can continue.";
 
 
                     setMessages(
@@ -1285,6 +1393,19 @@ function Assistant() {
                     true
                 );
 
+                setIsThinking(true);
+
+                thinkingRef.current =
+                    true;
+
+
+                // ==========================================
+                // APPROVE REQUEST
+                // ==========================================
+
+                startExecution(
+                    "Executing the approved action..."
+                );
 
                 const approvalResult =
                     await approveAction(
@@ -1311,6 +1432,10 @@ function Assistant() {
                 }
 
 
+                // ==========================================
+                // RE-EXECUTE ORIGINAL COMMAND
+                // ==========================================
+
                 const result =
                     await sendMessage(
                         originalCommand,
@@ -1325,14 +1450,51 @@ function Assistant() {
                 );
 
 
+                const approvedExecutionWorkflow =
+                    result?.execution_workflow ||
+                    result?.executionWorkflow ||
+                    [];
+
+
+                if (
+                    Array.isArray(
+                        approvedExecutionWorkflow
+                    ) &&
+                    approvedExecutionWorkflow.length > 0
+                ) {
+
+                    setExecutionWorkflowData(
+                        approvedExecutionWorkflow
+                    );
+
+                }
+
+
                 // ==========================================
-                // GLOBAL NOTIFICATION FOR APPROVED ACTION
+                // GLOBAL NOTIFICATION
                 // ==========================================
 
                 createActionNotification(
                     result,
                     originalCommand
                 );
+
+
+                if (result?.success !== false) {
+
+                    finishExecution(
+                        result?.message ||
+                        "Approved action completed successfully."
+                    );
+
+                } else {
+
+                    failExecution(
+                        result?.message ||
+                        "Approved action execution failed."
+                    );
+
+                }
 
 
                 setPendingApproval(
@@ -1345,6 +1507,12 @@ function Assistant() {
                     result?.response ||
                     result?.reply ||
                     "The action was completed successfully.";
+
+
+                setIsThinking(false);
+
+                thinkingRef.current =
+                    false;
 
 
                 setMessages(
@@ -1371,9 +1539,21 @@ function Assistant() {
                 );
 
 
+                failExecution(
+                    error?.message ||
+                    "Approved action execution failed."
+                );
+
+
                 setPendingApproval(
                     null
                 );
+
+
+                setIsThinking(false);
+
+                thinkingRef.current =
+                    false;
 
 
                 const errorMessage =
@@ -1446,9 +1626,15 @@ function Assistant() {
                 );
 
 
+                updateExecution(
+                    "CANCELLED",
+                    "The requested action was cancelled."
+                );
+
+
                 const message =
                     result?.message ||
-                    "Okay. I cancelled the booking request.";
+                    "Okay. I cancelled the requested action.";
 
 
                 setMessages(
@@ -1474,9 +1660,15 @@ function Assistant() {
                 );
 
 
+                failExecution(
+                    error?.message ||
+                    "I could not reject the requested action."
+                );
+
+
                 const errorMessage =
                     error?.message ||
-                    "I could not reject the booking request.";
+                    "I could not reject the requested action.";
 
 
                 setMessages(
@@ -2270,432 +2462,37 @@ function Assistant() {
 
 
                                 {/* ==========================================
-                                    APPROVAL CARD
+                                    SECURITY APPROVAL COMPONENT
                                 ========================================== */}
 
                                 {pendingApproval && (
 
-                                    <div
-                                        style={{
-                                            marginTop:
-                                                "16px",
-
-                                            padding:
-                                                "18px",
-
-                                            borderRadius:
-                                                "16px",
-
-                                            border:
-                                                "1px solid rgba(124, 92, 255, 0.35)",
-
-                                            background:
-                                                "rgba(124, 92, 255, 0.08)",
-
-                                            boxShadow:
-                                                "0 10px 30px rgba(0, 0, 0, 0.15)",
-                                        }}
-                                    >
-
-                                        <div
-                                            style={{
-                                                display:
-                                                    "flex",
-
-                                                alignItems:
-                                                    "center",
-
-                                                gap:
-                                                    "12px",
-
-                                                marginBottom:
-                                                    "14px",
-                                            }}
-                                        >
-
-                                            <div
-                                                style={{
-                                                    width:
-                                                        "38px",
-
-                                                    height:
-                                                        "38px",
-
-                                                    borderRadius:
-                                                        "12px",
-
-                                                    display:
-                                                        "flex",
-
-                                                    alignItems:
-                                                        "center",
-
-                                                    justifyContent:
-                                                        "center",
-
-                                                    background:
-                                                        "rgba(124, 92, 255, 0.16)",
-
-                                                    fontSize:
-                                                        "18px",
-                                                }}
-                                            >
-                                                🔐
-                                            </div>
-
-
-                                            <div>
-
-                                                <strong
-                                                    style={{
-                                                        display:
-                                                            "block",
-
-                                                        fontSize:
-                                                            "14px",
-
-                                                        letterSpacing:
-                                                            "0.04em",
-                                                    }}
-                                                >
-                                                    BOOKING APPROVAL
-                                                </strong>
-
-
-                                                <span
-                                                    style={{
-                                                        display:
-                                                            "block",
-
-                                                        marginTop:
-                                                            "3px",
-
-                                                        fontSize:
-                                                            "12px",
-
-                                                        opacity:
-                                                            0.7,
-                                                    }}
-                                                >
-                                                    Your permission is required
-                                                </span>
-
-                                            </div>
-
-                                        </div>
-
-
-                                        <p
-                                            style={{
-                                                margin:
-                                                    "0 0 14px",
-
-                                                fontSize:
-                                                    "13px",
-
-                                                lineHeight:
-                                                    1.6,
-
-                                                opacity:
-                                                    0.85,
-                                            }}
-                                        >
-                                            Zarvis is ready to confirm this booking, but needs your permission first.
-                                        </p>
-
-
-                                        <div
-                                            style={{
-                                                display:
-                                                    "grid",
-
-                                                gap:
-                                                    "8px",
-
-                                                marginBottom:
-                                                    "16px",
-                                            }}
-                                        >
-
-                                            {pendingApproval.parameters?.service && (
-
-                                                <div
-                                                    style={{
-                                                        display:
-                                                            "flex",
-
-                                                        justifyContent:
-                                                            "space-between",
-
-                                                        gap:
-                                                            "12px",
-
-                                                        padding:
-                                                            "9px 11px",
-
-                                                        borderRadius:
-                                                            "10px",
-
-                                                        background:
-                                                            "rgba(255, 255, 255, 0.04)",
-                                                    }}
-                                                >
-
-                                                    <span
-                                                        style={{
-                                                            fontSize:
-                                                                "12px",
-
-                                                            opacity:
-                                                                0.65,
-                                                        }}
-                                                    >
-                                                        Service
-                                                    </span>
-
-
-                                                    <strong
-                                                        style={{
-                                                            fontSize:
-                                                                "12px",
-
-                                                            textAlign:
-                                                                "right",
-                                                        }}
-                                                    >
-                                                        {
-                                                            pendingApproval
-                                                                .parameters
-                                                                .service
-                                                        }
-                                                    </strong>
-
-                                                </div>
-
-                                            )}
-
-
-                                            {pendingApproval.parameters?.date && (
-
-                                                <div
-                                                    style={{
-                                                        display:
-                                                            "flex",
-
-                                                        justifyContent:
-                                                            "space-between",
-
-                                                        gap:
-                                                            "12px",
-
-                                                        padding:
-                                                            "9px 11px",
-
-                                                        borderRadius:
-                                                            "10px",
-
-                                                        background:
-                                                            "rgba(255, 255, 255, 0.04)",
-                                                    }}
-                                                >
-
-                                                    <span
-                                                        style={{
-                                                            fontSize:
-                                                                "12px",
-
-                                                            opacity:
-                                                                0.65,
-                                                        }}
-                                                    >
-                                                        Date
-                                                    </span>
-
-
-                                                    <strong
-                                                        style={{
-                                                            fontSize:
-                                                                "12px",
-                                                        }}
-                                                    >
-                                                        {
-                                                            pendingApproval
-                                                                .parameters
-                                                                .date
-                                                        }
-                                                    </strong>
-
-                                                </div>
-
-                                            )}
-
-
-                                            {pendingApproval.parameters?.time && (
-
-                                                <div
-                                                    style={{
-                                                        display:
-                                                            "flex",
-
-                                                        justifyContent:
-                                                            "space-between",
-
-                                                        gap:
-                                                            "12px",
-
-                                                        padding:
-                                                            "9px 11px",
-
-                                                        borderRadius:
-                                                            "10px",
-
-                                                        background:
-                                                            "rgba(255, 255, 255, 0.04)",
-                                                    }}
-                                                >
-
-                                                    <span
-                                                        style={{
-                                                            fontSize:
-                                                                "12px",
-
-                                                            opacity:
-                                                                0.65,
-                                                        }}
-                                                    >
-                                                        Time
-                                                    </span>
-
-
-                                                    <strong
-                                                        style={{
-                                                            fontSize:
-                                                                "12px",
-                                                        }}
-                                                    >
-                                                        {
-                                                            pendingApproval
-                                                                .parameters
-                                                                .time
-                                                        }
-                                                    </strong>
-
-                                                </div>
-
-                                            )}
-
-                                        </div>
-
-
-                                        <div
-                                            style={{
-                                                display:
-                                                    "flex",
-
-                                                gap:
-                                                    "10px",
-
-                                                justifyContent:
-                                                    "flex-end",
-
-                                                flexWrap:
-                                                    "wrap",
-                                            }}
-                                        >
-
-                                            <button
-                                                type="button"
-                                                onClick={
-                                                    handleReject
-                                                }
-                                                disabled={
-                                                    isApprovalProcessing
-                                                }
-                                                style={{
-                                                    minHeight:
-                                                        "42px",
-
-                                                    padding:
-                                                        "0 16px",
-
-                                                    borderRadius:
-                                                        "10px",
-
-                                                    border:
-                                                        "1px solid rgba(255, 255, 255, 0.16)",
-
-                                                    background:
-                                                        "transparent",
-
-                                                    color:
-                                                        "inherit",
-
-                                                    cursor:
-                                                        isApprovalProcessing
-                                                            ? "not-allowed"
-                                                            : "pointer",
-
-                                                    opacity:
-                                                        isApprovalProcessing
-                                                            ? 0.5
-                                                            : 1,
-                                                }}
-                                            >
-                                                Reject
-                                            </button>
-
-
-                                            <button
-                                                type="button"
-                                                onClick={
-                                                    handleApprove
-                                                }
-                                                disabled={
-                                                    isApprovalProcessing
-                                                }
-                                                style={{
-                                                    minHeight:
-                                                        "42px",
-
-                                                    padding:
-                                                        "0 18px",
-
-                                                    borderRadius:
-                                                        "10px",
-
-                                                    border:
-                                                        "1px solid rgba(124, 92, 255, 0.5)",
-
-                                                    background:
-                                                        "rgba(124, 92, 255, 0.9)",
-
-                                                    color:
-                                                        "#ffffff",
-
-                                                    fontWeight:
-                                                        600,
-
-                                                    cursor:
-                                                        isApprovalProcessing
-                                                            ? "not-allowed"
-                                                            : "pointer",
-
-                                                    opacity:
-                                                        isApprovalProcessing
-                                                            ? 0.6
-                                                            : 1,
-                                                }}
-                                            >
-
-                                                {isApprovalProcessing
-                                                    ? "Processing..."
-                                                    : "Approve Booking"}
-
-                                            </button>
-
-                                        </div>
-
-                                    </div>
+                                    <ApprovalRequest
+
+                                        approvalId={
+                                            pendingApproval.approvalId
+                                        }
+
+                                        action={
+                                            pendingApproval.intent ===
+                                            "SEND_EMAIL"
+                                                ? "email"
+                                                : "action"
+                                        }
+
+                                        details={
+                                            pendingApproval.parameters
+                                        }
+
+                                        onApproved={
+                                            handleApprove
+                                        }
+
+                                        onRejected={
+                                            handleReject
+                                        }
+
+                                    />
 
                                 )}
 

@@ -1,3 +1,4 @@
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -125,6 +126,13 @@ async def chat(
                     "Request blocked by security."
                 )
             },
+
+            # =================================================
+            # EXECUTION WORKFLOW
+            # =================================================
+
+            "execution_workflow": [],
+
             "context": []
         }
 
@@ -235,8 +243,19 @@ async def chat(
         "action_result": result.get(
             "action_result"
         ),
+
+        # =================================================
+        # EXECUTION WORKFLOW
+        # =================================================
+
+        "execution_workflow": result.get(
+            "execution_workflow",
+            []
+        ),
+
         "context": result.get(
             "context",
             []
         )
     }
+

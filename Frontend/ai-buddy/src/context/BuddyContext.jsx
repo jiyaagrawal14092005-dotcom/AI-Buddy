@@ -1,7 +1,7 @@
-
 // ==========================================
 // ZARVIS BUDDY CONTEXT
 // Global assistant state, execution state,
+// execution workflow, dashboard refresh,
 // and notification management
 // ==========================================
 
@@ -48,6 +48,44 @@ export function BuddyProvider({ children }) {
 
     const [executionMessage, setExecutionMessage] =
         useState("");
+
+    // ==========================================
+    // BASIC EXECUTION WORKFLOW
+    //
+    // Stores the actual execution stages
+    // received from Zarvis backend.
+    // ==========================================
+
+    const [executionWorkflow, setExecutionWorkflow] =
+        useState([]);
+
+    // ==========================================
+    // DASHBOARD REFRESH
+    //
+    // Used when any feature performs a task.
+    //
+    // Example:
+    //
+    // Email sent
+    //      ↓
+    // refreshDashboard()
+    //      ↓
+    // Dashboard reloads latest data
+    //
+    // The value changes every time
+    // refreshDashboard() is called.
+    // ==========================================
+
+    const [dashboardRefreshKey, setDashboardRefreshKey] =
+        useState(0);
+
+    const refreshDashboard = () => {
+
+        setDashboardRefreshKey(
+            (previous) => previous + 1
+        );
+
+    };
 
     // ==========================================
     // GLOBAL NOTIFICATIONS
@@ -135,17 +173,32 @@ export function BuddyProvider({ children }) {
     // GLOBAL EXECUTION
     // ==========================================
 
-    const startExecution = (message = "Processing your request...") => {
+    const startExecution = (
+        message = "Processing your request..."
+    ) => {
+
         setExecutionActive(true);
+
         setExecutionStatus("RUNNING");
+
         setExecutionMessage(message);
+
+        // Start a fresh workflow for every
+        // new execution.
+        setExecutionWorkflow([]);
     };
+
+    // ==========================================
+    // UPDATE GLOBAL EXECUTION
+    // ==========================================
 
     const updateExecution = (
         status,
         message = ""
     ) => {
+
         setExecutionStatus(status);
+
         setExecutionMessage(message);
 
         if (
@@ -153,30 +206,107 @@ export function BuddyProvider({ children }) {
             status === "FAILED" ||
             status === "CANCELLED"
         ) {
+
             setExecutionActive(false);
+
         }
     };
+
+    // ==========================================
+    // SET EXECUTION WORKFLOW
+    //
+    // Backend can send the complete workflow
+    // array after task execution.
+    // ==========================================
+
+    const setExecutionWorkflowData = (
+        workflow = []
+    ) => {
+
+        if (!Array.isArray(workflow)) {
+
+            setExecutionWorkflow([]);
+
+            return;
+
+        }
+
+        setExecutionWorkflow(workflow);
+    };
+
+    // ==========================================
+    // UPDATE ONE WORKFLOW STEP
+    //
+    // Useful when execution is happening
+    // step-by-step.
+    // ==========================================
+
+    const updateExecutionWorkflow = (
+        workflow = []
+    ) => {
+
+        if (!Array.isArray(workflow)) {
+
+            return;
+
+        }
+
+        setExecutionWorkflow(workflow);
+    };
+
+    // ==========================================
+    // CLEAR EXECUTION WORKFLOW
+    // ==========================================
+
+    const clearExecutionWorkflow = () => {
+
+        setExecutionWorkflow([]);
+
+    };
+
+    // ==========================================
+    // FINISH EXECUTION
+    // ==========================================
 
     const finishExecution = (
         message = "Task completed successfully."
     ) => {
+
         setExecutionStatus("COMPLETED");
+
         setExecutionMessage(message);
+
         setExecutionActive(false);
     };
+
+    // ==========================================
+    // FAIL EXECUTION
+    // ==========================================
 
     const failExecution = (
         message = "Task failed."
     ) => {
+
         setExecutionStatus("FAILED");
+
         setExecutionMessage(message);
+
         setExecutionActive(false);
     };
 
+    // ==========================================
+    // CLEAR EXECUTION
+    // ==========================================
+
     const clearExecution = () => {
+
         setExecutionActive(false);
+
         setExecutionStatus("IDLE");
+
         setExecutionMessage("");
+
+        setExecutionWorkflow([]);
     };
 
     // ==========================================
@@ -192,25 +322,34 @@ export function BuddyProvider({ children }) {
     } = {}) => {
 
         const notification = {
+
             id:
                 `${Date.now()}-${Math.random()
                     .toString(36)
                     .slice(2, 9)}`,
 
             title,
+
             message,
+
             type,
+
             icon,
+
             persistent,
 
             read: false,
 
-            createdAt: new Date().toISOString(),
+            createdAt:
+                new Date().toISOString(),
         };
 
         setNotifications((previous) => [
+
             notification,
+
             ...previous,
+
         ]);
 
         return notification.id;
@@ -220,12 +359,18 @@ export function BuddyProvider({ children }) {
     // REMOVE NOTIFICATION
     // ==========================================
 
-    const removeNotification = (notificationId) => {
+    const removeNotification = (
+        notificationId
+    ) => {
+
         setNotifications((previous) =>
+
             previous.filter(
                 (notification) =>
-                    notification.id !== notificationId
+                    notification.id !==
+                    notificationId
             )
+
         );
     };
 
@@ -233,16 +378,26 @@ export function BuddyProvider({ children }) {
     // MARK ONE NOTIFICATION AS READ
     // ==========================================
 
-    const markNotificationRead = (notificationId) => {
+    const markNotificationRead = (
+        notificationId
+    ) => {
+
         setNotifications((previous) =>
-            previous.map((notification) =>
-                notification.id === notificationId
-                    ? {
-                        ...notification,
-                        read: true,
-                    }
-                    : notification
+
+            previous.map(
+                (notification) =>
+
+                    notification.id ===
+                    notificationId
+
+                        ? {
+                            ...notification,
+                            read: true,
+                        }
+
+                        : notification
             )
+
         );
     };
 
@@ -251,11 +406,16 @@ export function BuddyProvider({ children }) {
     // ==========================================
 
     const markAllNotificationsRead = () => {
+
         setNotifications((previous) =>
-            previous.map((notification) => ({
-                ...notification,
-                read: true,
-            }))
+
+            previous.map(
+                (notification) => ({
+                    ...notification,
+                    read: true,
+                })
+            )
+
         );
     };
 
@@ -264,7 +424,9 @@ export function BuddyProvider({ children }) {
     // ==========================================
 
     const clearNotifications = () => {
+
         setNotifications([]);
+
     };
 
     // ==========================================
@@ -284,15 +446,22 @@ export function BuddyProvider({ children }) {
     const resetBuddy = () => {
 
         setIsThinking(false);
+
         setIsListening(false);
+
         setWakeWordActive(false);
 
         setLastCommand("");
+
         setLastResponse("");
 
         setExecutionActive(false);
+
         setExecutionStatus("IDLE");
+
         setExecutionMessage("");
+
+        setExecutionWorkflow([]);
 
         setBuddyStatus("ONLINE");
     };
@@ -308,8 +477,11 @@ export function BuddyProvider({ children }) {
         // --------------------------------------
 
         buddyStatus,
+
         isThinking,
+
         lastCommand,
+
         lastResponse,
 
         // --------------------------------------
@@ -317,6 +489,7 @@ export function BuddyProvider({ children }) {
         // --------------------------------------
 
         isListening,
+
         wakeWordActive,
 
         // --------------------------------------
@@ -326,15 +499,19 @@ export function BuddyProvider({ children }) {
         updateStatus,
 
         startThinking,
+
         stopThinking,
 
         setCommand,
+
         setResponse,
 
         startListeningState,
+
         stopListeningState,
 
         enableWakeWord,
+
         disableWakeWord,
 
         // --------------------------------------
@@ -342,26 +519,55 @@ export function BuddyProvider({ children }) {
         // --------------------------------------
 
         executionActive,
+
         executionStatus,
+
         executionMessage,
 
         startExecution,
+
         updateExecution,
+
         finishExecution,
+
         failExecution,
+
         clearExecution,
+
+        // --------------------------------------
+        // EXECUTION WORKFLOW
+        // --------------------------------------
+
+        executionWorkflow,
+
+        setExecutionWorkflowData,
+
+        updateExecutionWorkflow,
+
+        clearExecutionWorkflow,
+
+        // --------------------------------------
+        // DASHBOARD REFRESH
+        // --------------------------------------
+
+        dashboardRefreshKey,
+
+        refreshDashboard,
 
         // --------------------------------------
         // GLOBAL NOTIFICATIONS
         // --------------------------------------
 
         notifications,
+
         unreadNotificationCount,
 
         addNotification,
+
         removeNotification,
 
         markNotificationRead,
+
         markAllNotificationsRead,
 
         clearNotifications,
@@ -374,9 +580,13 @@ export function BuddyProvider({ children }) {
     };
 
     return (
+
         <BuddyContext.Provider value={value}>
+
             {children}
+
         </BuddyContext.Provider>
+
     );
 }
 
@@ -387,13 +597,14 @@ export function useBuddy() {
     );
 
     if (!context) {
+
         throw new Error(
             "useBuddy must be used inside BuddyProvider."
         );
+
     }
 
     return context;
 }
 
 export default BuddyContext;
-

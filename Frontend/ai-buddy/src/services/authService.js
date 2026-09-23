@@ -6,18 +6,26 @@ import api from "./api";
 
 const USER_STORAGE_KEY = "ai_buddy_user";
 
-// ==========================================
-// Login user
-// ==========================================
+
+// ------------------------------------------
+// LOGIN USER
+// ------------------------------------------
+
 export async function login(credentials) {
+
     if (!credentials?.email || !credentials?.password) {
-        throw new Error("Email and password are required.");
+        throw new Error(
+            "Email and password are required."
+        );
     }
 
-    const result = await api.post("/api/auth/login", {
-        email: credentials.email.trim(),
-        password: credentials.password,
-    });
+    const result = await api.post(
+        "/api/auth/login",
+        {
+            email: credentials.email.trim(),
+            password: credentials.password,
+        }
+    );
 
     if (!result?.success || !result?.user) {
         throw new Error(
@@ -25,7 +33,6 @@ export async function login(credentials) {
         );
     }
 
-    // Store logged-in user for frontend session
     localStorage.setItem(
         USER_STORAGE_KEY,
         JSON.stringify(result.user)
@@ -34,25 +41,92 @@ export async function login(credentials) {
     return result;
 }
 
-// ==========================================
-// Register new user
-// ==========================================
+
+// ------------------------------------------
+// REGISTER NEW USER
+// ------------------------------------------
+
 export async function register(userData) {
+
     if (!userData?.email || !userData?.password) {
-        throw new Error("Email and password are required.");
+        throw new Error(
+            "Email and password are required."
+        );
     }
 
-    return api.post("/api/auth/register", userData);
+    return api.post(
+        "/api/auth/register",
+        userData
+    );
 }
 
-// ==========================================
-// Logout user
-// ==========================================
+
+// ------------------------------------------
+// UPDATE USER PROFILE
+// ------------------------------------------
+
+export async function updateProfile(
+    userId,
+    username
+) {
+
+    if (!userId) {
+        throw new Error(
+            "User ID is required."
+        );
+    }
+
+    if (!username?.trim()) {
+        throw new Error(
+            "Name cannot be empty."
+        );
+    }
+
+    const result = await api.put(
+        "/api/auth/profile",
+        {
+            user_id: userId,
+            username: username.trim(),
+        }
+    );
+
+    if (!result?.success || !result?.user) {
+        throw new Error(
+            result?.message ||
+            "Profile update failed."
+        );
+    }
+
+    // --------------------------------------
+    // UPDATE STORED USER
+    // --------------------------------------
+
+    localStorage.setItem(
+        USER_STORAGE_KEY,
+        JSON.stringify(result.user)
+    );
+
+    return result;
+}
+
+
+// ------------------------------------------
+// LOGOUT USER
+// ------------------------------------------
+
 export async function logout() {
+
     try {
-        await api.post("/api/auth/logout");
+
+        await api.post(
+            "/api/auth/logout"
+        );
+
     } finally {
-        localStorage.removeItem(USER_STORAGE_KEY);
+
+        localStorage.removeItem(
+            USER_STORAGE_KEY
+        );
     }
 
     return {
@@ -61,38 +135,57 @@ export async function logout() {
     };
 }
 
-// ==========================================
-// Get current logged-in user
-// ==========================================
+
+// ------------------------------------------
+// GET CURRENT LOGGED-IN USER
+// ------------------------------------------
+
 export async function getCurrentUser() {
-    const storedUser = localStorage.getItem(USER_STORAGE_KEY);
+
+    const storedUser =
+        localStorage.getItem(
+            USER_STORAGE_KEY
+        );
 
     if (!storedUser) {
         return null;
     }
 
     try {
-        return JSON.parse(storedUser);
+
+        return JSON.parse(
+            storedUser
+        );
+
     } catch (error) {
+
         console.error(
             "Failed to read stored user:",
             error
         );
 
-        localStorage.removeItem(USER_STORAGE_KEY);
+        localStorage.removeItem(
+            USER_STORAGE_KEY
+        );
 
         return null;
     }
 }
 
-// ==========================================
-// Check authentication status
-// ==========================================
+
+// ------------------------------------------
+// CHECK AUTHENTICATION
+// ------------------------------------------
+
 export async function checkAuth() {
+
     try {
-        const user = await getCurrentUser();
+
+        const user =
+            await getCurrentUser();
 
         if (!user || !user.id) {
+
             return {
                 authenticated: false,
                 user: null,
@@ -103,7 +196,9 @@ export async function checkAuth() {
             authenticated: true,
             user,
         };
+
     } catch (error) {
+
         console.error(
             "Authentication check failed:",
             error
@@ -116,15 +211,20 @@ export async function checkAuth() {
     }
 }
 
-// ==========================================
-// Export service
-// ==========================================
+
+// ------------------------------------------
+// EXPORT SERVICE
+// ------------------------------------------
+
 const authService = {
+
     login,
     register,
+    updateProfile,
     logout,
     getCurrentUser,
     checkAuth,
+
 };
 
 export default authService;

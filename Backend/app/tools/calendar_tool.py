@@ -1,4 +1,3 @@
-
 from datetime import datetime
 
 from app.tools.base_tool import BaseTool
@@ -283,9 +282,6 @@ class CalendarTool(BaseTool):
                     "message": str(error)
                 }
 
-            # Connect provider to the user's
-            # real Google Calendar.
-
             connection_result = (
                 self.calendar_provider.connect(
                     user_id
@@ -409,41 +405,220 @@ class CalendarTool(BaseTool):
                 ""
             )
 
+            title = parameters.get(
+                "title",
+                ""
+            )
+
+            calendar_id = parameters.get(
+                "calendar_id",
+                "primary"
+            )
+
             if not isinstance(
+                calendar_id,
+                str
+            ):
+                calendar_id = "primary"
+
+            calendar_id = calendar_id.strip()
+
+            if not calendar_id:
+                calendar_id = "primary"
+
+            # -------------------------------------
+            # DELETE BY EVENT ID
+            # -------------------------------------
+
+            if isinstance(
                 event_id,
                 str
-            ) or not event_id.strip():
+            ) and event_id.strip():
 
-                return {
-                    "success": False,
-                    "message": (
-                        "Event ID is required."
+                connection_result = (
+                    self.calendar_provider.connect(
+                        user_id
                     )
-                }
-
-            connection_result = (
-                self.calendar_provider.connect(
-                    user_id
                 )
-            )
 
-            if not connection_result.get(
-                "success"
-            ):
+                if not connection_result.get(
+                    "success"
+                ):
 
-                return connection_result
+                    return connection_result
 
-            return self.calendar_provider.execute(
-                action="delete",
-                parameters={
-                    "user_id": user_id,
-                    "event_id": event_id,
-                    "calendar_id": parameters.get(
-                        "calendar_id",
-                        "primary"
+                return self.calendar_provider.execute(
+                    action="delete",
+                    parameters={
+                        "user_id": user_id,
+                        "event_id": event_id.strip(),
+                        "calendar_id": calendar_id
+                    }
+                )
+
+            # -------------------------------------
+            # DELETE BY EVENT TITLE
+            # -------------------------------------
+
+            if isinstance(
+                title,
+                str
+            ) and title.strip():
+
+                connection_result = (
+                    self.calendar_provider.connect(
+                        user_id
                     )
-                }
-            )
+                )
+
+                if not connection_result.get(
+                    "success"
+                ):
+
+                    return connection_result
+
+                list_result = (
+                    self.calendar_provider.execute(
+                        action="list",
+                        parameters={
+                            "user_id": user_id,
+                            "max_results": parameters.get(
+                                "max_results",
+                                100
+                            ),
+                            "calendar_id": calendar_id
+                        }
+                    )
+                )
+
+                if not list_result.get(
+                    "success"
+                ):
+
+                    return list_result
+
+                events = list_result.get(
+                    "events",
+                    []
+                )
+
+                requested_title = (
+                    title.strip().casefold()
+                )
+
+                matching_events = []
+
+                for event in events:
+
+                    event_title = event.get(
+                        "title",
+                        ""
+                    )
+
+                    if not isinstance(
+                        event_title,
+                        str
+                    ):
+                        continue
+
+                    if (
+                        event_title.strip().casefold()
+                        == requested_title
+                    ):
+
+                        matching_events.append(
+                            event
+                        )
+
+                if not matching_events:
+
+                    return {
+                        "success": False,
+                        "message": (
+                            f'Calendar event "{title.strip()}" '
+                            "was not found."
+                        )
+                    }
+
+                if len(
+                    matching_events
+                ) > 1:
+
+                    return {
+                        "success": False,
+                        "message": (
+                            f'Multiple calendar events named '
+                            f'"{title.strip()}" were found. '
+                            "Please provide the event date or event ID."
+                        ),
+                        "events": matching_events
+                    }
+
+                matched_event = matching_events[0]
+
+                matched_event_id = matched_event.get(
+                    "id",
+                    ""
+                )
+
+                if not isinstance(
+                    matched_event_id,
+                    str
+                ) or not matched_event_id.strip():
+
+                    return {
+                        "success": False,
+                        "message": (
+                            "The matching calendar event "
+                            "does not contain a valid event ID."
+                        )
+                    }
+
+                delete_result = (
+                    self.calendar_provider.execute(
+                        action="delete",
+                        parameters={
+                            "user_id": user_id,
+                            "event_id": (
+                                matched_event_id.strip()
+                            ),
+                            "calendar_id": calendar_id
+                        }
+                    )
+                )
+
+                if delete_result.get(
+                    "success"
+                ):
+
+                    delete_result[
+                        "deleted_event"
+                    ] = {
+                        "id": matched_event_id.strip(),
+                        "title": matched_event.get(
+                            "title",
+                            ""
+                        ),
+                        "start": matched_event.get(
+                            "start"
+                        ),
+                        "end": matched_event.get(
+                            "end"
+                        )
+                    }
+
+                return delete_result
+
+            # -------------------------------------
+            # NO ID / TITLE
+            # -------------------------------------
+
+            return {
+                "success": False,
+                "message": (
+                    "Event ID or event title is required."
+                )
+            }
 
         # -----------------------------------------
         # CALENDAR LIST
@@ -482,4 +657,3 @@ class CalendarTool(BaseTool):
     ) -> bool:
 
         return True
-

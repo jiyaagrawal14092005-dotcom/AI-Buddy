@@ -281,6 +281,129 @@ def login_user(
 
 
 # ---------------------------------
+# UPDATE USER PROFILE
+# ---------------------------------
+
+@router.put("/profile")
+def update_user_profile(
+    profile_data: dict,
+    db: Session = Depends(get_db)
+):
+
+    user_id = profile_data.get("user_id")
+    username = str(
+        profile_data.get("username", "")
+    ).strip()
+
+    # ---------------------------------
+    # VALIDATE USER ID
+    # ---------------------------------
+
+    if user_id is None:
+
+        return {
+            "success": False,
+            "message": "User ID is required."
+        }
+
+    try:
+
+        user_id = int(user_id)
+
+    except (TypeError, ValueError):
+
+        return {
+            "success": False,
+            "message": "Invalid user ID."
+        }
+
+    # ---------------------------------
+    # VALIDATE USERNAME
+    # ---------------------------------
+
+    if not username:
+
+        return {
+            "success": False,
+            "message": "Name cannot be empty."
+        }
+
+    if len(username) > 100:
+
+        return {
+            "success": False,
+            "message": "Name cannot exceed 100 characters."
+        }
+
+    # ---------------------------------
+    # FIND USER
+    # ---------------------------------
+
+    user = (
+        db.query(User)
+        .filter(
+            User.id == user_id
+        )
+        .first()
+    )
+
+    if user is None:
+
+        return {
+            "success": False,
+            "message": "User not found."
+        }
+
+    # ---------------------------------
+    # CHECK DUPLICATE USERNAME
+    # ---------------------------------
+
+    existing_username = (
+        db.query(User)
+        .filter(
+            User.username == username,
+            User.id != user_id
+        )
+        .first()
+    )
+
+    if existing_username is not None:
+
+        return {
+            "success": False,
+            "message": "Username already exists."
+        }
+
+    # ---------------------------------
+    # UPDATE USERNAME
+    # ---------------------------------
+
+    user.username = username
+
+    try:
+
+        db.commit()
+
+        db.refresh(user)
+
+        return {
+            "success": True,
+            "message": "Profile updated successfully.",
+            "user": user_response(user)
+        }
+
+    except Exception as error:
+
+        db.rollback()
+
+        return {
+            "success": False,
+            "message": "Profile update failed.",
+            "error": str(error)
+        }
+
+
+# ---------------------------------
 # CURRENT USER
 # ---------------------------------
 
